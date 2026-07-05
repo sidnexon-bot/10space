@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10space – 10men</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f2f2f7; color: #1c1c1e; }
+
+    body.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-card { background: #fff; border-radius: 16px; padding: 40px; text-align: center; width: 320px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+    .login-card h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .login-card p { color: #6e6e73; margin-bottom: 24px; }
+    .primary-btn { width: 100%; padding: 14px; font-size: 16px; background: #EE220C; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .primary-btn:hover { background: #cc1a09; }
+    .error { color: #EE220C; font-size: 14px; margin-top: 12px; }
+    .hidden { display: none; }
+
+    .topbar { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar h1 { font-size: 18px; font-weight: 700; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; }
+    .logout-btn { font-size: 14px; color: #6e6e73; background: none; border: none; cursor: pointer; }
+
+    .app-layout { display: flex; min-height: calc(100vh - 56px); }
+    .sidebar { width: 240px; background: #fff; border-right: 1px solid #e5e5ea; padding: 16px 0; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px; }
+
+    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; border-radius: 8px; margin: 2px 8px; font-size: 14px; color: #1c1c1e; }
+    .sidebar-item:hover { background: #f2f2f7; }
+    .sidebar-item.active { background: #fff0ee; color: #EE220C; font-weight: 600; }
+    .sidebar-item svg { flex-shrink: 0; }
+    .sidebar-section { font-size: 11px; font-weight: 600; color: #8e8e93; padding: 12px 20px 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #6e6e73; margin-bottom: 20px; }
+    .breadcrumb span { cursor: pointer; }
+    .breadcrumb span:hover { color: #EE220C; }
+    .breadcrumb .sep { color: #c7c7cc; }
+
+    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .toolbar-left { display: flex; gap: 8px; }
+    .toolbar-right { display: flex; gap: 8px; }
+    .btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; font-weight: 500; }
+    .btn-primary { background: #EE220C; color: #fff; }
+    .btn-primary:hover { background: #cc1a09; }
+    .btn-icon { width: 36px; height: 36px; border-radius: 8px; background: #f2f2f7; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-icon:hover { background: #e5e5ea; }
+    .btn-icon.active { background: #fff0ee; }
+
+    .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .doc-card { background: #fff; border-radius: 12px; padding: 16px; cursor: pointer; border: 1px solid #e5e5ea; transition: box-shadow 0.15s; }
+    .doc-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .doc-card-icon { margin-bottom: 12px; }
+    .doc-card-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; word-break: break-word; }
+    .doc-card-meta { font-size: 12px; color: #8e8e93; }
+    .doc-card-code { font-size: 11px; color: #EE220C; font-weight: 600; margin-top: 6px; }
+
+    .doc-list { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e5ea; }
+    .doc-list-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; cursor: pointer; }
+    .doc-list-item:last-child { border-bottom: none; }
+    .doc-list-item:hover { background: #f9f9fb; }
+    .doc-list-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .doc-list-code { font-size: 12px; color: #EE220C; font-weight: 600; width: 90px; }
+    .doc-list-meta { font-size: 12px; color: #8e8e93; width: 120px; text-align: right; }
+
+    .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .folder-card { background: #fff; border-radius: 12px; padding: 16px; cursor: pointer; border: 1px solid #e5e5ea; display: flex; align-items: center; gap: 12px; transition: box-shadow 0.15s; }
+    .folder-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .folder-card-name { font-size: 14px; font-weight: 500; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #8e8e93; }
+    .empty-state p { margin-top: 12px; font-size: 15px; }
+
+    .upload-zone { border: 2px dashed #c7c7cc; border-radius: 12px; padding: 40px; text-align: center; color: #8e8e93; margin-bottom: 24px; transition: border-color 0.15s, background 0.15s; }
+    .upload-zone.dragover { border-color: #EE220C; background: #fff0ee; color: #EE220C; }
+    .upload-zone p { margin-top: 8px; font-size: 14px; }
+
+    /* MOBILNÍ UI */
+    @media (max-width: 768px) {
+      .app-layout { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e5e5ea; padding: 8px 0; display: none; }
+      .sidebar.open { display: block; }
+      .main { padding: 16px; }
+      .topbar { padding: 0 16px; }
+      .hamburger { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: none; border: none; cursor: pointer; }
+      .doc-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .folder-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .upload-zone { padding: 24px 16px; }
+      .doc-list-meta { display: none; }
+    }
+
+    @media (min-width: 769px) {
+      .hamburger { display: none; }
+    }
+  </style>
+</head>
+<body class="login-page" id="body">
+
+<!-- LOGIN -->
+<div class="login-card" id="login-screen">
+  <h1>10space</h1>
+  <p>Přihlas se svým Google účtem</p>
+  <button class="primary-btn" onclick="handleGoogleLogin()">Přihlásit se přes Google</button>
+  <p id="login-error" class="error hidden"></p>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="hidden">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      </svg>
+      <h1>10space</h1>
+    </div>
+    <div class="topbar-right">
+      <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
+      <span id="user-name" style="font-size:14px;color:#6e6e73;"></span>
+      <button class="logout-btn" onclick="handleLogout()">Odhlásit</button>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">Složky</div>
+      <div id="sidebar-folders"></div>
+    </div>
+
+    <div class="main">
+      <div class="breadcrumb" id="breadcrumb"></div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="btn btn-primary" onclick="openUpload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;margin-right:6px;vertical-align:middle"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nahrát
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn-icon" id="view-grid-btn" onclick="setView('grid')" title="Mřížka">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="btn-icon" id="view-list-btn" onclick="setView('list')" title="Seznam">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="upload-zone hidden" id="upload-zone"
+        ondragover="event.preventDefault();this.classList.add('dragover')"
+        ondragleave="this.classList.remove('dragover')"
+        ondrop="handleDrop(event)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        <p>Přetáhni soubory sem nebo <label style="color:#EE220C;cursor:pointer;font-weight:600">vyber ze zařízení<input type="file" multiple style="display:none" onchange="handleFileSelect(event)"></label></p>
+      </div>
+
+      <div id="content-area"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAjDCB3gpqytTHnG7zKLKJGXMNeW5vyC_I",
+  authDomain: "base-39f52.firebaseapp.com",
+  databaseURL: "https://base-39f52-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "base-39f52",
+  storageBucket: "base-39f52.firebasestorage.app",
+  messagingSenderId: "20753597026",
+  appId: "1:20753597026:web:bec0c5a784492206f3c73b"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const storage = getStorage(app);
+
+let currentUser = null;
+window.currentFolder = null;
+let allFolders = {};
+window.allDocs = {};
+let viewMode = "grid";
+
+// AUTH
+window.handleGoogleLogin = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const email = result.user.email;
+    const snapshot = await get(ref(db, "/members"));
+    const members = snapshot.val();
+    const member = Object.values(members).find(m => m.email === email);
+    if (!member) {
+      document.getElementById("login-error").textContent = "Přístup zamítnut: email není v seznamu členů";
+      document.getElementById("login-error").classList.remove("hidden");
+      await signOut(auth);
+      return;
+    }
+    currentUser = { ...member, photoURL: result.user.photoURL };
+  } catch(err) {
+    document.getElementById("login-error").textContent = "Chyba přihlášení: " + err.message;
+    document.getElementById("login-error").classList.remove("hidden");
+  }
+};
+
+window.handleLogout = async () => {
+  await signOut(auth);
+  location.reload();
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const snapshot = await get(ref(db, "/members"));
+    const members = snapshot.val();
+    const member = Object.values(members).find(m => m.email === user.email);
+    if (!member) { await signOut(auth); return; }
+    currentUser = { ...member, photoURL: user.photoURL };
+    showApp();
+  }
+});
+
+function showApp() {
+  document.getElementById("body").classList.remove("login-page");
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("app-screen").classList.remove("hidden");
+  document.getElementById("user-name").textContent = currentUser.name || currentUser.email;
+  if (currentUser.photoURL) document.getElementById("user-avatar").src = currentUser.photoURL;
+  loadFolders();
+}
+
+// SLOŽKY
+async function loadFolders() {
+  const snap = await get(ref(db, "/slozky"));
+  allFolders = snap.val() || {};
+  renderSidebar();
+  navigateTo(null);
+}
+
+function renderSidebar() {
+  const root = Object.entries(allFolders).filter(([id, f]) => !f.rodic);
+  const html = root.map(([id, f]) => `
+    <div class="sidebar-item" onclick="navigateTo('${id}')" id="sidebar-${id}">
+      ${folderIcon()}
+      ${f.nazev}
+    </div>
+  `).join("");
+  document.getElementById("sidebar-folders").innerHTML = html;
+}
+
+function folderIcon() {
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+}
+
+function fileIcon(size) {
+  const s = size || 32;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+
+// NAVIGACE
+window.navigateTo = async (folderId) => {
+  window.currentFolder = folderId;
+  if (window.innerWidth <= 768) {
+    document.querySelector(".sidebar").classList.remove("open");
+  }
+  document.querySelectorAll(".sidebar-item").forEach(el => el.classList.remove("active"));
+  if (folderId) {
+    const rootId = getRootFolder(folderId);
+    const el = document.getElementById(`sidebar-${rootId}`);
+    if (el) el.classList.add("active");
+  }
+  renderBreadcrumb(folderId);
+  await renderContent(folderId);
+};
+
+function getRootFolder(folderId) {
+  const folder = allFolders[folderId];
+  if (!folder || !folder.rodic) return folderId;
+  return getRootFolder(folder.rodic);
+}
+
+function renderBreadcrumb(folderId) {
+  const crumbs = [{ id: null, name: "10space" }];
+  let id = folderId;
+  const trail = [];
+  while (id) {
+    const f = allFolders[id];
+    if (!f) break;
+    trail.unshift({ id, name: f.nazev });
+    id = f.rodic;
+  }
+  const all = [...crumbs, ...trail];
+  const html = all.map((c, i) =>
+    i < all.length - 1
+      ? `<span onclick="navigateTo('${c.id}')">${c.name}</span><span class="sep">›</span>`
+      : `<span style="color:#1c1c1e;font-weight:500">${c.name}</span>`
+  ).join("");
+  document.getElementById("breadcrumb").innerHTML = html;
+}
+
+async function renderContent(folderId) {
+  const area = document.getElementById("content-area");
+  const subfolders = Object.entries(allFolders).filter(([id, f]) => f.rodic === folderId);
+
+  try {
+    const snap = await get(ref(db, "/dokumenty"));
+    window.allDocs = snap.val() || {};
+  } catch(e) {
+    window.allDocs = {};
+  }
+
+  const docs = Object.entries(window.allDocs).filter(([id, d]) => d.slozkaId === folderId);
+
+  if (subfolders.length === 0 && docs.length === 0) {
+    area.innerHTML = `<div class="empty-state">${folderIcon()}<p>Tato složka je prázdná</p></div>`;
+    return;
+  }
+
+  let html = "";
+
+  if (subfolders.length > 0) {
+    html += `<div class="folder-grid">`;
+    html += subfolders.map(([id, f]) => `
+      <div class="folder-card" onclick="navigateTo('${id}')">
+        ${folderIcon()}
+        <span class="folder-card-name">${f.nazev}</span>
+      </div>
+    `).join("");
+    html += `</div>`;
+  }
+
+  if (docs.length > 0) {
+    if (viewMode === "grid") {
+      html += `<div class="doc-grid">`;
+      html += docs.map(([id, d]) => `
+        <div class="doc-card" onclick="openDocument('${id}')">
+          <div class="doc-card-icon">${fileIcon(32)}</div>
+          <div class="doc-card-name">${d.nazev}</div>
+          <div class="doc-card-meta">${d.kategorie || ""}</div>
+          ${d.evidCislo ? `<div class="doc-card-code">${d.evidCislo}</div>` : ""}
+        </div>
+      `).join("");
+      html += `</div>`;
+    } else {
+      html += `<div class="doc-list">`;
+      html += docs.map(([id, d]) => `
+        <div class="doc-list-item" onclick="openDocument('${id}')">
+          ${fileIcon(20)}
+          <span class="doc-list-name">${d.nazev}</span>
+          <span class="doc-list-code">${d.evidCislo || ""}</span>
+          <span class="doc-list-meta">${d.kategorie || ""}</span>
+        </div>
+      `).join("");
+      html += `</div>`;
+    }
+  }
+
+  area.innerHTML = html;
+}
+
+// OTEVŘENÍ DOKUMENTU
+window.openDocument = async (docId) => {
+  const doc = window.allDocs[docId];
+  if (!doc) return;
+
+  const verze = doc.verejneVerze;
+  if (!verze) { alert("Dokument nemá žádnou verzi."); return; }
+
+  const latestKey = Object.keys(verze).sort().pop();
+  const latest = verze[latestKey];
+
+  try {
+    const fileRef = storageRef(storage, `dokumenty/${latest.fileId}`);
+    const url = await getDownloadURL(fileRef);
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch(err) {
+    alert("Chyba při otevírání: " + err.message);
+  }
+};
+
+// HAMBURGER
+window.toggleSidebar = () => {
+  document.querySelector(".sidebar").classList.toggle("open");
+};
+
+// VIEW MODE
+window.setView = (mode) => {
+  viewMode = mode;
+  document.getElementById("view-grid-btn").classList.toggle("active", mode === "grid");
+  document.getElementById("view-list-btn").classList.toggle("active", mode === "list");
+  renderContent(window.currentFolder);
+};
+
+// UPLOAD
+window.openUpload = () => {
+  document.getElementById("upload-zone").classList.toggle("hidden");
+};
+
+window.handleDrop = (e) => {
+  e.preventDefault();
+  document.getElementById("upload-zone").classList.remove("dragover");
+  processFiles(Array.from(e.dataTransfer.files));
+};
+
+window.handleFileSelect = (e) => {
+  processFiles(Array.from(e.target.files));
+};
+
+async function processFiles(files) {
+  if (!window.currentFolder) {
+    alert("Nejdřív vyber složku kam chceš nahrát.");
+    return;
+  }
+
+  for (const file of files) {
+    const fileId = crypto.randomUUID();
+    const fileRef = storageRef(storage, `dokumenty/${fileId}`);
+
+    try {
+      await uploadBytes(fileRef, file);
+
+      const docRef = ref(db, `/dokumenty/${fileId}`);
+      await set(docRef, {
+        nazev: file.name,
+        kategorie: null,
+        stav: null,
+        slozkaId: window.currentFolder,
+        zdroj: "dataroom",
+        nahralKdo: currentUser.email,
+        datumNahrani: Date.now(),
+        evidCislo: "—",
+        verejneVerze: {
+          1: {
+            fileId: fileId,
+            datum: new Date().toISOString().split("T")[0],
+            poznamka: "První nahrání",
+            nahralKdo: currentUser.email
+          }
+        }
+      });
+
+      console.log(`Nahráno: ${file.name}`);
+    } catch(err) {
+      alert(`Chyba při nahrávání ${file.name}: ${err.message}`);
+    }
+  }
+
+  document.getElementById("upload-zone").classList.add("hidden");
+  await renderContent(window.currentFolder);
+}
+
+setView("grid");
+</script>
+
+</body>
+</html>
