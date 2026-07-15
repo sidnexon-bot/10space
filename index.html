@@ -433,6 +433,7 @@ window.handleDrop = (e) => {
 };
 
 window.handleFileSelect = (e) => {
+  console.log("handleFileSelect zavolána, files:", e.target.files.length);
   processFiles(Array.from(e.target.files));
 };
 
