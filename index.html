@@ -437,6 +437,7 @@ window.handleFileSelect = (e) => {
 };
 
 async function processFiles(files) {
+  console.log("processFiles zavolána, files:", files.length, "folder:", window.currentFolder);
   if (!window.currentFolder) {
     alert("Nejdřív vyber složku kam chceš nahrát.");
     return;
