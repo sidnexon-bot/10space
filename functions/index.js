@@ -1,4 +1,4 @@
-// deploy v5
+// deploy v6
 const { onRequest } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase } = require("firebase-admin/database");
