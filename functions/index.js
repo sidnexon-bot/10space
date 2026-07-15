@@ -1,11 +1,13 @@
-// deploy v6
+// deploy v10
 const { onRequest } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase } = require("firebase-admin/database");
 const { getAuth } = require("firebase-admin/auth");
 const { google } = require("googleapis");
 
-initializeApp();
+initializeApp({
+  databaseURL: "https://base-39f52-default-rtdb.europe-west1.firebasedatabase.app"
+});
 
 async function getDriveClient(db) {
   const snap = await db.ref("drive_config").get();
@@ -84,7 +86,7 @@ exports.getFileUrl = onRequest({ cors: true }, async (req, res) => {
 });
 
 // Nahraj soubor na Drive
-exports.uploadFile = onRequest({ cors: true }, async (req, res) => {
+exports.uploadFile = onRequest({ cors: true, timeoutSeconds: 120 }, async (req, res) => {
   const token = req.headers.authorization?.split("Bearer ")[1];
   if (!token) return res.status(401).json({ error: "Nepřihlášen" });
 
