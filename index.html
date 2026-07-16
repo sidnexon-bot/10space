@@ -143,6 +143,27 @@
 
     /* RECENT BADGE */
     .recent-section-title { font-size: 13px; font-weight: 600; color: #8e8e93; padding: 16px 24px 8px; }
+
+    /* LOADING SPINNER */
+    .spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+    .spinner { width: 36px; height: 36px; border: 3px solid #e5e5ea; border-top-color: #EE220C; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* UPLOAD PROGRESS */
+    .upload-progress-panel { position: fixed; bottom: 24px; right: 24px; width: 320px; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border: 1px solid #e5e5ea; z-index: 1500; overflow: hidden; }
+    .upload-progress-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; font-size: 14px; font-weight: 600; }
+    .upload-progress-close { background: none; border: none; cursor: pointer; color: #8e8e93; font-size: 18px; line-height: 1; }
+    .upload-progress-list { max-height: 240px; overflow-y: auto; }
+    .upload-progress-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #f2f2f7; font-size: 13px; }
+    .upload-progress-item:last-child { border-bottom: none; }
+    .upload-progress-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .upload-progress-status { font-size: 12px; font-weight: 500; flex-shrink: 0; }
+    .upload-progress-status.done { color: #34c759; }
+    .upload-progress-status.active { color: #EE220C; }
+    .upload-progress-status.queue { color: #8e8e93; }
+    .upload-progress-bar-wrap { height: 2px; background: #f2f2f7; margin: 0 16px 8px; border-radius: 1px; }
+    .upload-progress-bar { height: 2px; background: #EE220C; border-radius: 1px; transition: width 0.3s; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -315,6 +336,21 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     Smazat
   </div>
+
+  <!-- SPINNER -->
+  <div class="spinner-overlay hidden" id="spinner">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- UPLOAD PROGRESS PANEL -->
+  <div class="upload-progress-panel hidden" id="upload-progress-panel">
+    <div class="upload-progress-header">
+      <span id="upload-progress-title">Nahrávání</span>
+      <button class="upload-progress-close" onclick="document.getElementById('upload-progress-panel').classList.add('hidden')">×</button>
+    </div>
+    <div class="upload-progress-list" id="upload-progress-list"></div>
+  </div>
+
 </div>
 
 <script type="module">
@@ -753,6 +789,7 @@ window.cancelDetailComment = () => {
 
 // OPEN DOCUMENT
 window.openDocument = async (docId) => {
+  showSpinner();
   try {
     const token = await auth.currentUser.getIdToken();
     const response = await fetch(FUNCTIONS.getFileUrl, {
@@ -761,6 +798,7 @@ window.openDocument = async (docId) => {
       body: JSON.stringify({ docId })
     });
     const data = await response.json();
+    hideSpinner();
     if (data.url) {
       const a = document.createElement("a");
       a.href = data.url; a.target = "_blank"; a.rel = "noopener";
@@ -768,7 +806,10 @@ window.openDocument = async (docId) => {
     } else {
       alert("Chyba: " + (data.error || "Nelze otevřít"));
     }
-  } catch(err) { alert("Chyba: " + err.message); }
+  } catch(err) {
+    hideSpinner();
+    alert("Chyba: " + err.message);
+  }
 };
 
 // CONTEXT MENU
@@ -875,6 +916,58 @@ window.createFolder = async () => {
   }
 };
 
+  // SPINNER
+function showSpinner() { document.getElementById("spinner").classList.remove("hidden"); }
+function hideSpinner() { document.getElementById("spinner").classList.add("hidden"); }
+
+// UPLOAD PROGRESS
+function initUploadProgress(files) {
+  const panel = document.getElementById("upload-progress-panel");
+  const list = document.getElementById("upload-progress-list");
+  document.getElementById("upload-progress-title").textContent = `Nahrávání dokumentů (${files.length})`;
+  list.innerHTML = files.map((f, i) => `
+    <div id="upload-item-${i}">
+      <div class="upload-progress-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="upload-progress-name">${f.name}</span>
+        <span class="upload-progress-status queue" id="upload-status-${i}">ve frontě</span>
+      </div>
+      <div class="upload-progress-bar-wrap hidden" id="upload-bar-wrap-${i}">
+        <div class="upload-progress-bar" id="upload-bar-${i}" style="width:0%"></div>
+      </div>
+    </div>
+  `).join("");
+  panel.classList.remove("hidden");
+}
+
+function setUploadItemActive(i) {
+  document.getElementById(`upload-status-${i}`).textContent = "nahrávání…";
+  document.getElementById(`upload-status-${i}`).className = "upload-progress-status active";
+  document.getElementById(`upload-bar-wrap-${i}`).classList.remove("hidden");
+  // Simulace progress baru (skutečný progress vyžaduje XHR)
+  let pct = 0;
+  const bar = document.getElementById(`upload-bar-${i}`);
+  const interval = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 15, 90);
+    bar.style.width = pct + "%";
+  }, 200);
+  return interval;
+}
+
+function setUploadItemDone(i, interval) {
+  clearInterval(interval);
+  document.getElementById(`upload-bar-${i}`).style.width = "100%";
+  document.getElementById(`upload-status-${i}`).textContent = "nahráno";
+  document.getElementById(`upload-status-${i}`).className = "upload-progress-status done";
+}
+
+function setUploadItemError(i, interval) {
+  clearInterval(interval);
+  document.getElementById(`upload-status-${i}`).textContent = "chyba";
+  document.getElementById(`upload-status-${i}`).className = "upload-progress-status";
+  document.getElementById(`upload-status-${i}`).style.color = "#EE220C";
+}
+
 // UPLOAD
 window.openUpload = () => {
   document.getElementById("upload-zone").classList.toggle("hidden");
@@ -891,7 +984,12 @@ async function processFiles(files) {
     alert("Nejdřív vyber složku kam chceš nahrát.");
     return;
   }
-  for (const file of files) {
+
+  initUploadProgress(files);
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const interval = setUploadItemActive(i);
     try {
       const base64Data = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -899,6 +997,7 @@ async function processFiles(files) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+
       const token = await auth.currentUser.getIdToken();
       const response = await fetch(FUNCTIONS.uploadFile, {
         method: "POST",
@@ -920,12 +1019,17 @@ async function processFiles(files) {
       };
       await set(docRef, docData);
       window.allDocs[fileId] = docData;
-      console.log(`Nahráno: ${file.name}`);
-    } catch(err) { alert(`Chyba: ${err.message}`); }
+      setUploadItemDone(i, interval);
+    } catch(err) {
+      setUploadItemError(i, interval);
+      console.error(`Chyba při nahrávání ${file.name}:`, err.message);
+    }
   }
+
   document.getElementById("upload-zone").classList.add("hidden");
   renderTab();
 }
+  
 </script>
 </body>
 </html>
