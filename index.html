@@ -337,20 +337,6 @@
     Smazat
   </div>
 
-  <!-- SPINNER -->
-  <div class="spinner-overlay hidden" id="spinner">
-    <div class="spinner"></div>
-  </div>
-  
-  <!-- UPLOAD PROGRESS PANEL -->
-  <div class="upload-progress-panel hidden" id="upload-progress-panel">
-    <div class="upload-progress-header">
-      <span id="upload-progress-title">Nahrávání</span>
-      <button class="upload-progress-close" onclick="document.getElementById('upload-progress-panel').classList.add('hidden')">×</button>
-    </div>
-    <div class="upload-progress-list" id="upload-progress-list"></div>
-  </div>
-
 </div>
 
 <script type="module">
@@ -478,8 +464,9 @@ window.switchTab = (tab) => {
     folders: "Složky", media: "Multimédia",
     projects: "Projekty", favorites: "Oblíbené"
   };
-  document.getElementById("content-title").textContent = titles[tab] || tab;
-  document.getElementById("breadcrumb").innerHTML = "";
+  const title = titles[tab] || tab;
+  document.getElementById("content-title").textContent = title;
+  document.getElementById("breadcrumb").innerHTML = `<span style="color:#8e8e93">10space</span><span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${title}</span>`;
 
   renderTab();
 };
@@ -492,8 +479,14 @@ function renderTab() {
     items = items.sort(([,a],[,b]) => (b.datumNahrani||0) - (a.datumNahrani||0)).slice(0, 20);
   } else if (currentTab === "documents") {
     items = items.filter(([,d]) => {
-      const m = d.mimeType || "";
-      return m.includes("pdf") || m.includes("document") || m.includes("spreadsheet") || m.includes("presentation") || m.includes("text");
+      const m = (d.mimeType || "").toLowerCase();
+      const name = (d.nazev || "").toLowerCase();
+      return m.includes("pdf") || m.includes("document") || m.includes("spreadsheet") ||
+             m.includes("presentation") || m.includes("text") || m.includes("word") ||
+             m.includes("excel") || m.includes("powerpoint") ||
+             name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".xlsx") ||
+             name.endsWith(".pptx") || name.endsWith(".txt") ||
+             m === "" || m === "application/octet-stream";
     });
   } else if (currentTab === "media") {
     items = items.filter(([,d]) => {
@@ -566,21 +559,26 @@ function renderFolderContent(folderId) {
 }
 
 function renderBreadcrumb(folderId) {
-  const crumbs = [{ id: null, name: "10space" }];
-  let id = folderId;
   const trail = [];
+  let id = folderId;
   while (id) {
     const f = allFolders[id];
     if (!f) break;
     trail.unshift({ id, name: f.nazev });
     id = f.rodic;
   }
-  const all = [...crumbs, ...trail];
-  document.getElementById("breadcrumb").innerHTML = all.map((c, i) =>
-    i < all.length - 1
+
+  // Dominantní název = aktuální složka nebo záložka
+  const currentName = trail.length > 0 ? trail[trail.length - 1].name : document.getElementById("content-title").textContent;
+  document.getElementById("content-title").textContent = currentName;
+
+  // Breadcrumb = cesta k aktuální složce
+  const crumbs = [{ id: null, name: "10space" }, ...trail.slice(0, -1)];
+  document.getElementById("breadcrumb").innerHTML = crumbs.map((c, i) =>
+    i < crumbs.length - 1
       ? `<span onclick="navigateToFolder('${c.id}')">${c.name}</span><span class="sep">›</span>`
-      : `<span style="color:#1c1c1e;font-weight:500">${c.name}</span>`
-  ).join("");
+      : `<span onclick="navigateToFolder('${c.id}')">${c.name}</span>`
+  ).join("") + (trail.length > 0 ? `<span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${currentName}</span>` : "");
 }
 
 // RENDER LIST
@@ -1064,5 +1062,20 @@ async function processFiles(files) {
 }
   
 </script>
+  
+<!-- SPINNER -->
+<div class="spinner-overlay hidden" id="spinner">
+  <div class="spinner"></div>
+</div>
+
+<!-- UPLOAD PROGRESS PANEL -->
+<div class="upload-progress-panel hidden" id="upload-progress-panel">
+  <div class="upload-progress-header">
+    <span id="upload-progress-title">Nahrávání</span>
+    <button class="upload-progress-close" onclick="document.getElementById('upload-progress-panel').classList.add('hidden')">×</button>
+  </div>
+  <div class="upload-progress-list" id="upload-progress-list"></div>
+</div>
+  
 </body>
 </html>
