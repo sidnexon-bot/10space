@@ -16,7 +16,7 @@
     .primary-btn { width: 100%; padding: 14px; font-size: 16px; background: #EE220C; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
     .primary-btn:hover { background: #cc1a09; }
     .error { color: #EE220C; font-size: 14px; margin-top: 12px; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
 
     /* APP LAYOUT */
     #app-screen { display: flex; flex-direction: column; height: 100vh; }
@@ -145,7 +145,8 @@
     .recent-section-title { font-size: 13px; font-weight: 600; color: #8e8e93; padding: 16px 24px 8px; }
 
     /* LOADING SPINNER */
-    .spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+    .spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
+    .spinner-overlay.active { display: flex; }
     .spinner { width: 36px; height: 36px; border: 3px solid #e5e5ea; border-top-color: #EE220C; border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     
@@ -948,8 +949,8 @@ window.createFolder = async () => {
 };
 
   // SPINNER
-function showSpinner() { document.getElementById("spinner").classList.remove("hidden"); }
-function hideSpinner() { document.getElementById("spinner").classList.add("hidden"); }
+function showSpinner() { document.getElementById("spinner").classList.add("active"); }
+function hideSpinner() { document.getElementById("spinner").classList.remove("active"); }
 
 // UPLOAD PROGRESS
 function initUploadProgress(files) {
