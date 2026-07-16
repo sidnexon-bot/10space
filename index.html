@@ -61,10 +61,10 @@
     .breadcrumb .sep { color: #c7c7cc; }
 
     /* MULTI-SELECT TOOLBAR */
-    .multi-toolbar { background: #1c1c1e; color: #fff; padding: 0 24px; height: 48px; display: flex; align-items: center; gap: 12px; font-size: 14px; }
-    .multi-toolbar-btn { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .multi-toolbar-btn:hover { background: rgba(255,255,255,0.2); }
-    .multi-toolbar-btn.danger { color: #ff6b6b; }
+    .multi-toolbar { background: #f2f2f7; color: #1c1c1e; border-bottom: 1px solid #e5e5ea; padding: 0 24px; height: 48px; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 500; }
+    .multi-toolbar-btn { background: #fff; border: 1px solid #e5e5ea; color: #1c1c1e; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .multi-toolbar-btn:hover { background: #e5e5ea; }
+    .multi-toolbar-btn.danger { color: #EE220C; border-color: #EE220C; }
 
     /* LIST VIEW */
     .list-container { padding: 0; }
@@ -72,6 +72,7 @@
     .list-item { display: grid; grid-template-columns: 32px 1fr 100px 140px 140px 40px; gap: 8px; padding: 10px 24px; align-items: center; border-bottom: 1px solid #f2f2f7; cursor: pointer; background: #fff; transition: background 0.1s; }
     .list-item:hover { background: #f9f9fb; }
     .list-item.selected { background: #fff0ee; }
+    .list-item.active-detail { background: #fff8f7; border-left: 3px solid #EE220C; }
     .list-item-checkbox { display: flex; align-items: center; justify-content: center; }
     .list-item-checkbox input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #EE220C; }
     .list-item-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -588,6 +589,7 @@ function updateMultiToolbar() {
     document.getElementById("multi-count").textContent = `${count} vybráno`;
   } else {
     toolbar.classList.add("hidden");
+    document.getElementById("multi-count").textContent = "0 vybráno";
     if (selectedDetailId) rightSidebar.classList.remove("hidden-sidebar");
   }
 }
@@ -595,8 +597,10 @@ function updateMultiToolbar() {
 // DETAIL SIDEBAR
 function showDetail(id, isFolder) {
   selectedDetailId = id;
+  document.querySelectorAll(".list-item").forEach(el => el.classList.remove("active-detail"));
+  document.getElementById(`item-${id}`)?.classList.add("active-detail");
   const rightSidebar = document.getElementById("right-sidebar");
-  rightSidebar.classList.remove("hidden-sidebar");
+  if (selectedItems.size <= 1) rightSidebar.classList.remove("hidden-sidebar");
   renderDetailContent();
 }
 
@@ -686,7 +690,7 @@ function renderDetailContent() {
 }
 
 function renderLocationTree(slozkaId) {
-  if (!slozkaId) return '<div class="location-item current">10space (root)</div>';
+  if (!slozkaId) return '<div class="location-item current" style="padding-left:0">10space</div>';
   const trail = [];
   let id = slozkaId;
   while (id) {
@@ -697,8 +701,12 @@ function renderLocationTree(slozkaId) {
   }
   return [{ id: null, name: "10space" }, ...trail].map((c, i, arr) =>
     i < arr.length - 1
-      ? `<div class="location-item" onclick="navigateToFolder('${c.id}')">${c.name} ›</div>`
-      : `<div class="location-item current">${c.name}</div>`
+      ? `<div class="location-item" style="padding-left:${i * 12}px" onclick="navigateToFolder('${c.id}')">
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}${"›"}</span>${c.name}
+         </div>`
+      : `<div class="location-item current" style="padding-left:${i * 12}px">
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}${"›"}</span>${c.name}
+         </div>`
   ).join("");
 }
 
