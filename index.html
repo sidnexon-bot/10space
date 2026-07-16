@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>10space – 10men</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <title>10space</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f2f2f7; color: #1c1c1e; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f2f2f7; color: #1c1c1e; height: 100vh; overflow: hidden; }
 
-    body.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    /* LOGIN */
+    body.login-page { display: flex; align-items: center; justify-content: center; background: #f2f2f7; overflow: auto; }
     .login-card { background: #fff; border-radius: 16px; padding: 40px; text-align: center; width: 320px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
     .login-card h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
     .login-card p { color: #6e6e73; margin-bottom: 24px; }
@@ -18,128 +18,130 @@
     .error { color: #EE220C; font-size: 14px; margin-top: 12px; }
     .hidden { display: none; }
 
-    .topbar { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .topbar-left { display: flex; align-items: center; gap: 12px; }
-    .topbar h1 { font-size: 18px; font-weight: 700; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; }
-    .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; }
-    .logout-btn { font-size: 14px; color: #6e6e73; background: none; border: none; cursor: pointer; }
+    /* APP LAYOUT */
+    #app-screen { display: flex; flex-direction: column; height: 100vh; }
 
-    .app-layout { display: flex; min-height: calc(100vh - 56px); }
-    .sidebar { width: 240px; background: #fff; border-right: 1px solid #e5e5ea; padding: 16px 0; flex-shrink: 0; }
-    .main { flex: 1; padding: 24px; }
+    /* TOPBAR */
+    .topbar { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 100; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .topbar-left h1 { font-size: 17px; font-weight: 700; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+    .user-name { font-size: 13px; color: #6e6e73; }
+    .logout-btn { font-size: 13px; color: #6e6e73; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .logout-btn:hover { background: #f2f2f7; }
 
-    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; border-radius: 8px; margin: 2px 8px; font-size: 14px; color: #1c1c1e; }
-    .sidebar-item:hover { background: #f2f2f7; }
-    .sidebar-item.active { background: #fff0ee; color: #EE220C; font-weight: 600; }
-    .sidebar-item svg { flex-shrink: 0; }
-    .sidebar-section { font-size: 11px; font-weight: 600; color: #8e8e93; padding: 12px 20px 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    /* MAIN AREA */
+    .app-body { display: flex; flex: 1; overflow: hidden; }
 
-    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #6e6e73; margin-bottom: 20px; }
+    /* LEFT SIDEBAR */
+    .left-sidebar { width: 220px; background: #fff; border-right: 1px solid #e5e5ea; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+    .sidebar-logo { padding: 16px 16px 8px; }
+    .sidebar-tabs { display: flex; flex-direction: column; gap: 2px; padding: 4px 8px; }
+    .sidebar-tab { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #1c1c1e; border: none; background: none; width: 100%; text-align: left; }
+    .sidebar-tab:hover { background: #f2f2f7; }
+    .sidebar-tab.active { background: #fff0ee; color: #EE220C; font-weight: 600; }
+    .sidebar-tab svg { flex-shrink: 0; }
+    .sidebar-divider { height: 1px; background: #e5e5ea; margin: 8px 16px; }
+    .sidebar-section-title { font-size: 11px; font-weight: 600; color: #8e8e93; padding: 8px 20px 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* UPLOAD BUTTON */
+    .upload-btn-wrap { padding: 12px 16px; }
+    .upload-btn { width: 100%; padding: 9px; background: #EE220C; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .upload-btn:hover { background: #cc1a09; }
+
+    /* MAIN CONTENT */
+    .main-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .content-header { padding: 20px 24px 12px; border-bottom: 1px solid #e5e5ea; background: #fff; }
+    .content-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .content-subtitle { font-size: 13px; color: #8e8e93; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6e6e73; margin-top: 8px; flex-wrap: wrap; }
     .breadcrumb span { cursor: pointer; }
     .breadcrumb span:hover { color: #EE220C; }
     .breadcrumb .sep { color: #c7c7cc; }
 
-    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .toolbar-left { display: flex; gap: 8px; }
-    .toolbar-right { display: flex; gap: 8px; }
-    .btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; font-weight: 500; }
-    .btn-primary { background: #EE220C; color: #fff; }
-    .btn-primary:hover { background: #cc1a09; }
-    .btn-icon { width: 36px; height: 36px; border-radius: 8px; background: #f2f2f7; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .btn-icon:hover { background: #e5e5ea; }
-    .btn-icon.active { background: #fff0ee; }
+    /* MULTI-SELECT TOOLBAR */
+    .multi-toolbar { background: #1c1c1e; color: #fff; padding: 0 24px; height: 48px; display: flex; align-items: center; gap: 12px; font-size: 14px; }
+    .multi-toolbar-btn { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .multi-toolbar-btn:hover { background: rgba(255,255,255,0.2); }
+    .multi-toolbar-btn.danger { color: #ff6b6b; }
 
-    .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-    .doc-card { background: #fff; border-radius: 12px; padding: 16px; cursor: pointer; border: 1px solid #e5e5ea; transition: box-shadow 0.15s; }
-    .doc-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .doc-card-icon { margin-bottom: 12px; }
-    .doc-card-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; word-break: break-word; }
-    .doc-card-meta { font-size: 12px; color: #8e8e93; }
-    .doc-card-code { font-size: 11px; color: #EE220C; font-weight: 600; margin-top: 6px; }
+    /* LIST VIEW */
+    .list-container { padding: 0; }
+    .list-header { display: grid; grid-template-columns: 32px 1fr 100px 140px 140px 40px; gap: 8px; padding: 8px 24px; font-size: 12px; font-weight: 600; color: #8e8e93; border-bottom: 1px solid #f2f2f7; background: #fff; position: sticky; top: 0; z-index: 10; }
+    .list-item { display: grid; grid-template-columns: 32px 1fr 100px 140px 140px 40px; gap: 8px; padding: 10px 24px; align-items: center; border-bottom: 1px solid #f2f2f7; cursor: pointer; background: #fff; transition: background 0.1s; }
+    .list-item:hover { background: #f9f9fb; }
+    .list-item.selected { background: #fff0ee; }
+    .list-item-checkbox { display: flex; align-items: center; justify-content: center; }
+    .list-item-checkbox input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #EE220C; }
+    .list-item-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .list-item-name-text { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .list-item-name-text:hover { color: #EE220C; text-decoration: underline; }
+    .list-item-code { font-size: 12px; color: #EE220C; font-weight: 600; }
+    .list-item-date { font-size: 12px; color: #8e8e93; }
+    .list-item-dots { display: flex; align-items: center; justify-content: center; }
+    .dots-btn { width: 28px; height: 28px; border-radius: 6px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #8e8e93; }
+    .dots-btn:hover { background: #f2f2f7; color: #1c1c1e; }
 
-    .doc-list { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e5ea; }
-    .doc-list-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; cursor: pointer; }
-    .doc-list-item:last-child { border-bottom: none; }
-    .doc-list-item:hover { background: #f9f9fb; }
-    .doc-list-name { flex: 1; font-size: 14px; font-weight: 500; }
-    .doc-list-code { font-size: 12px; color: #EE220C; font-weight: 600; width: 90px; }
-    .doc-list-meta { font-size: 12px; color: #8e8e93; width: 120px; text-align: right; }
+    /* EMPTY STATE */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; color: #8e8e93; gap: 12px; }
+    .empty-state p { font-size: 15px; }
 
-    .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .folder-card { background: #fff; border-radius: 12px; padding: 16px; cursor: pointer; border: 1px solid #e5e5ea; display: flex; align-items: center; gap: 12px; transition: box-shadow 0.15s; }
-    .folder-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .folder-card-name { font-size: 14px; font-weight: 500; }
-
-    .empty-state { text-align: center; padding: 60px 20px; color: #8e8e93; }
-    .empty-state p { margin-top: 12px; font-size: 15px; }
-
-    .upload-zone { border: 2px dashed #c7c7cc; border-radius: 12px; padding: 40px; text-align: center; color: #8e8e93; margin-bottom: 24px; transition: border-color 0.15s, background 0.15s; }
+    /* UPLOAD ZONE */
+    .upload-zone { border: 2px dashed #c7c7cc; border-radius: 12px; padding: 40px; text-align: center; color: #8e8e93; margin: 16px 24px; transition: border-color 0.15s, background 0.15s; }
     .upload-zone.dragover { border-color: #EE220C; background: #fff0ee; color: #EE220C; }
     .upload-zone p { margin-top: 8px; font-size: 14px; }
 
-    /* MOBILNÍ UI */
-    @media (max-width: 768px) {
-      .app-layout { flex-direction: column; }
-      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e5e5ea; padding: 8px 0; display: none; }
-      .sidebar.open { display: block; }
-      .main { padding: 16px; }
-      .topbar { padding: 0 16px; }
-      .hamburger { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: none; border: none; cursor: pointer; }
-      .doc-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-      .folder-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-      .upload-zone { padding: 24px 16px; }
-      .doc-list-meta { display: none; }
-    }
+    /* RIGHT DETAIL SIDEBAR */
+    .right-sidebar { width: 280px; background: #fff; border-left: 1px solid #e5e5ea; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; transition: width 0.2s; }
+    .right-sidebar.hidden-sidebar { width: 0; border: none; }
+    .detail-tabs { display: flex; border-bottom: 1px solid #e5e5ea; flex-shrink: 0; }
+    .detail-tab { flex: 1; padding: 12px; font-size: 13px; font-weight: 500; text-align: center; cursor: pointer; color: #6e6e73; border: none; background: none; border-bottom: 2px solid transparent; }
+    .detail-tab.active { color: #EE220C; border-bottom-color: #EE220C; }
+    .detail-content { flex: 1; overflow-y: auto; padding: 16px; }
+    .detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #c7c7cc; gap: 8px; font-size: 13px; text-align: center; padding: 20px; }
 
-    @media (min-width: 769px) {
-      .hamburger { display: none; }
-    }
+    /* DETAIL FIELDS */
+    .detail-field { margin-bottom: 16px; }
+    .detail-label { font-size: 11px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .detail-value { font-size: 14px; color: #1c1c1e; }
+    .detail-input { width: 100%; font-size: 14px; padding: 6px 8px; border: 1px solid #e5e5ea; border-radius: 6px; outline: none; font-family: inherit; }
+    .detail-input:focus { border-color: #EE220C; }
+    .detail-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .detail-save-btn { padding: 5px 12px; background: #EE220C; color: #fff; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .detail-cancel-btn { padding: 5px 12px; background: #f2f2f7; color: #1c1c1e; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .detail-static { font-size: 13px; color: #6e6e73; }
 
-    /* KONTEXTOVÉ MENU */
-      .context-menu {
-        position: fixed;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-        padding: 6px 0;
-        min-width: 200px;
-        z-index: 1000;
-        border: 1px solid #e5e5ea;
-      }
-      .context-menu-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        font-size: 14px;
-        cursor: pointer;
-        color: #1c1c1e;
-      }
-      .context-menu-item:hover { background: #f2f2f7; }
-      .context-menu-item.danger { color: #EE220C; }
-      .context-menu-item svg { flex-shrink: 0; }
-      .context-menu-sep { height: 1px; background: #e5e5ea; margin: 4px 0; }
-      
-      .three-dots {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0.5;
-        transition: opacity 0.15s;
-        flex-shrink: 0;
-      }
-      .doc-card:hover .three-dots,
-      .doc-list-item:hover .three-dots,
-      .folder-card:hover .three-dots { opacity: 1; }
-      .three-dots:hover { background: #f2f2f7; }
+    /* LOCATION TREE */
+    .location-tree { font-size: 13px; }
+    .location-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; cursor: pointer; color: #1c1c1e; }
+    .location-item:hover { color: #EE220C; }
+    .location-item.current { font-weight: 600; color: #1c1c1e; cursor: default; }
 
+    /* VERSION CARDS */
+    .version-card { background: #f9f9fb; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative; }
+    .version-card-header { display: flex; align-items: flex-start; gap: 10px; }
+    .version-avatar { width: 32px; height: 32px; border-radius: 50%; background: #EE220C; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .version-info { flex: 1; font-size: 13px; }
+    .version-title { font-weight: 600; margin-bottom: 2px; }
+    .version-meta { color: #6e6e73; font-size: 12px; line-height: 1.6; }
+    .version-dots { position: absolute; top: 8px; right: 8px; }
+
+    /* CONTEXT MENU */
+    .context-menu { position: fixed; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); padding: 6px 0; min-width: 200px; z-index: 1000; border: 1px solid #e5e5ea; }
+    .context-menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 14px; cursor: pointer; color: #1c1c1e; }
+    .context-menu-item:hover { background: #f2f2f7; }
+    .context-menu-item.danger { color: #EE220C; }
+    .context-menu-sep { height: 1px; background: #e5e5ea; margin: 4px 0; }
+
+    /* FOLDER TREE (v záložce Složky) */
+    .folder-tree { padding: 8px; }
+    .folder-tree-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .folder-tree-item:hover { background: #f2f2f7; }
+    .folder-tree-children { padding-left: 20px; }
+
+    /* RECENT BADGE */
+    .recent-section-title { font-size: 13px; font-weight: 600; color: #8e8e93; padding: 16px 24px 8px; }
   </style>
 </head>
 <body class="login-page" id="body">
@@ -154,99 +156,164 @@
 
 <!-- APP -->
 <div id="app-screen" class="hidden">
+
+  <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <button class="hamburger" onclick="toggleSidebar()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-      </svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       <h1>10space</h1>
     </div>
     <div class="topbar-right">
       <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
-      <span id="user-name" style="font-size:14px;color:#6e6e73;"></span>
+      <span class="user-name" id="user-name"></span>
       <button class="logout-btn" onclick="handleLogout()">Odhlásit</button>
-    </div>
-
-    <!-- KONTEXTOVÉ MENU -->
-    <div class="context-menu" id="context-menu" style="display:none;">
-      <div class="context-menu-item" onclick="contextAction('download')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Stáhnout
-      </div>
-      <div class="context-menu-item" onclick="contextAction('rename')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Přejmenovat
-      </div>
-      <div class="context-menu-item" onclick="contextAction('duplicate')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Duplikovat
-      </div>
-      <div class="context-menu-item" onclick="contextAction('copylink')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        Kopírovat odkaz
-      </div>
-      <div class="context-menu-item" onclick="contextAction('info')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Informace
-      </div>
-      <div class="context-menu-sep"></div>
-      <div class="context-menu-item danger" onclick="contextAction('delete')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Smazat
-      </div>
     </div>
   </div>
 
-  <div class="app-layout">
-    <div class="sidebar">
-      <div class="sidebar-section">Složky</div>
-      <div id="sidebar-folders"></div>
-    </div>
+  <!-- APP BODY -->
+  <div class="app-body">
 
-    <div class="main">
-      <div class="breadcrumb" id="breadcrumb"></div>
-
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button class="btn btn-primary" onclick="openUpload()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;margin-right:6px;vertical-align:middle"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nahrát
-          </button>
-        </div>
-        <div class="toolbar-right">
-          <button class="btn-icon" id="view-grid-btn" onclick="setView('grid')" title="Mřížka">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          </button>
-          <button class="btn-icon" id="view-list-btn" onclick="setView('list')" title="Seznam">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          </button>
-        </div>
+    <!-- LEFT SIDEBAR -->
+    <div class="left-sidebar">
+      <div class="upload-btn-wrap">
+        <button class="upload-btn" onclick="openUpload()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nahrát
+        </button>
       </div>
 
-      <div class="upload-zone hidden" id="upload-zone"
-        ondragover="event.preventDefault();this.classList.add('dragover')"
-        ondragleave="this.classList.remove('dragover')"
-        ondrop="handleDrop(event)">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" onclick="switchTab('recent')" id="tab-recent">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Nedávné
+        </button>
+        <button class="sidebar-tab" onclick="switchTab('documents')" id="tab-documents">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Dokumenty
+        </button>
+        <button class="sidebar-tab" onclick="switchTab('folders')" id="tab-folders">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Složky
+        </button>
+        <button class="sidebar-tab" onclick="switchTab('media')" id="tab-media">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Multimédia
+        </button>
+        <button class="sidebar-tab" onclick="switchTab('projects')" id="tab-projects">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="3" width="6" height="18" rx="1"/></svg>
+          Projekty
+        </button>
+        <button class="sidebar-tab" onclick="switchTab('favorites')" id="tab-favorites">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Oblíbené
+        </button>
+      </div>
+
+      <!-- FOLDER TREE (zobrazí se v záložce Složky) -->
+      <div id="sidebar-folder-tree" class="hidden"></div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="main-content"
+      ondragover="event.preventDefault();document.getElementById('upload-zone').classList.add('dragover')"
+      ondragleave="document.getElementById('upload-zone').classList.remove('dragover')"
+      ondrop="handleDrop(event)">
+
+      <!-- CONTENT HEADER -->
+      <div class="content-header" id="content-header">
+        <div class="content-title" id="content-title">Nedávné</div>
+        <div class="breadcrumb" id="breadcrumb"></div>
+      </div>
+
+      <!-- MULTI-SELECT TOOLBAR -->
+      <div class="multi-toolbar hidden" id="multi-toolbar">
+        <span id="multi-count">0 vybráno</span>
+        <button class="multi-toolbar-btn" onclick="multiDownload()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Stáhnout
+        </button>
+        <button class="multi-toolbar-btn" onclick="multiMove()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+          Přesunout
+        </button>
+        <button class="multi-toolbar-btn danger" onclick="multiDelete()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Smazat
+        </button>
+      </div>
+
+      <!-- UPLOAD ZONE -->
+      <div class="upload-zone hidden" id="upload-zone">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
         <p>Přetáhni soubory sem nebo <label style="color:#EE220C;cursor:pointer;font-weight:600">vyber ze zařízení<input type="file" multiple style="display:none" onchange="handleFileSelect(event)"></label></p>
       </div>
 
+      <!-- LIST HEADER -->
+      <div class="list-header" id="list-header">
+        <div>
+          <input type="checkbox" id="select-all" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;accent-color:#EE220C;cursor:pointer;">
+        </div>
+        <div>Název</div>
+        <div>Kód</div>
+        <div>Přidáno</div>
+        <div>Změněno</div>
+        <div></div>
+      </div>
+
+      <!-- CONTENT AREA -->
       <div id="content-area"></div>
     </div>
+
+    <!-- RIGHT DETAIL SIDEBAR -->
+    <div class="right-sidebar hidden-sidebar" id="right-sidebar">
+      <div class="detail-tabs">
+        <button class="detail-tab active" onclick="switchDetailTab('details')" id="dtab-details">Podrobnosti</button>
+        <button class="detail-tab" onclick="switchDetailTab('versions')" id="dtab-versions">Verze</button>
+      </div>
+      <div class="detail-content" id="detail-content">
+        <div class="detail-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p>Vyber soubor<br>pro zobrazení detailů</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="context-menu hidden" id="context-menu">
+  <div class="context-menu-item" onclick="contextAction('download')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Stáhnout
+  </div>
+  <div class="context-menu-item" onclick="contextAction('rename')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Přejmenovat
+  </div>
+  <div class="context-menu-item" onclick="contextAction('duplicate')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    Duplikovat
+  </div>
+  <div class="context-menu-item" onclick="contextAction('copylink')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Kopírovat odkaz
+  </div>
+  <div class="context-menu-item" onclick="contextAction('info')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Informace
+  </div>
+  <div class="context-menu-sep"></div>
+  <div class="context-menu-item danger" onclick="contextAction('delete')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    Smazat
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjDCB3gpqytTHnG7zKLKJGXMNeW5vyC_I",
@@ -262,38 +329,44 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
+const FUNCTIONS = {
+  getFileUrl: "https://getfileurl-etp6s2ynnq-uc.a.run.app",
+  uploadFile: "https://uploadfile-etp6s2ynnq-uc.a.run.app",
+  deleteFile: "https://deletefile-etp6s2ynnq-uc.a.run.app"
+};
+
 let currentUser = null;
-window.currentFolder = null;
 let allFolders = {};
 window.allDocs = {};
-let viewMode = "grid";
+let currentTab = "recent";
+window.currentFolder = null;
+let selectedItems = new Set();
+let contextItemId = null;
+let activeDetailTab = "details";
+let selectedDetailId = null;
 
 // AUTH
 window.handleGoogleLogin = async () => {
   try {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    const email = result.user.email;
     const snapshot = await get(ref(db, "/members"));
     const members = snapshot.val();
-    const member = Object.values(members).find(m => m.email === email);
+    const member = Object.values(members).find(m => m.email === result.user.email);
     if (!member) {
-      document.getElementById("login-error").textContent = "Přístup zamítnut: email není v seznamu členů";
+      document.getElementById("login-error").textContent = "Přístup zamítnut";
       document.getElementById("login-error").classList.remove("hidden");
       await signOut(auth);
       return;
     }
     currentUser = { ...member, photoURL: result.user.photoURL };
   } catch(err) {
-    document.getElementById("login-error").textContent = "Chyba přihlášení: " + err.message;
+    document.getElementById("login-error").textContent = "Chyba: " + err.message;
     document.getElementById("login-error").classList.remove("hidden");
   }
 };
 
-window.handleLogout = async () => {
-  await signOut(auth);
-  location.reload();
-};
+window.handleLogout = async () => { await signOut(auth); location.reload(); };
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -312,57 +385,108 @@ function showApp() {
   document.getElementById("app-screen").classList.remove("hidden");
   document.getElementById("user-name").textContent = currentUser.name || currentUser.email;
   if (currentUser.photoURL) document.getElementById("user-avatar").src = currentUser.photoURL;
-  loadFolders();
+  loadData();
 }
 
-// SLOŽKY
-async function loadFolders() {
-  const snap = await get(ref(db, "/slozky"));
-  allFolders = snap.val() || {};
-  renderSidebar();
-  navigateTo(null);
+// LOAD DATA
+async function loadData() {
+  const [foldersSnap, docsSnap] = await Promise.all([
+    get(ref(db, "/slozky")),
+    get(ref(db, "/dokumenty"))
+  ]);
+  allFolders = foldersSnap.val() || {};
+  window.allDocs = docsSnap.val() || {};
+  renderFolderTree();
+  switchTab("recent");
 }
 
-function renderSidebar() {
-  const root = Object.entries(allFolders).filter(([id, f]) => !f.rodic);
-  const html = root.map(([id, f]) => `
-    <div class="sidebar-item" onclick="navigateTo('${id}')" id="sidebar-${id}">
-      ${folderIcon()}
+// FOLDER TREE
+function renderFolderTree() {
+  const tree = document.getElementById("sidebar-folder-tree");
+  tree.innerHTML = buildFolderTree(null, 0);
+}
+
+function buildFolderTree(parentId, depth) {
+  const children = Object.entries(allFolders).filter(([id, f]) => f.rodic === parentId);
+  if (children.length === 0) return "";
+  return children.map(([id, f]) => `
+    <div class="folder-tree-item" style="padding-left:${8 + depth * 16}px" onclick="navigateToFolder('${id}')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       ${f.nazev}
     </div>
+    ${buildFolderTree(id, depth + 1)}
   `).join("");
-  document.getElementById("sidebar-folders").innerHTML = html;
 }
 
-function folderIcon() {
-  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
-}
+// TABS
+window.switchTab = (tab) => {
+  currentTab = tab;
+  selectedItems.clear();
+  window.currentFolder = null;
 
-function fileIcon(size) {
-  const s = size || 32;
-  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
-}
+  document.querySelectorAll(".sidebar-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById(`tab-${tab}`)?.classList.add("active");
 
-// NAVIGACE
-window.navigateTo = async (folderId) => {
-  window.currentFolder = folderId;
-  if (window.innerWidth <= 768) {
-    document.querySelector(".sidebar").classList.remove("open");
-  }
-  document.querySelectorAll(".sidebar-item").forEach(el => el.classList.remove("active"));
-  if (folderId) {
-    const rootId = getRootFolder(folderId);
-    const el = document.getElementById(`sidebar-${rootId}`);
-    if (el) el.classList.add("active");
-  }
-  renderBreadcrumb(folderId);
-  await renderContent(folderId);
+  const folderTree = document.getElementById("sidebar-folder-tree");
+  folderTree.classList.toggle("hidden", tab !== "folders");
+
+  const titles = {
+    recent: "Nedávné", documents: "Dokumenty",
+    folders: "Složky", media: "Multimédia",
+    projects: "Projekty", favorites: "Oblíbené"
+  };
+  document.getElementById("content-title").textContent = titles[tab] || tab;
+  document.getElementById("breadcrumb").innerHTML = "";
+
+  renderTab();
 };
 
-function getRootFolder(folderId) {
-  const folder = allFolders[folderId];
-  if (!folder || !folder.rodic) return folderId;
-  return getRootFolder(folder.rodic);
+function renderTab() {
+  const area = document.getElementById("content-area");
+  let items = Object.entries(window.allDocs);
+
+  if (currentTab === "recent") {
+    items = items.sort(([,a],[,b]) => (b.datumNahrani||0) - (a.datumNahrani||0)).slice(0, 20);
+  } else if (currentTab === "documents") {
+    items = items.filter(([,d]) => {
+      const m = d.mimeType || "";
+      return m.includes("pdf") || m.includes("document") || m.includes("spreadsheet") || m.includes("presentation") || m.includes("text");
+    });
+  } else if (currentTab === "media") {
+    items = items.filter(([,d]) => {
+      const m = d.mimeType || "";
+      return m.includes("image") || m.includes("video") || m.includes("audio");
+    });
+  } else if (currentTab === "folders") {
+    renderFolderContent(null);
+    return;
+  } else if (currentTab === "projects") {
+    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="3" width="6" height="18" rx="1"/></svg><p>Projekty budou dostupné brzy</p></div>`;
+    return;
+  } else if (currentTab === "favorites") {
+    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>Zatím žádné oblíbené</p></div>`;
+    return;
+  }
+
+  renderListItems(items);
+}
+
+// FOLDER NAVIGATION
+window.navigateToFolder = (folderId) => {
+  window.currentFolder = folderId;
+  selectedItems.clear();
+  renderFolderContent(folderId);
+  renderBreadcrumb(folderId);
+};
+
+function renderFolderContent(folderId) {
+  const subfolders = Object.entries(allFolders).filter(([id, f]) => f.rodic === folderId);
+  const docs = Object.entries(window.allDocs).filter(([id, d]) => d.slozkaId === folderId);
+
+  const folderItems = subfolders.map(([id, f]) => ({ id, type: "folder", nazev: f.nazev, datumNahrani: null }));
+  const docItems = docs.map(([id, d]) => ({ id, type: "doc", ...d }));
+
+  renderListItems([...folderItems.map(f => [f.id, f]), ...docItems.map(d => [d.id, d])], true);
 }
 
 function renderBreadcrumb(folderId) {
@@ -376,343 +500,398 @@ function renderBreadcrumb(folderId) {
     id = f.rodic;
   }
   const all = [...crumbs, ...trail];
-  const html = all.map((c, i) =>
+  document.getElementById("breadcrumb").innerHTML = all.map((c, i) =>
     i < all.length - 1
-      ? `<span onclick="navigateTo('${c.id}')">${c.name}</span><span class="sep">›</span>`
+      ? `<span onclick="navigateToFolder('${c.id}')">${c.name}</span><span class="sep">›</span>`
       : `<span style="color:#1c1c1e;font-weight:500">${c.name}</span>`
   ).join("");
-  document.getElementById("breadcrumb").innerHTML = html;
 }
 
-async function renderContent(folderId) {
+// RENDER LIST
+function renderListItems(items, withFolders = false) {
   const area = document.getElementById("content-area");
-  const subfolders = Object.entries(allFolders).filter(([id, f]) => f.rodic === folderId);
 
-  try {
-    const snap = await get(ref(db, "/dokumenty"));
-    window.allDocs = snap.val() || {};
-  } catch(e) {
-    window.allDocs = {};
-  }
-
-  const docs = Object.entries(window.allDocs).filter(([id, d]) => d.slozkaId === folderId);
-
-  if (subfolders.length === 0 && docs.length === 0) {
-    area.innerHTML = `<div class="empty-state">${folderIcon()}<p>Tato složka je prázdná</p></div>`;
+  if (items.length === 0) {
+    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><p>Žádné položky</p></div>`;
     return;
   }
 
-  let html = "";
+  area.innerHTML = items.map(([id, d]) => {
+    const isFolder = d.type === "folder";
+    const date = d.datumNahrani ? new Date(d.datumNahrani).toLocaleDateString("cs-CZ") : "—";
+    const icon = isFolder
+      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
 
-  if (subfolders.length > 0) {
-    html += `<div class="folder-grid">`;
-    html += subfolders.map(([id, f]) => `
-      <div class="folder-card" onclick="navigateTo('${id}')">
-        ${folderIcon()}
-        <span class="folder-card-name">${f.nazev}</span>
-      </div>
-    `).join("");
-    html += `</div>`;
-  }
-
-  if (docs.length > 0) {
-    if (viewMode === "grid") {
-      html += `<div class="doc-grid">`;
-      html += docs.map(([id, d]) => `
-        <div class="doc-card" onclick="openDocument('${id}')">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div class="doc-card-icon">${fileIcon(32)}</div>
-            <button class="three-dots" onclick="openContextMenu(event, '${id}')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-            </button>
-          </div>
-          <div class="doc-card-name">${d.nazev}</div>
-          <div class="doc-card-meta">${d.kategorie || ""}</div>
-          ${d.evidCislo ? `<div class="doc-card-code">${d.evidCislo}</div>` : ""}
+    return `
+      <div class="list-item ${selectedItems.has(id) ? 'selected' : ''}" 
+           id="item-${id}"
+           onclick="handleItemClick(event, '${id}', ${isFolder})">
+        <div class="list-item-checkbox" onclick="event.stopPropagation()">
+          <input type="checkbox" ${selectedItems.has(id) ? 'checked' : ''} 
+                 onchange="toggleSelect('${id}', this.checked)">
         </div>
-      `).join("");
-      html += `</div>`;
-    } else {
-      html += `<div class="doc-list">`;
-     html += docs.map(([id, d]) => `
-      <div class="doc-list-item" onclick="openDocument('${id}')">
-        ${fileIcon(20)}
-        <span class="doc-list-name">${d.nazev}</span>
-        <span class="doc-list-code">${d.evidCislo || ""}</span>
-        <span class="doc-list-meta">${d.kategorie || ""}</span>
-        <button class="three-dots" onclick="openContextMenu(event, '${id}')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-        </button>
+        <div class="list-item-name">
+          ${icon}
+          <span class="list-item-name-text" onclick="event.stopPropagation();handleNameClick('${id}', ${isFolder})">${d.nazev}</span>
+        </div>
+        <div class="list-item-code">${d.evidCislo || ""}</div>
+        <div class="list-item-date">${date}</div>
+        <div class="list-item-date">—</div>
+        <div class="list-item-dots">
+          <button class="dots-btn" onclick="event.stopPropagation();openContextMenu(event, '${id}', ${isFolder})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
       </div>
-    `).join("");
-      html += `</div>`;
-    }
-  }
-
-  area.innerHTML = html;
+    `;
+  }).join("");
 }
 
-// OTEVŘENÍ DOKUMENTU
+// ITEM CLICK
+window.handleItemClick = (e, id, isFolder) => {
+  if (e.target.type === "checkbox") return;
+  showDetail(id, isFolder);
+};
+
+window.handleNameClick = (id, isFolder) => {
+  if (isFolder) {
+    navigateToFolder(id);
+  } else {
+    openDocument(id);
+  }
+};
+
+// SELECTION
+window.toggleSelect = (id, checked) => {
+  if (checked) selectedItems.add(id);
+  else selectedItems.delete(id);
+  document.getElementById(`item-${id}`)?.classList.toggle("selected", checked);
+  updateMultiToolbar();
+};
+
+window.toggleSelectAll = (checked) => {
+  document.querySelectorAll(".list-item input[type='checkbox']").forEach(cb => {
+    cb.checked = checked;
+    const id = cb.closest(".list-item")?.id?.replace("item-", "");
+    if (id) toggleSelect(id, checked);
+  });
+};
+
+function updateMultiToolbar() {
+  const toolbar = document.getElementById("multi-toolbar");
+  const rightSidebar = document.getElementById("right-sidebar");
+  const count = selectedItems.size;
+  if (count > 1) {
+    toolbar.classList.remove("hidden");
+    rightSidebar.classList.add("hidden-sidebar");
+    document.getElementById("multi-count").textContent = `${count} vybráno`;
+  } else {
+    toolbar.classList.add("hidden");
+    if (selectedDetailId) rightSidebar.classList.remove("hidden-sidebar");
+  }
+}
+
+// DETAIL SIDEBAR
+function showDetail(id, isFolder) {
+  selectedDetailId = id;
+  const rightSidebar = document.getElementById("right-sidebar");
+  rightSidebar.classList.remove("hidden-sidebar");
+  renderDetailContent();
+}
+
+window.switchDetailTab = (tab) => {
+  activeDetailTab = tab;
+  document.querySelectorAll(".detail-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById(`dtab-${tab}`)?.classList.add("active");
+  renderDetailContent();
+};
+
+function renderDetailContent() {
+  if (!selectedDetailId) return;
+  const doc = window.allDocs[selectedDetailId];
+  const folder = allFolders[selectedDetailId];
+  const item = doc || folder;
+  if (!item) return;
+
+  const content = document.getElementById("detail-content");
+
+  if (activeDetailTab === "details") {
+    const created = doc?.datumNahrani ? new Date(doc.datumNahrani).toLocaleString("cs-CZ") : "—";
+    content.innerHTML = `
+      <div class="detail-field">
+        <div class="detail-label">Název</div>
+        <input class="detail-input" id="detail-name-input" value="${item.nazev || ""}" 
+               onfocus="showDetailActions('name')" onblur="hideDetailActions('name', event)">
+        <div class="detail-actions hidden" id="detail-name-actions">
+          <button class="detail-save-btn" onclick="saveDetailName()">Uložit</button>
+          <button class="detail-cancel-btn" onclick="cancelDetailName()">Zrušit</button>
+        </div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Komentář</div>
+        <textarea class="detail-input" id="detail-comment-input" rows="3"
+                  onfocus="showDetailActions('comment')" onblur="hideDetailActions('comment', event)"
+                  style="resize:none">${item.komentar || ""}</textarea>
+        <div class="detail-actions hidden" id="detail-comment-actions">
+          <button class="detail-save-btn" onclick="saveDetailComment()">Uložit</button>
+          <button class="detail-cancel-btn" onclick="cancelDetailComment()">Zrušit</button>
+        </div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Vytvořeno</div>
+        <div class="detail-static">${created}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Nahráno kým</div>
+        <div class="detail-static">${doc?.nahralKdo || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Umístění</div>
+        <div class="location-tree">${renderLocationTree(doc?.slozkaId)}</div>
+      </div>
+    `;
+  } else {
+    const verze = doc?.verejneVerze || {};
+    const keys = Object.keys(verze).sort((a,b) => b - a);
+    if (keys.length === 0) {
+      content.innerHTML = `<div class="detail-empty"><p>Žádné verze</p></div>`;
+      return;
+    }
+    content.innerHTML = keys.map(k => {
+      const v = verze[k];
+      const initials = (v.nahralKdo || "?").split("@")[0].slice(0,2).toUpperCase();
+      return `
+        <div class="version-card">
+          <div class="version-card-header">
+            <div class="version-avatar">${initials}</div>
+            <div class="version-info">
+              <div class="version-title">Verze ${k}</div>
+              <div class="version-meta">
+                Nahráno: ${v.nahralKdo || "—"}<br>
+                Datum: ${v.datum || "—"}<br>
+                ${v.poznamka ? `Poznámka: ${v.poznamka}` : ""}
+              </div>
+            </div>
+          </div>
+          <div class="version-dots">
+            <button class="dots-btn" onclick="openVersionMenu(event, '${selectedDetailId}', '${k}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+function renderLocationTree(slozkaId) {
+  if (!slozkaId) return '<div class="location-item current">10space (root)</div>';
+  const trail = [];
+  let id = slozkaId;
+  while (id) {
+    const f = allFolders[id];
+    if (!f) break;
+    trail.unshift({ id, name: f.nazev });
+    id = f.rodic;
+  }
+  return [{ id: null, name: "10space" }, ...trail].map((c, i, arr) =>
+    i < arr.length - 1
+      ? `<div class="location-item" onclick="navigateToFolder('${c.id}')">${c.name} ›</div>`
+      : `<div class="location-item current">${c.name}</div>`
+  ).join("");
+}
+
+// DETAIL INLINE EDIT
+window.showDetailActions = (field) => {
+  document.getElementById(`detail-${field}-actions`)?.classList.remove("hidden");
+};
+window.hideDetailActions = (field, e) => {
+  setTimeout(() => {
+    if (!document.getElementById(`detail-${field}-actions`)?.contains(document.activeElement)) {
+      document.getElementById(`detail-${field}-actions`)?.classList.add("hidden");
+    }
+  }, 150);
+};
+window.saveDetailName = async () => {
+  const val = document.getElementById("detail-name-input").value;
+  if (selectedDetailId && val) {
+    await set(ref(db, `/dokumenty/${selectedDetailId}/nazev`), val);
+    window.allDocs[selectedDetailId].nazev = val;
+    renderTab();
+  }
+};
+window.cancelDetailName = () => {
+  document.getElementById("detail-name-input").value = window.allDocs[selectedDetailId]?.nazev || "";
+  document.getElementById("detail-name-actions").classList.add("hidden");
+};
+window.saveDetailComment = async () => {
+  const val = document.getElementById("detail-comment-input").value;
+  if (selectedDetailId) {
+    await set(ref(db, `/dokumenty/${selectedDetailId}/komentar`), val);
+    window.allDocs[selectedDetailId].komentar = val;
+  }
+};
+window.cancelDetailComment = () => {
+  document.getElementById("detail-comment-input").value = window.allDocs[selectedDetailId]?.komentar || "";
+  document.getElementById("detail-comment-actions").classList.add("hidden");
+};
+
+// OPEN DOCUMENT
 window.openDocument = async (docId) => {
-  const doc = window.allDocs[docId];
-  if (!doc) return;
-
-  const verze = doc.verejneVerze;
-  if (!verze) { alert("Dokument nemá žádnou verzi."); return; }
-
   try {
-    const user = auth.currentUser;
-    const token = await user.getIdToken();
-
-    const response = await fetch("https://getfileurl-etp6s2ynnq-uc.a.run.app", {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(FUNCTIONS.getFileUrl, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ docId })
     });
-
     const data = await response.json();
     if (data.url) {
       const a = document.createElement("a");
-      a.href = data.url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = data.url; a.target = "_blank"; a.rel = "noopener";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else {
-      alert("Chyba: " + (data.error || "Nelze otevřít dokument"));
+      alert("Chyba: " + (data.error || "Nelze otevřít"));
     }
-  } catch(err) {
-    alert("Chyba při otevírání: " + err.message);
-  }
+  } catch(err) { alert("Chyba: " + err.message); }
 };
 
-// KONTEXTOVÉ MENU
-let contextDocId = null;
-
-window.openContextMenu = (e, docId) => {
-  e.stopPropagation();
-  contextDocId = docId;
+// CONTEXT MENU
+window.openContextMenu = (e, id, isFolder) => {
+  contextItemId = id;
   const menu = document.getElementById("context-menu");
-  menu.style.display = "block";
-
-  // Pozice menu
-  const x = e.clientX;
-  const y = e.clientY;
-  const menuW = 200;
-  const menuH = 250;
-  menu.style.left = (x + menuW > window.innerWidth ? x - menuW : x) + "px";
-  menu.style.top = (y + menuH > window.innerHeight ? y - menuH : y) + "px";
+  menu.classList.remove("hidden");
+  const x = e.clientX, y = e.clientY;
+  menu.style.left = (x + 200 > window.innerWidth ? x - 200 : x) + "px";
+  menu.style.top = (y + 280 > window.innerHeight ? y - 280 : y) + "px";
 };
-
 window.closeContextMenu = () => {
-  document.getElementById("context-menu").style.display = "none";
-  contextDocId = null;
+  document.getElementById("context-menu").classList.add("hidden");
 };
-
 document.addEventListener("click", closeContextMenu);
 
 window.contextAction = async (action) => {
   closeContextMenu();
-  if (!contextDocId) return;
-  const doc = window.allDocs[contextDocId];
-  if (!doc) return;
+  if (!contextItemId) return;
+  const doc = window.allDocs[contextItemId];
 
   if (action === "delete") {
-    if (!confirm(`Smazat "${doc.nazev}"?`)) return;
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const response = await fetch("https://deletefile-etp6s2ynnq-uc.a.run.app", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ docId: contextDocId })
-      });
-      const data = await response.json();
-      if (data.success) {
-        await renderContent(window.currentFolder);
-      } else {
-        alert("Chyba: " + (data.error || "Nelze smazat"));
-      }
-    } catch(err) {
-      alert("Chyba: " + err.message);
-    }
-
-  } else if (action === "info") {
-    const verze = doc.verejneVerze;
-    const latestKey = Object.keys(verze || {}).sort().pop();
-    const latest = verze?.[latestKey];
-    alert(
-      `Název: ${doc.nazev}\n` +
-      `Nahráno: ${new Date(doc.datumNahrani).toLocaleDateString("cs-CZ")}\n` +
-      `Nahráno kým: ${doc.nahralKdo}\n` +
-      `Evidenční číslo: ${doc.evidCislo || "—"}\n` +
-      `Verze: ${latestKey || "1"}\n` +
-      `Datum verze: ${latest?.datum || "—"}`
-    );
-
-  } else if (action === "copylink") {
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const response = await fetch("https://getfileurl-etp6s2ynnq-uc.a.run.app", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ docId: contextDocId })
-      });
-      const data = await response.json();
-      if (data.url) {
-        await navigator.clipboard.writeText(data.url);
-        alert("Odkaz zkopírován do schránky");
-      }
-    } catch(err) {
-      alert("Chyba: " + err.message);
-    }
+    if (!confirm(`Smazat "${doc?.nazev}"?`)) return;
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(FUNCTIONS.deleteFile, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ docId: contextItemId })
+    });
+    const data = await res.json();
+    if (data.success) { delete window.allDocs[contextItemId]; renderTab(); }
+    else alert("Chyba: " + data.error);
 
   } else if (action === "rename") {
-    const newName = prompt("Nový název:", doc.nazev);
-    if (!newName || newName === doc.nazev) return;
-    await set(ref(db, `/dokumenty/${contextDocId}/nazev`), newName);
-    await renderContent(window.currentFolder);
+    const newName = prompt("Nový název:", doc?.nazev);
+    if (newName && newName !== doc?.nazev) {
+      await set(ref(db, `/dokumenty/${contextItemId}/nazev`), newName);
+      window.allDocs[contextItemId].nazev = newName;
+      renderTab();
+    }
+
+  } else if (action === "copylink") {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(FUNCTIONS.getFileUrl, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ docId: contextItemId })
+    });
+    const data = await res.json();
+    if (data.url) { await navigator.clipboard.writeText(data.url); alert("Odkaz zkopírován"); }
 
   } else if (action === "download") {
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const response = await fetch("https://getfileurl-etp6s2ynnq-uc.a.run.app", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ docId: contextDocId })
-      });
-      const data = await response.json();
-      if (data.url) {
-        const a = document.createElement("a");
-        a.href = data.url;
-        a.download = doc.nazev;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    } catch(err) {
-      alert("Chyba: " + err.message);
-    }
+    await openDocument(contextItemId);
+
+  } else if (action === "info") {
+    showDetail(contextItemId, false);
 
   } else if (action === "duplicate") {
     alert("Duplikovat — bude implementováno");
   }
 };
 
-// HAMBURGER
-window.toggleSidebar = () => {
-  document.querySelector(".sidebar").classList.toggle("open");
+window.openVersionMenu = (e, docId, version) => {
+  e.stopPropagation();
+  alert(`Verze ${version} — akce budou implementovány`);
 };
 
-// VIEW MODE
-window.setView = (mode) => {
-  viewMode = mode;
-  document.getElementById("view-grid-btn").classList.toggle("active", mode === "grid");
-  document.getElementById("view-list-btn").classList.toggle("active", mode === "list");
-  renderContent(window.currentFolder);
+// MULTI SELECT ACTIONS
+window.multiDownload = () => alert("Hromadné stažení — bude implementováno");
+window.multiMove = () => alert("Přesunout — bude implementováno");
+window.multiDelete = async () => {
+  if (!confirm(`Smazat ${selectedItems.size} položek?`)) return;
+  const token = await auth.currentUser.getIdToken();
+  for (const id of selectedItems) {
+    await fetch(FUNCTIONS.deleteFile, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ docId: id })
+    });
+    delete window.allDocs[id];
+  }
+  selectedItems.clear();
+  updateMultiToolbar();
+  renderTab();
 };
 
 // UPLOAD
 window.openUpload = () => {
   document.getElementById("upload-zone").classList.toggle("hidden");
 };
-
 window.handleDrop = (e) => {
   e.preventDefault();
   document.getElementById("upload-zone").classList.remove("dragover");
   processFiles(Array.from(e.dataTransfer.files));
 };
-
-window.handleFileSelect = (e) => {
-  console.log("handleFileSelect zavolána, files:", e.target.files.length);
-  processFiles(Array.from(e.target.files));
-};
+window.handleFileSelect = (e) => { processFiles(Array.from(e.target.files)); e.target.value = ""; };
 
 async function processFiles(files) {
-  console.log("processFiles zavolána, files:", files.length, "folder:", window.currentFolder);
   if (!window.currentFolder) {
     alert("Nejdřív vyber složku kam chceš nahrát.");
     return;
   }
-
   for (const file of files) {
     try {
-      // Převeď soubor na base64
       const base64Data = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(",")[1]);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-
-      const user = auth.currentUser;
-      const token = await user.getIdToken();
-
-      // Nahraj přes Cloud Function na Drive
-      const response = await fetch("https://uploadfile-etp6s2ynnq-uc.a.run.app", {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(FUNCTIONS.uploadFile, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          mimeType: file.type,
-          base64Data: base64Data,
-          slozkaId: window.currentFolder
-        })
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, mimeType: file.type, base64Data, slozkaId: window.currentFolder })
       });
-
       const data = await response.json();
       if (!data.driveFileId) throw new Error(data.error || "Upload selhal");
 
-      // Ulož metadata do RTDB
       const fileId = crypto.randomUUID();
       const docRef = ref(db, `/dokumenty/${fileId}`);
-      await set(docRef, {
-        nazev: file.name,
-        kategorie: null,
-        stav: null,
-        slozkaId: window.currentFolder,
-        storage: "gdrive",
-        zdroj: "10space",
-        nahralKdo: currentUser.email,
-        datumNahrani: Date.now(),
+      const docData = {
+        nazev: file.name, kategorie: null, stav: null,
+        slozkaId: window.currentFolder, storage: "gdrive",
+        mimeType: file.type, zdroj: "10space",
+        nahralKdo: currentUser.email, datumNahrani: Date.now(),
         evidCislo: "—",
-        verejneVerze: {
-          1: {
-            driveFileId: data.driveFileId,
-            datum: new Date().toISOString().split("T")[0],
-            poznamka: "První nahrání",
-            nahralKdo: currentUser.email
-          }
-        }
-      });
-
+        verejneVerze: { 1: { driveFileId: data.driveFileId, datum: new Date().toISOString().split("T")[0], poznamka: "První nahrání", nahralKdo: currentUser.email } }
+      };
+      await set(docRef, docData);
+      window.allDocs[fileId] = docData;
       console.log(`Nahráno: ${file.name}`);
-    } catch(err) {
-      alert(`Chyba při nahrávání ${file.name}: ${err.message}`);
-    }
+    } catch(err) { alert(`Chyba: ${err.message}`); }
   }
-
   document.getElementById("upload-zone").classList.add("hidden");
-  await renderContent(window.currentFolder);
+  renderTab();
 }
-
-setView("grid");
 </script>
-
 </body>
 </html>
