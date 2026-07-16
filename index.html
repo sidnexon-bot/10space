@@ -420,7 +420,12 @@ async function renderContent(folderId) {
       html += `<div class="doc-grid">`;
       html += docs.map(([id, d]) => `
         <div class="doc-card" onclick="openDocument('${id}')">
-          <div class="doc-card-icon">${fileIcon(32)}</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="doc-card-icon">${fileIcon(32)}</div>
+            <button class="three-dots" onclick="openContextMenu(event, '${id}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
           <div class="doc-card-name">${d.nazev}</div>
           <div class="doc-card-meta">${d.kategorie || ""}</div>
           ${d.evidCislo ? `<div class="doc-card-code">${d.evidCislo}</div>` : ""}
@@ -429,14 +434,17 @@ async function renderContent(folderId) {
       html += `</div>`;
     } else {
       html += `<div class="doc-list">`;
-      html += docs.map(([id, d]) => `
-        <div class="doc-list-item" onclick="openDocument('${id}')">
-          ${fileIcon(20)}
-          <span class="doc-list-name">${d.nazev}</span>
-          <span class="doc-list-code">${d.evidCislo || ""}</span>
-          <span class="doc-list-meta">${d.kategorie || ""}</span>
-        </div>
-      `).join("");
+     html += docs.map(([id, d]) => `
+      <div class="doc-list-item" onclick="openDocument('${id}')">
+        ${fileIcon(20)}
+        <span class="doc-list-name">${d.nazev}</span>
+        <span class="doc-list-code">${d.evidCislo || ""}</span>
+        <span class="doc-list-meta">${d.kategorie || ""}</span>
+        <button class="three-dots" onclick="openContextMenu(event, '${id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
+      </div>
+    `).join("");
       html += `</div>`;
     }
   }
@@ -479,6 +487,127 @@ window.openDocument = async (docId) => {
     }
   } catch(err) {
     alert("Chyba při otevírání: " + err.message);
+  }
+};
+
+// KONTEXTOVÉ MENU
+let contextDocId = null;
+
+window.openContextMenu = (e, docId) => {
+  e.stopPropagation();
+  contextDocId = docId;
+  const menu = document.getElementById("context-menu");
+  menu.style.display = "block";
+
+  // Pozice menu
+  const x = e.clientX;
+  const y = e.clientY;
+  const menuW = 200;
+  const menuH = 250;
+  menu.style.left = (x + menuW > window.innerWidth ? x - menuW : x) + "px";
+  menu.style.top = (y + menuH > window.innerHeight ? y - menuH : y) + "px";
+};
+
+window.closeContextMenu = () => {
+  document.getElementById("context-menu").style.display = "none";
+  contextDocId = null;
+};
+
+document.addEventListener("click", closeContextMenu);
+
+window.contextAction = async (action) => {
+  closeContextMenu();
+  if (!contextDocId) return;
+  const doc = window.allDocs[contextDocId];
+  if (!doc) return;
+
+  if (action === "delete") {
+    if (!confirm(`Smazat "${doc.nazev}"?`)) return;
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch("https://deletefile-etp6s2ynnq-uc.a.run.app", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ docId: contextDocId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        await renderContent(window.currentFolder);
+      } else {
+        alert("Chyba: " + (data.error || "Nelze smazat"));
+      }
+    } catch(err) {
+      alert("Chyba: " + err.message);
+    }
+
+  } else if (action === "info") {
+    const verze = doc.verejneVerze;
+    const latestKey = Object.keys(verze || {}).sort().pop();
+    const latest = verze?.[latestKey];
+    alert(
+      `Název: ${doc.nazev}\n` +
+      `Nahráno: ${new Date(doc.datumNahrani).toLocaleDateString("cs-CZ")}\n` +
+      `Nahráno kým: ${doc.nahralKdo}\n` +
+      `Evidenční číslo: ${doc.evidCislo || "—"}\n` +
+      `Verze: ${latestKey || "1"}\n` +
+      `Datum verze: ${latest?.datum || "—"}`
+    );
+
+  } else if (action === "copylink") {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch("https://getfileurl-etp6s2ynnq-uc.a.run.app", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ docId: contextDocId })
+      });
+      const data = await response.json();
+      if (data.url) {
+        await navigator.clipboard.writeText(data.url);
+        alert("Odkaz zkopírován do schránky");
+      }
+    } catch(err) {
+      alert("Chyba: " + err.message);
+    }
+
+  } else if (action === "rename") {
+    const newName = prompt("Nový název:", doc.nazev);
+    if (!newName || newName === doc.nazev) return;
+    await set(ref(db, `/dokumenty/${contextDocId}/nazev`), newName);
+    await renderContent(window.currentFolder);
+
+  } else if (action === "download") {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch("https://getfileurl-etp6s2ynnq-uc.a.run.app", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ docId: contextDocId })
+      });
+      const data = await response.json();
+      if (data.url) {
+        const a = document.createElement("a");
+        a.href = data.url;
+        a.download = doc.nazev;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch(err) {
+      alert("Chyba: " + err.message);
+    }
+
+  } else if (action === "duplicate") {
+    alert("Duplikovat — bude implementováno");
   }
 };
 
