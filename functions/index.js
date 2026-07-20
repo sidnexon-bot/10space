@@ -1,4 +1,4 @@
-// deploy v15
+// deploy v17
 const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
@@ -229,3 +229,158 @@ exports.deleteFile = onRequest(
     }
   }
 );
+
+// ═════════════════════════════════════════════════════════════════════
+// PŘIPOJIT NA KONEC index.js — z existujícího kódu výš v souboru
+// využívá jen: initializeApp(), getDatabase, getAuth, google, onRequest,
+// defineSecret. NEPOUŽÍVÁ DRIVE_CLIENT_ID/DRIVE_CLIENT_SECRET — ty patří
+// k OAuth klientovi v jiném GCP projektu/účtu (majitel Google Disku) a
+// pro obecné přihlašování členů se nehodí. Místo toho používá vlastní,
+// nový pár secrets napojený na "Web client (auto created by Google
+// Service)" — OAuth klienta, co Firebase sám vytvořil přímo v base-39f52
+// a co appky (10base, 10korun, 10space) už úspěšně používají pro
+// signInWithPopup/signInWithRedirect.
+//
+// Custom Token OAuth flow pro Marka — řeší iOS PWA standalone bug
+// (appka se zasekávala na loginu, viz TenOrbit-roadmapa.md, sekce
+// "Known issue — Marek iOS PWA login"). Princip: OAuth výměna s Googlem
+// proběhne celá tady na serveru, appka na klientovi dostane hotový
+// Firebase Custom Token přes URL parametr — nezávisí na tom, jestli si
+// iOS "pamatuje" něco napříč odchodem na Google a návratem.
+//
+// Vyžaduje DVA NOVÉ Firebase Secrets (hodnoty vzít z "Web client (auto
+// created by Google Service)" v Google Cloud Console → base-39f52 →
+// APIs & Services → Credentials):
+//   firebase functions:secrets:set MAREK_OAUTH_CLIENT_ID
+//   firebase functions:secrets:set MAREK_OAUTH_CLIENT_SECRET
+//   firebase functions:secrets:set MAREK_STATE_SECRET
+//
+// A do TOHOTO klienta (ne Drive klienta v jiném projektu!) přidat do
+// Authorized redirect URIs:
+//   https://us-central1-base-39f52.cloudfunctions.net/marekAuthCallback
+// ═════════════════════════════════════════════════════════════════════
+
+const crypto = require("crypto");
+const MAREK_OAUTH_CLIENT_ID = defineSecret("MAREK_OAUTH_CLIENT_ID");
+const MAREK_OAUTH_CLIENT_SECRET = defineSecret("MAREK_OAUTH_CLIENT_SECRET");
+const MAREK_STATE_SECRET = defineSecret("MAREK_STATE_SECRET");
+
+const MAREK_REDIRECT_URI = "https://us-central1-base-39f52.cloudfunctions.net/marekAuthCallback";
+const MAREK_APP_LOGIN_URL = "https://marek.10men.cz/login.html";
+
+// ── State token (CSRF ochrana, bezstavová — nic se neukládá do DB) ──
+function signState(secret) {
+  const payload = Date.now().toString();
+  const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  return Buffer.from(`${payload}.${sig}`).toString("base64url");
+}
+
+function verifyState(state, secret, maxAgeMs = 5 * 60 * 1000) {
+  try {
+    const decoded = Buffer.from(state, "base64url").toString("utf8");
+    const [payload, sig] = decoded.split(".");
+    const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+    if (sig !== expected) return false;
+    const age = Date.now() - parseInt(payload, 10);
+    return age >= 0 && age < maxAgeMs;
+  } catch {
+    return false;
+  }
+}
+
+// ── 1) Start — appka sem naviguje (window.location.href, ne fetch) ──
+exports.marekAuthStart = onRequest(
+  { secrets: [MAREK_OAUTH_CLIENT_ID, MAREK_STATE_SECRET] },
+  (req, res) => {
+    const oauth2Client = new google.auth.OAuth2(
+      MAREK_OAUTH_CLIENT_ID.value(),
+      undefined,
+      MAREK_REDIRECT_URI
+    );
+
+    const state = signState(MAREK_STATE_SECRET.value());
+
+    const authUrl = oauth2Client.generateAuthUrl({
+      scope: ["openid", "email", "profile"],
+      state,
+      prompt: "select_account"
+    });
+
+    res.redirect(authUrl);
+  }
+);
+
+// ── 2) Callback — Google sem přesměruje po souhlasu uživatele ──
+exports.marekAuthCallback = onRequest(
+  { secrets: [MAREK_OAUTH_CLIENT_ID, MAREK_OAUTH_CLIENT_SECRET, MAREK_STATE_SECRET] },
+  async (req, res) => {
+    const { code, state, error: googleError } = req.query;
+
+    if (googleError) {
+      return res.redirect(`${MAREK_APP_LOGIN_URL}?error=${encodeURIComponent(String(googleError))}`);
+    }
+
+    if (!code || !state || !verifyState(String(state), MAREK_STATE_SECRET.value())) {
+      return res.redirect(`${MAREK_APP_LOGIN_URL}?error=invalid_state`);
+    }
+
+    try {
+      const oauth2Client = new google.auth.OAuth2(
+        MAREK_OAUTH_CLIENT_ID.value(),
+        MAREK_OAUTH_CLIENT_SECRET.value(),
+        MAREK_REDIRECT_URI
+      );
+
+      const { tokens } = await oauth2Client.getToken(String(code));
+      oauth2Client.setCredentials(tokens);
+
+      const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+      const { data: profile } = await oauth2.userinfo.get();
+      const email = profile.email;
+
+      if (!email) {
+        return res.redirect(`${MAREK_APP_LOGIN_URL}?error=no_email`);
+      }
+
+      // Ověření členství proti /members — appka to dělá i na klientovi,
+      // tady navíc na serveru (defense in depth): negenerujeme platný
+      // token nikomu mimo /members.
+      const db = getDatabase();
+      const membersSnap = await db.ref("/members").get();
+      const members = membersSnap.val() || {};
+      const isMember = Object.values(members).some((m) => m && m.email === email);
+
+      if (!isMember) {
+        return res.redirect(`${MAREK_APP_LOGIN_URL}?error=access_denied`);
+      }
+
+      // Najít existující Firebase Auth účet podle emailu (vznikl dřív při
+      // přihlášení přes signInWithPopup) — KLÍČOVÉ pro zachování stejného
+      // uid, a tedy historie chatů v /marek_chats/{uid}. Pokud účet ještě
+      // neexistuje (nový člen), vytvoří se.
+      let userRecord;
+      try {
+        userRecord = await getAuth().getUserByEmail(email);
+      } catch (e) {
+        if (e.code === "auth/user-not-found") {
+          userRecord = await getAuth().createUser({
+            email,
+            displayName: profile.name || email,
+            photoURL: profile.picture || undefined
+          });
+        } else {
+          throw e;
+        }
+      }
+
+      const customToken = await getAuth().createCustomToken(userRecord.uid);
+
+      res.redirect(`${MAREK_APP_LOGIN_URL}?token=${encodeURIComponent(customToken)}`);
+    } catch (e) {
+      console.error("marekAuthCallback error:", e.message);
+      res.redirect(`${MAREK_APP_LOGIN_URL}?error=server_error`);
+    }
+  }
+);
+
+
