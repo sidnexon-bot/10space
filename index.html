@@ -1025,6 +1025,126 @@ function setUploadItemError(i, interval) {
   document.getElementById(`upload-status-${i}`).style.color = "#EE220C";
 }
 
+// EVIDENČNÍ ČÍSLA
+let evidKategorie = null;
+let evidSkupina = "TEN";
+let evidPendingFiles = [];
+let evidCurrentIndex = 0;
+let evidResults = [];
+
+window.selectKategorie = (k) => {
+  evidKategorie = k;
+  document.querySelectorAll(".modal-option").forEach(el => el.classList.remove("selected"));
+  document.querySelector(`.modal-option input[value="${k}"]`)?.closest(".modal-option").classList.add("selected");
+  
+  // LAM jen pro noty (1-4, X)
+  const isNoty = ["1","2","3","4","X"].includes(k);
+  const btnLAM = document.getElementById("btn-LAM");
+  btnLAM.disabled = !isNoty;
+  if (!isNoty) {
+    evidSkupina = "TEN";
+    document.getElementById("btn-TEN").classList.add("selected");
+    document.getElementById("btn-LAM").classList.remove("selected");
+  }
+  
+  updateEvidPreview();
+  document.getElementById("evid-confirm-btn").disabled = false;
+};
+
+window.selectSkupina = (s) => {
+  evidSkupina = s;
+  document.getElementById("btn-TEN").classList.toggle("selected", s === "TEN");
+  document.getElementById("btn-LAM").classList.toggle("selected", s === "LAM");
+  updateEvidPreview();
+};
+
+function updateEvidPreview() {
+  if (!evidKategorie) return;
+  const kod = evidKategorie + evidSkupina;
+  document.getElementById("evid-preview").textContent = `${kod} ???`;
+}
+
+function openEvidModal(files) {
+  evidPendingFiles = files;
+  evidCurrentIndex = 0;
+  evidResults = [];
+  evidKategorie = null;
+  evidSkupina = "TEN";
+  
+  // Reset UI
+  document.querySelectorAll(".modal-option").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll('input[name="kategorie"]').forEach(el => el.checked = false);
+  document.getElementById("btn-TEN").classList.add("selected");
+  document.getElementById("btn-LAM").classList.remove("selected");
+  document.getElementById("btn-LAM").disabled = true;
+  document.getElementById("evid-preview").textContent = "—";
+  document.getElementById("evid-confirm-btn").disabled = true;
+
+  // Název souboru v titulku
+  document.querySelector("#evid-modal .modal h2").textContent = 
+    files.length > 1 
+      ? `Evidenční číslo (${evidCurrentIndex + 1}/${files.length}): ${files[0].name}`
+      : `Přiřadit evidenční číslo: ${files[0].name}`;
+  
+  document.getElementById("evid-modal").classList.add("active");
+}
+
+window.confirmEvid = async () => {
+  if (!evidKategorie) return;
+  
+  const kod = evidKategorie + evidSkupina;
+  
+  // Atomicky incrementuj čítač v RTDB
+  const citaceRef = ref(db, `/citace/${kod}`);
+  const snap = await get(citaceRef);
+  const current = snap.val() || 0;
+  const next = current + 1;
+  await set(citaceRef, next);
+  
+  const cislo = String(next).padStart(3, "0");
+  const evidCislo = `${kod} ${cislo}`;
+  
+  evidResults.push({ file: evidPendingFiles[evidCurrentIndex], evidCislo });
+  evidCurrentIndex++;
+  
+  if (evidCurrentIndex < evidPendingFiles.length) {
+    // Další soubor
+    evidKategorie = null;
+    evidSkupina = "TEN";
+    document.querySelectorAll(".modal-option").forEach(el => el.classList.remove("selected"));
+    document.querySelectorAll('input[name="kategorie"]').forEach(el => el.checked = false);
+    document.getElementById("btn-TEN").classList.add("selected");
+    document.getElementById("btn-LAM").classList.remove("selected");
+    document.getElementById("btn-LAM").disabled = true;
+    document.getElementById("evid-preview").textContent = "—";
+    document.getElementById("evid-confirm-btn").disabled = true;
+    document.querySelector("#evid-modal .modal h2").textContent = 
+      `Evidenční číslo (${evidCurrentIndex + 1}/${evidPendingFiles.length}): ${evidPendingFiles[evidCurrentIndex].name}`;
+  } else {
+    // Všechny soubory mají čísla, spusť upload
+    document.getElementById("evid-modal").classList.remove("active");
+    await processFilesWithEvid(evidResults);
+  }
+};
+
+window.skipEvid = () => {
+  evidResults.push({ file: evidPendingFiles[evidCurrentIndex], evidCislo: "—" });
+  evidCurrentIndex++;
+  
+  if (evidCurrentIndex < evidPendingFiles.length) {
+    document.querySelector("#evid-modal .modal h2").textContent = 
+      `Evidenční číslo (${evidCurrentIndex + 1}/${evidPendingFiles.length}): ${evidPendingFiles[evidCurrentIndex].name}`;
+    evidKategorie = null;
+    document.querySelectorAll(".modal-option").forEach(el => el.classList.remove("selected"));
+    document.querySelectorAll('input[name="kategorie"]').forEach(el => el.checked = false);
+    document.getElementById("evid-preview").textContent = "—";
+    document.getElementById("evid-confirm-btn").disabled = true;
+  } else {
+    document.getElementById("evid-modal").classList.remove("active");
+    processFilesWithEvid(evidResults);
+  }
+};
+
 // UPLOAD
 window.openUpload = () => {
   document.getElementById("upload-zone").classList.toggle("hidden");
@@ -1041,11 +1161,15 @@ async function processFiles(files) {
     alert("Nejdřív vyber složku kam chceš nahrát.");
     return;
   }
+  // Otevři dialog pro evidenční čísla
+  openEvidModal(Array.from(files));
+}
 
-  initUploadProgress(files);
+async function processFilesWithEvid(fileResults) {
+  initUploadProgress(fileResults.map(r => r.file));
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+  for (let i = 0; i < fileResults.length; i++) {
+    const { file, evidCislo } = fileResults[i];
     const interval = setUploadItemActive(i);
     try {
       const base64Data = await new Promise((resolve, reject) => {
@@ -1067,11 +1191,11 @@ async function processFiles(files) {
       const fileId = crypto.randomUUID();
       const docRef = ref(db, `/dokumenty/${fileId}`);
       const docData = {
-        nazev: file.name, kategorie: null, stav: null,
+        nazev: file.name, kategorie: evidKategorie, stav: null,
         slozkaId: window.currentFolder, storage: "gdrive",
         mimeType: file.type, zdroj: "10space",
         nahralKdo: currentUser.email, datumNahrani: Date.now(),
-        evidCislo: "—",
+        evidCislo: evidCislo,
         verejneVerze: { 1: { driveFileId: data.driveFileId, datum: new Date().toISOString().split("T")[0], poznamka: "První nahrání", nahralKdo: currentUser.email } }
       };
       await set(docRef, docData);
@@ -1079,7 +1203,7 @@ async function processFiles(files) {
       setUploadItemDone(i, interval);
     } catch(err) {
       setUploadItemError(i, interval);
-      console.error(`Chyba při nahrávání ${file.name}:`, err.message);
+      console.error(`Chyba: ${err.message}`);
     }
   }
 
