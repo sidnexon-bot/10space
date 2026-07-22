@@ -1096,22 +1096,6 @@ window.selectSkupina = (s) => {
 
 function updateEvidPreview() {
   if (!evidKategorie) return;
-  // Existující dokument — ulož přímo
-  if (evidIsExisting) {
-    const kod = evidKategorie + evidSkupina;
-    const citaceRef = ref(db, `/citace/${kod}`);
-    const snap = await get(citaceRef);
-    const current = snap.val() || 0;
-    const next = current + 1;
-    await set(citaceRef, next);
-    const evidCislo = `${kod} ${String(next).padStart(3, "0")}`;
-    await set(ref(db, `/dokumenty/${evidIsExisting}/evidCislo`), evidCislo);
-    window.allDocs[evidIsExisting].evidCislo = evidCislo;
-    document.getElementById("evid-modal").classList.remove("active");
-    evidIsExisting = null;
-    renderTab();
-    return;
-  }
   const kod = evidKategorie + evidSkupina;
   document.getElementById("evid-preview").textContent = `${kod} ???`;
 }
@@ -1143,6 +1127,23 @@ function openEvidModal(files) {
 
 window.confirmEvid = async () => {
   if (!evidKategorie) return;
+
+  // Existující dokument — ulož přímo
+  if (evidIsExisting) {
+    const kod = evidKategorie + evidSkupina;
+    const citaceRef = ref(db, `/citace/${kod}`);
+    const snap = await get(citaceRef);
+    const current = snap.val() || 0;
+    const next = current + 1;
+    await set(citaceRef, next);
+    const evidCislo = `${kod} ${String(next).padStart(3, "0")}`;
+    await set(ref(db, `/dokumenty/${evidIsExisting}/evidCislo`), evidCislo);
+    window.allDocs[evidIsExisting].evidCislo = evidCislo;
+    document.getElementById("evid-modal").classList.remove("active");
+    evidIsExisting = null;
+    renderTab();
+    return;
+  }
   
   const kod = evidKategorie + evidSkupina;
   
