@@ -547,39 +547,221 @@ window.switchTab = (tab) => {
 
 function renderTab() {
   const area = document.getElementById("content-area");
-  let items = Object.entries(window.allDocs);
 
   if (currentTab === "recent") {
-    items = items.sort(([,a],[,b]) => (b.datumNahrani||0) - (a.datumNahrani||0)).slice(0, 20);
-  } else if (currentTab === "documents") {
-    items = items.filter(([,d]) => {
-      const m = (d.mimeType || "").toLowerCase();
-      const name = (d.nazev || "").toLowerCase();
-      return m.includes("pdf") || m.includes("document") || m.includes("spreadsheet") ||
-             m.includes("presentation") || m.includes("text") || m.includes("word") ||
-             m.includes("excel") || m.includes("powerpoint") ||
-             name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".xlsx") ||
-             name.endsWith(".pptx") || name.endsWith(".txt") ||
-             m === "" || m === "application/octet-stream";
-    });
-  } else if (currentTab === "media") {
-    items = items.filter(([,d]) => {
-      const m = d.mimeType || "";
-      return m.includes("image") || m.includes("video") || m.includes("audio");
-    });
-  } else if (currentTab === "folders") {
-    renderFolderContent();
-    return;
-  } else if (currentTab === "projects") {
-    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="3" width="6" height="18" rx="1"/></svg><p>Projekty budou dostupné brzy</p></div>`;
-    return;
-  } else if (currentTab === "favorites") {
-    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>Zatím žádné oblíbené</p></div>`;
+    const items = Object.entries(window.allDocs)
+      .sort(([,a],[,b]) => (b.datumNahrani||0) - (a.datumNahrani||0))
+      .slice(0, 20);
+    renderListItems(items);
     return;
   }
 
-  renderListItems(items);
+  if (currentTab === "documents") {
+    area.innerHTML = `<div class="empty-state"><div class="spinner"></div><p style="margin-top:16px">Načítám dokumenty z Drive...</p></div>`;
+    loadDriveFiles(null).then(files => {
+      const docs = files.filter(f => getMimeTypeCategory(f.mimeType) === "document");
+      docs.sort((a, b) => a.name.localeCompare(b.name, "cs"));
+      renderDriveItems(docs);
+    }).catch(err => {
+      area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
+    });
+    return;
+  }
+
+  if (currentTab === "folders") {
+    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám složky z Drive...</p></div>`;
+    loadDriveFiles(null).then(files => {
+      renderDriveFolderContent(null, files);
+      renderDriveSidebarTree(files);
+    }).catch(err => {
+      area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
+    });
+    return;
+  }
+
+  if (currentTab === "media") {
+    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám multimédia z Drive...</p></div>`;
+    loadDriveFiles(null).then(files => {
+      const media = files.filter(f => {
+        const cat = getMimeTypeCategory(f.mimeType);
+        return cat === "image" || cat === "video" || cat === "audio";
+      });
+      media.sort((a, b) => a.name.localeCompare(b.name, "cs"));
+      renderDriveItems(media);
+    }).catch(err => {
+      area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
+    });
+    return;
+  }
+
+  if (currentTab === "projects") {
+    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="3" width="6" height="18" rx="1"/></svg><p>Projekty budou dostupné brzy</p></div>`;
+    return;
+  }
+
+  if (currentTab === "favorites") {
+    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>Zatím žádné oblíbené</p></div>`;
+    return;
+  }
 }
+
+// DRIVE ITEMS RENDER
+function renderDriveItems(files) {
+  const area = document.getElementById("content-area");
+  if (files.length === 0) {
+    area.innerHTML = `<div class="empty-state"><p>Žádné položky</p></div>`;
+    return;
+  }
+  area.innerHTML = files.map(f => `
+    <div class="list-item" id="item-${f.id}" onclick="handleDriveItemClick(event, '${f.id}', ${f.isFolder})">
+      <div class="list-item-checkbox" onclick="event.stopPropagation()">
+        <input type="checkbox" onchange="toggleSelect('${f.id}', this.checked)">
+      </div>
+      <div class="list-item-name">
+        ${getDriveFileIcon(f.mimeType, 18)}
+        <span class="list-item-name-text" onclick="event.stopPropagation();handleDriveNameClick('${f.id}', '${f.mimeType}', ${f.isFolder})">${f.name}</span>
+      </div>
+      <div class="list-item-code"></div>
+      <div class="list-item-date">${f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString("cs-CZ") : "—"}</div>
+      <div class="list-item-date">${formatFileSize(f.size)}</div>
+      <div class="list-item-dots">
+        <button class="dots-btn" onclick="event.stopPropagation();openDriveContextMenu(event, '${f.id}', '${f.name}', ${f.isFolder})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderDriveFolderContent(folderId, files) {
+  const area = document.getElementById("content-area");
+  area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
+  
+  loadDriveFiles(folderId).then(driveFiles => {
+    const folders = driveFiles.filter(f => f.isFolder);
+    const docs = driveFiles.filter(f => !f.isFolder);
+    renderDriveItems([...folders, ...docs]);
+    renderBreadcrumb(folderId);
+  }).catch(err => {
+    area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
+  });
+}
+
+function renderDriveSidebarTree(files) {
+  const tree = document.getElementById("sidebar-folder-tree");
+  const folders = files.filter(f => f.isFolder);
+  tree.innerHTML = folders.map(f => `
+    <div class="folder-tree-item" onclick="navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\'")}')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      ${f.name}
+    </div>
+  `).join("");
+}
+
+// DRIVE NAVIGACE
+let driveBreadcrumb = []; // [{id, name}]
+
+window.navigateToDriveFolder = (folderId, folderName) => {
+  window.currentFolder = folderId;
+  driveBreadcrumb.push({ id: folderId, name: folderName });
+  renderDriveFolderContent(folderId);
+  renderDriveBreadcrumb();
+};
+
+function renderDriveBreadcrumb() {
+  const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
+  const currentName = crumbs[crumbs.length - 1].name;
+  document.getElementById("content-title").textContent = currentName;
+  document.getElementById("breadcrumb").innerHTML = crumbs.slice(0, -1).map(c =>
+    `<span onclick="navigateToDriveFolderById('${c.id}')">${c.name}</span><span class="sep">›</span>`
+  ).join("") + `<span style="color:#1c1c1e;font-weight:500">${currentName}</span>`;
+}
+
+window.navigateToDriveFolderById = (id) => {
+  if (!id || id === "null") {
+    driveBreadcrumb = [];
+    window.currentFolder = null;
+    renderTab();
+    return;
+  }
+  if (id === "root") {
+    driveBreadcrumb = [];
+    window.currentFolder = null;
+    renderDriveFolderContent(null);
+    renderDriveBreadcrumb();
+    return;
+  }
+  const idx = driveBreadcrumb.findIndex(c => c.id === id);
+  if (idx >= 0) {
+    driveBreadcrumb = driveBreadcrumb.slice(0, idx + 1);
+    window.currentFolder = id;
+    renderDriveFolderContent(id);
+    renderDriveBreadcrumb();
+  }
+};
+
+// DRIVE KLIKNUTÍ
+window.handleDriveItemClick = (e, id, isFolder) => {
+  if (e.target.type === "checkbox") return;
+  showDriveDetail(id, isFolder);
+};
+
+window.handleDriveNameClick = (id, mimeType, isFolder) => {
+  if (isFolder) return; // složka se otevře přes navigateToDriveFolder
+  openDriveFile(id);
+};
+
+window.openDriveFile = async (fileId) => {
+  showSpinner();
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(FUNCTIONS.getFileUrl, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ driveFileId: fileId })
+    });
+    const data = await response.json();
+    hideSpinner();
+    if (data.url) {
+      const a = document.createElement("a");
+      a.href = data.url; a.target = "_blank"; a.rel = "noopener";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else {
+      alert("Chyba: " + (data.error || "Nelze otevřít"));
+    }
+  } catch(err) {
+    hideSpinner();
+    alert("Chyba: " + err.message);
+  }
+};
+
+function showDriveDetail(fileId, isFolder) {
+  selectedDetailId = fileId;
+  const rightSidebar = document.getElementById("right-sidebar");
+  rightSidebar.classList.remove("hidden-sidebar");
+  const content = document.getElementById("detail-content");
+  content.innerHTML = `
+    <div class="detail-field">
+      <div class="detail-label">ID souboru</div>
+      <div class="detail-static" style="font-size:11px;word-break:break-all">${fileId}</div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Typ</div>
+      <div class="detail-static">${isFolder ? "Složka" : "Soubor"}</div>
+    </div>
+  `;
+}
+
+window.openDriveContextMenu = (e, id, name, isFolder) => {
+  contextItemId = id;
+  const menu = document.getElementById("context-menu");
+  menu.classList.remove("hidden");
+  const assignBtn = document.getElementById("ctx-assign-evid");
+  if (assignBtn) assignBtn.style.display = "none";
+  const x = e.clientX, y = e.clientY;
+  menu.style.left = (x + 200 > window.innerWidth ? x - 200 : x) + "px";
+  menu.style.top = (y + 280 > window.innerHeight ? y - 280 : y) + "px";
+};
 
 function renderFolderList() {
   const area = document.getElementById("content-area");
