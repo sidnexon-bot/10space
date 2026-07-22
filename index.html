@@ -1102,6 +1102,72 @@ async function processFiles(files) {
   </div>
   <div class="upload-progress-list" id="upload-progress-list"></div>
 </div>
+
+<!-- EVIDENČNÍ ČÍSLO DIALOG -->
+<div class="modal-overlay" id="evid-modal">
+  <div class="modal">
+    <h2>Přiřadit evidenční číslo</h2>
+    
+    <div class="modal-section-title">Kategorie</div>
+    <div class="modal-options">
+      <label class="modal-option" onclick="selectKategorie('1')">
+        <input type="radio" name="kategorie" value="1">
+        <span><strong>1</strong> — Noty: Lidové, folk, tradicionály</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('2')">
+        <input type="radio" name="kategorie" value="2">
+        <span><strong>2</strong> — Noty: Pop, jazz, swing, filmová hudba</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('3')">
+        <input type="radio" name="kategorie" value="3">
+        <span><strong>3</strong> — Noty: Klasika, duchovní, liturgie</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('4')">
+        <input type="radio" name="kategorie" value="4">
+        <span><strong>4</strong> — Noty: Adventní, vánoční</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('X')">
+        <input type="radio" name="kategorie" value="X">
+        <span><strong>X</strong> — Noty: Nespecifikovaný žánr</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('5')">
+        <input type="radio" name="kategorie" value="5">
+        <span><strong>5</strong> — Zápisy ze zkoušek a schůzí</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('6')">
+        <input type="radio" name="kategorie" value="6">
+        <span><strong>6</strong> — Akce, plánování, šablony, anotace</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('7')">
+        <input type="radio" name="kategorie" value="7">
+        <span><strong>7</strong> — Cedule a nápisy</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('8')">
+        <input type="radio" name="kategorie" value="8">
+        <span><strong>8</strong> — Písemnosti spolku</span>
+      </label>
+      <label class="modal-option" onclick="selectKategorie('9')">
+        <input type="radio" name="kategorie" value="9">
+        <span><strong>9</strong> — Tabulky</span>
+      </label>
+    </div>
+
+    <div class="modal-section-title">Skupina</div>
+    <div class="modal-skupina">
+      <button class="modal-skupina-btn selected" id="btn-TEN" onclick="selectSkupina('TEN')">TEN (10men)</button>
+      <button class="modal-skupina-btn" id="btn-LAM" onclick="selectSkupina('LAM')" disabled>LAM (Lamen)</button>
+    </div>
+
+    <div class="modal-preview">
+      Evidenční číslo: <span id="evid-preview">—</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-secondary" onclick="skipEvid()">Přeskočit</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmEvid()" id="evid-confirm-btn" disabled>Přiřadit</button>
+    </div>
+  </div>
+</div>
   
 </body>
 </html>
