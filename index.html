@@ -448,6 +448,49 @@ function showApp() {
   loadData();
 }
 
+// DRIVE API
+async function loadDriveFiles(folderId) {
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch(FUNCTIONS.listDriveFiles, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ folderId: folderId || null })
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error);
+  return data.files || [];
+}
+
+function getMimeTypeCategory(mimeType) {
+  if (!mimeType) return "other";
+  if (mimeType === "application/vnd.google-apps.folder") return "folder";
+  if (mimeType.includes("pdf") || mimeType.includes("document") || 
+      mimeType.includes("spreadsheet") || mimeType.includes("presentation") ||
+      mimeType.includes("text") || mimeType.includes("word") ||
+      mimeType.includes("excel") || mimeType.includes("powerpoint")) return "document";
+  if (mimeType.includes("image")) return "image";
+  if (mimeType.includes("video")) return "video";
+  if (mimeType.includes("audio")) return "audio";
+  return "other";
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return "—";
+  const mb = bytes / 1024 / 1024;
+  if (mb < 1) return Math.round(bytes / 1024) + " KB";
+  return mb.toFixed(1) + " MB";
+}
+
+function getDriveFileIcon(mimeType, size) {
+  const s = size || 18;
+  const cat = getMimeTypeCategory(mimeType);
+  if (cat === "folder") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+  if (cat === "image") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  if (cat === "video") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`;
+  if (cat === "audio") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#af52de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+
 // LOAD DATA
 async function loadData() {
   const [foldersSnap, docsSnap] = await Promise.all([
