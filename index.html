@@ -633,7 +633,7 @@ function renderDriveItems(files) {
   `).join("");
 }
 
-function renderDriveFolderContent(folderId, files) {
+function renderDriveFolderContent(folderId) {
   const area = document.getElementById("content-area");
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
   
@@ -641,7 +641,6 @@ function renderDriveFolderContent(folderId, files) {
     const folders = driveFiles.filter(f => f.isFolder);
     const docs = driveFiles.filter(f => !f.isFolder);
     renderDriveItems([...folders, ...docs]);
-    renderBreadcrumb(folderId);
   }).catch(err => {
     area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
   });
@@ -662,10 +661,12 @@ function renderDriveSidebarTree(files) {
 let driveBreadcrumb = []; // [{id, name}]
 
 window.navigateToDriveFolder = (folderId, folderName) => {
+  // Zabraň duplicitnímu přidání
+  if (window.currentFolder === folderId) return;
   window.currentFolder = folderId;
   driveBreadcrumb.push({ id: folderId, name: folderName });
-  renderDriveFolderContent(folderId);
   renderDriveBreadcrumb();
+  renderDriveFolderContent(folderId);
 };
 
 function renderDriveBreadcrumb() {
