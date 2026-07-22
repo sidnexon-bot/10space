@@ -917,10 +917,17 @@ window.contextAction = async (action) => {
     else alert("Chyba: " + data.error);
 
   } else if (action === "rename") {
-    const newName = prompt("Nový název:", doc?.nazev);
-    if (newName && newName !== doc?.nazev) {
-      await set(ref(db, `/dokumenty/${contextItemId}/nazev`), newName);
-      window.allDocs[contextItemId].nazev = newName;
+    const isFolder = !!allFolders[contextItemId];
+    const currentName = isFolder ? allFolders[contextItemId].nazev : doc?.nazev;
+    const newName = prompt("Nový název:", currentName);
+    if (newName && newName !== currentName) {
+      if (isFolder) {
+        await set(ref(db, `/slozky/${contextItemId}/nazev`), newName);
+        allFolders[contextItemId].nazev = newName;
+      } else {
+        await set(ref(db, `/dokumenty/${contextItemId}/nazev`), newName);
+        window.allDocs[contextItemId].nazev = newName;
+      }
       renderTab();
     }
 
