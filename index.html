@@ -357,6 +357,10 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     Informace
   </div>
+  <div class="context-menu-item" id="ctx-assign-evid" onclick="contextAction('assignEvid')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    Přiřadit evidenční číslo
+  </div>
   <div class="context-menu-sep"></div>
   <div class="context-menu-item danger" onclick="contextAction('delete')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -874,13 +878,25 @@ window.openContextMenu = (e, id, isFolder) => {
   contextItemId = id;
   const menu = document.getElementById("context-menu");
   menu.classList.remove("hidden");
+
+  // Zobraz/skryj "Přiřadit evidenční číslo"
+  const doc = window.allDocs[id];
+  const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "Owner";
+  const noEvid = doc && (!doc.evidCislo || doc.evidCislo === "—");
+  const assignBtn = document.getElementById("ctx-assign-evid");
+  if (assignBtn) {
+    assignBtn.style.display = (isAdmin && noEvid && !isFolder) ? "flex" : "none";
+  }
+
   const x = e.clientX, y = e.clientY;
   menu.style.left = (x + 200 > window.innerWidth ? x - 200 : x) + "px";
   menu.style.top = (y + 280 > window.innerHeight ? y - 280 : y) + "px";
 };
+
 window.closeContextMenu = () => {
   document.getElementById("context-menu").classList.add("hidden");
 };
+
 document.addEventListener("click", closeContextMenu);
 
 window.contextAction = async (action) => {
@@ -926,6 +942,25 @@ window.contextAction = async (action) => {
 
   } else if (action === "duplicate") {
     alert("Duplikovat — bude implementováno");
+
+  } else if (action === "assignEvid") {
+    evidPendingFiles = [{ name: doc?.nazev || "dokument" }];
+    evidCurrentIndex = 0;
+    evidResults = [];
+    evidKategorie = null;
+    evidSkupina = "TEN";
+    evidIsExisting = contextItemId;
+
+    document.querySelectorAll(".modal-option").forEach(el => el.classList.remove("selected"));
+    document.querySelectorAll('input[name="kategorie"]').forEach(el => el.checked = false);
+    document.getElementById("btn-TEN").classList.add("selected");
+    document.getElementById("btn-LAM").classList.remove("selected");
+    document.getElementById("btn-LAM").disabled = true;
+    document.getElementById("evid-preview").textContent = "—";
+    document.getElementById("evid-confirm-btn").disabled = true;
+    document.querySelector("#evid-modal .modal h2").textContent = `Přiřadit číslo: ${doc?.nazev}`;
+
+    document.getElementById("evid-modal").classList.add("active");
   }
 };
 
@@ -1031,6 +1066,7 @@ let evidSkupina = "TEN";
 let evidPendingFiles = [];
 let evidCurrentIndex = 0;
 let evidResults = [];
+let evidIsExisting = null;
 
 window.selectKategorie = (k) => {
   evidKategorie = k;
@@ -1060,6 +1096,22 @@ window.selectSkupina = (s) => {
 
 function updateEvidPreview() {
   if (!evidKategorie) return;
+  // Existující dokument — ulož přímo
+  if (evidIsExisting) {
+    const kod = evidKategorie + evidSkupina;
+    const citaceRef = ref(db, `/citace/${kod}`);
+    const snap = await get(citaceRef);
+    const current = snap.val() || 0;
+    const next = current + 1;
+    await set(citaceRef, next);
+    const evidCislo = `${kod} ${String(next).padStart(3, "0")}`;
+    await set(ref(db, `/dokumenty/${evidIsExisting}/evidCislo`), evidCislo);
+    window.allDocs[evidIsExisting].evidCislo = evidCislo;
+    document.getElementById("evid-modal").classList.remove("active");
+    evidIsExisting = null;
+    renderTab();
+    return;
+  }
   const kod = evidKategorie + evidSkupina;
   document.getElementById("evid-preview").textContent = `${kod} ???`;
 }
