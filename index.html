@@ -619,7 +619,7 @@ function renderDriveItems(files) {
       </div>
       <div class="list-item-name">
         ${getDriveFileIcon(f.mimeType, 18)}
-        <span class="list-item-name-text" onclick="event.stopPropagation();handleDriveNameClick('${f.id}', '${f.mimeType}', ${f.isFolder})">${f.name}</span>
+        <span class="list-item-name-text" onclick="event.stopPropagation();${f.isFolder ? `navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\'")}')` : `openDriveFile('${f.id}')`}">${f.name}</span>
       </div>
       <div class="list-item-code"></div>
       <div class="list-item-date">${f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString("cs-CZ") : "—"}</div>
