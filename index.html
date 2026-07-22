@@ -165,6 +165,31 @@
     .upload-progress-bar-wrap { height: 2px; background: #f2f2f7; margin: 0 16px 8px; border-radius: 1px; }
     .upload-progress-bar { height: 2px; background: #EE220C; border-radius: 1px; transition: width 0.3s; }
 
+    /* EVIDENČNÍ ČÍSLO DIALOG */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 3000; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #fff; border-radius: 16px; padding: 24px; width: 400px; max-width: 90vw; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
+    .modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+    .modal-section-title { font-size: 11px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 16px; }
+    .modal-options { display: flex; flex-direction: column; gap: 6px; }
+    .modal-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; border: 1px solid #e5e5ea; transition: background 0.1s; }
+    .modal-option:hover { background: #f9f9fb; }
+    .modal-option input[type="radio"] { accent-color: #EE220C; width: 16px; height: 16px; flex-shrink: 0; }
+    .modal-option.selected { background: #fff0ee; border-color: #EE220C; }
+    .modal-skupina { display: flex; gap: 8px; margin-top: 8px; }
+    .modal-skupina-btn { flex: 1; padding: 10px; border: 1px solid #e5e5ea; border-radius: 8px; font-size: 14px; cursor: pointer; background: #fff; text-align: center; transition: all 0.1s; }
+    .modal-skupina-btn:hover { background: #f9f9fb; }
+    .modal-skupina-btn.selected { background: #fff0ee; border-color: #EE220C; color: #EE220C; font-weight: 600; }
+    .modal-skupina-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .modal-footer { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+    .modal-btn { padding: 9px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; font-weight: 500; }
+    .modal-btn-primary { background: #EE220C; color: #fff; }
+    .modal-btn-primary:hover { background: #cc1a09; }
+    .modal-btn-secondary { background: #f2f2f7; color: #1c1c1e; }
+    .modal-btn-secondary:hover { background: #e5e5ea; }
+    .modal-preview { font-size: 13px; color: #8e8e93; margin-top: 12px; text-align: center; }
+    .modal-preview span { font-weight: 700; color: #EE220C; font-size: 15px; }
+
   </style>
 </head>
 <body class="login-page" id="body">
