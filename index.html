@@ -190,6 +190,19 @@
     .modal-preview { font-size: 13px; color: #8e8e93; margin-top: 12px; text-align: center; }
     .modal-preview span { font-weight: 700; color: #EE220C; font-size: 15px; }
 
+    /* SEARCH BAR */
+    .search-bar { display: flex; align-items: center; border: 1px solid #e5e5ea; border-radius: 8px; overflow: hidden; background: #f2f2f7; width: 320px; }
+    .search-select { border: none; background: none; padding: 8px 10px; font-size: 13px; color: #1c1c1e; cursor: pointer; border-right: 1px solid #e5e5ea; outline: none; flex-shrink: 0; width: 110px; }
+    .search-input { border: none; background: none; padding: 8px 12px; font-size: 14px; outline: none; flex: 1; }
+    .search-results { background: #fff; border-radius: 10px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border: 1px solid #e5e5ea; position: fixed; top: 60px; left: 50%; transform: translateX(-50%); width: 600px; max-height: 400px; overflow-y: auto; z-index: 500; }
+    .search-result-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f2f2f7; font-size: 14px; }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: #f9f9fb; }
+    .search-result-name { flex: 1; font-weight: 500; }
+    .search-result-path { font-size: 12px; color: #8e8e93; }
+    .search-result-code { font-size: 12px; color: #EE220C; font-weight: 600; }
+    .search-empty { padding: 24px; text-align: center; color: #8e8e93; font-size: 16px; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -210,6 +223,17 @@
     <div class="topbar-left">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       <h1>10space</h1>
+    </div>
+    <div class="search-bar">
+      <select class="search-select" id="search-category">
+        <option value="all">Vše</option>
+        <option value="document">Dokumenty</option>
+        <option value="folder">Složky</option>
+        <option value="image">Obrázky</option>
+        <option value="audio">Audio</option>
+        <option value="video">Video</option>
+      </select>
+      <input class="search-input" id="search-input" type="text" placeholder="Hledat..." oninput="handleSearch(this.value)">
     </div>
     <div class="topbar-right">
       <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
@@ -1477,6 +1501,87 @@ window.skipEvid = () => {
   } else {
     document.getElementById("evid-modal").classList.remove("active");
     processFilesWithEvid(evidResults);
+  }
+};
+
+// VYHLEDÁVÁNÍ
+window.handleSearch = (query) => {
+  const existing = document.getElementById("search-results-panel");
+  if (existing) existing.remove();
+  
+  if (!query || query.length < 2) return;
+
+  const category = document.getElementById("search-category").value;
+
+  // Hledej v Drive souborech
+  const fileResults = Object.entries(window.driveFiles || {})
+    .filter(([id, f]) => {
+      if (category !== "all" && getMimeTypeCategory(f.mimeType) !== category) return false;
+      return f.name?.toLowerCase().includes(query.toLowerCase());
+    })
+    .slice(0, 15)
+    .map(([id, f]) => {
+      const song = Object.values(window.repertoar || {}).find(s => {
+        const match = s.pdf?.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        return match && match[1] === id;
+      });
+      const parent = window.driveFolders?.[f.parentId]?.name || "";
+      return { id, name: f.name, mimeType: f.mimeType, parent, code: song?.code || "", isFolder: false };
+    });
+
+  // Hledej ve složkách
+  const folderResults = (category === "all" || category === "folder")
+    ? Object.entries(window.driveFolders || {})
+        .filter(([id, f]) => f.name?.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 5)
+        .map(([id, f]) => ({ id, name: f.name, mimeType: "folder", parent: window.driveFolders?.[f.parentId]?.name || "", code: "", isFolder: true }))
+    : [];
+
+  const results = [...folderResults, ...fileResults];
+
+  const panel = document.createElement("div");
+  panel.id = "search-results-panel";
+  panel.className = "search-results";
+
+  if (results.length === 0) {
+    panel.innerHTML = `<div class="search-empty">Nic nenalezeno pro „${query}"</div>`;
+  } else {
+    panel.innerHTML = results.map(r => `
+      <div class="search-result-item" onclick="handleSearchResultClick('${r.id}', ${r.isFolder}, '${r.name.replace(/'/g, "\\'")}')">
+        ${getDriveFileIcon(r.mimeType, 16)}
+        <span class="search-result-name">${highlightMatch(r.name, query)}</span>
+        ${r.code ? `<span class="search-result-code">${r.code}</span>` : ""}
+        <span class="search-result-path">${r.parent}</span>
+      </div>
+    `).join("");
+  }
+
+  document.body.appendChild(panel);
+
+  // Zavři při kliknutí mimo
+  setTimeout(() => {
+    document.addEventListener("click", closeSearch, { once: true });
+  }, 0);
+};
+
+function highlightMatch(text, query) {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return text.slice(0, idx) + `<strong>${text.slice(idx, idx + query.length)}</strong>` + text.slice(idx + query.length);
+}
+
+function closeSearch() {
+  document.getElementById("search-results-panel")?.remove();
+  document.getElementById("search-input").value = "";
+}
+
+window.handleSearchResultClick = (id, isFolder, name) => {
+  closeSearch();
+  if (isFolder) {
+    switchTab("folders");
+    navigateToDriveFolder(id, name);
+  } else {
+    openDriveFile(id);
   }
 };
 
