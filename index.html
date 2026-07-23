@@ -377,7 +377,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjDCB3gpqytTHnG7zKLKJGXMNeW5vyC_I",
@@ -514,19 +514,17 @@ function getDriveFileIcon(mimeType, size) {
 
 // LOAD DATA
 async function loadData() {
-  // Načti members složky z RTDB
-  const foldersSnap = await get(ref(db, "/slozky"));
-  allFolders = foldersSnap.val() || {};
+  // Načti složky z RTDB
+  const slozkySnap = await get(ref(db, "/slozky"));
+  allFolders = slozkySnap.val() || {};
 
-  // Načti Drive cache do paměti — jednou, pak reaktivně
-  const foldersSnap = await get(ref(db, "/driveCache/folders"));
-  window.driveFolders = foldersSnap.val() || {};
-  
-  // Reaktivní listener pro soubory
-  const { onValue } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  // Načti Drive folders do paměti
+  const driveFoldersSnap = await get(ref(db, "/driveCache/folders"));
+  window.driveFolders = driveFoldersSnap.val() || {};
+
+  // Reaktivní listener pro Drive soubory
   onValue(ref(db, "/driveCache/files"), (snap) => {
     window.driveFiles = snap.val() || {};
-    // Obnov aktuální záložku pokud je relevantní
     if (["documents", "media", "folders"].includes(currentTab)) {
       renderTab();
     }
