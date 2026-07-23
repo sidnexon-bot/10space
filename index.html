@@ -641,26 +641,20 @@ function renderTab() {
 }
 
 function getEvidBadge(fileId) {
-  const driveFile = window.driveFiles?.[fileId];
-  if (!driveFile) return "";
-  
-  // Zkus songId z driveCache
-  if (driveFile.songId) {
-    const song = window.repertoar?.[driveFile.songId];
-    if (song?.evidencniCislo) {
-      return `<span style="font-size:11px;font-weight:600;color:#EE220C;background:#fff0ee;padding:2px 6px;border-radius:4px;flex-shrink:0">${song.evidencniCislo}</span>`;
-    }
-  }
+  // Hledej v /repertoar skladbu kde pdf URL obsahuje fileId
+  const song = Object.values(window.repertoar || {}).find(s => {
+    if (!s.pdf) return false;
+    const match = s.pdf.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    return match && match[1] === fileId;
+  });
 
-  // Fallback — hledej podle driveFileId v /repertoar
-  const song = Object.values(window.repertoar || {}).find(s => s.driveFileId === fileId);
-  if (song?.evidencniCislo) {
-    return `<span style="font-size:11px;font-weight:600;color:#EE220C;background:#fff0ee;padding:2px 6px;border-radius:4px;flex-shrink:0">${song.evidencniCislo}</span>`;
+  if (song?.code) {
+    return `<span style="font-size:11px;font-weight:600;color:#EE220C;background:#fff0ee;padding:2px 6px;border-radius:4px;flex-shrink:0">${song.code}</span>`;
   }
 
   return "";
 }
-
+  
 // DRIVE ITEMS RENDER
 function renderDriveItems(files) {
   const area = document.getElementById("content-area");
