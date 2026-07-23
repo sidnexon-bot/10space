@@ -457,51 +457,28 @@ function showApp() {
 // DRIVE API
 async function loadDriveFiles(folderId) {
   const parentId = folderId || "0B23cZAlYDWOndmtIZU45WWJrbWM";
-  
-  // Čti z RTDB cache místo Drive API
-  const snap = await get(ref(db, "/driveCache/files"));
-  const allFiles = snap.val() || {};
-  
-  // Filtruj podle parentId
-  const files = Object.entries(allFiles)
+
+  const folders = Object.entries(window.driveFolders || {})
     .filter(([id, f]) => f.parentId === parentId)
     .map(([id, f]) => ({
-      id,
-      name: f.name,
-      mimeType: f.mimeType,
-      size: f.size,
-      modifiedTime: f.modifiedTime,
-      isFolder: false,
-      driveFileId: f.driveFileId
+      id, name: f.name, mimeType: "application/vnd.google-apps.folder",
+      modifiedTime: f.modifiedTime, isFolder: true
     }));
 
-  // Přidej složky
-  const foldersSnap = await get(ref(db, "/driveCache/folders"));
-  const allFolders = foldersSnap.val() || {};
-  const folders = Object.entries(allFolders)
+  const files = Object.entries(window.driveFiles || {})
     .filter(([id, f]) => f.parentId === parentId)
     .map(([id, f]) => ({
-      id,
-      name: f.name,
-      mimeType: "application/vnd.google-apps.folder",
-      modifiedTime: f.modifiedTime,
-      isFolder: true
+      id, name: f.name, mimeType: f.mimeType, size: f.size,
+      modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
     }));
 
   return [...folders, ...files];
 }
 
 async function loadAllDriveFiles() {
-  const snap = await get(ref(db, "/driveCache/files"));
-  const allFiles = snap.val() || {};
-  return Object.entries(allFiles).map(([id, f]) => ({
-    id,
-    name: f.name,
-    mimeType: f.mimeType,
-    size: f.size,
-    modifiedTime: f.modifiedTime,
-    isFolder: false,
-    driveFileId: f.driveFileId
+  return Object.entries(window.driveFiles || {}).map(([id, f]) => ({
+    id, name: f.name, mimeType: f.mimeType, size: f.size,
+    modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
   }));
 }
 
@@ -537,12 +514,18 @@ function getDriveFileIcon(mimeType, size) {
 
 // LOAD DATA
 async function loadData() {
-  const [foldersSnap, docsSnap] = await Promise.all([
-    get(ref(db, "/slozky")),
-    get(ref(db, "/dokumenty"))
-  ]);
+  // Načti members složky z RTDB
+  const foldersSnap = await get(ref(db, "/slozky"));
   allFolders = foldersSnap.val() || {};
-  window.allDocs = docsSnap.val() || {};
+
+  // Načti Drive cache do paměti — jednou, pak reaktivně
+  const [driveFoldersSnap, driveFilesSnap] = await Promise.all([
+    get(ref(db, "/driveCache/folders")),
+    get(ref(db, "/driveCache/files"))
+  ]);
+  window.driveFolders = driveFoldersSnap.val() || {};
+  window.driveFiles = driveFilesSnap.val() || {};
+
   renderFolderTree();
   switchTab("recent");
 }
