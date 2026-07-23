@@ -782,19 +782,14 @@ window.openDriveFile = async (fileId) => {
 
 function showDriveDetail(fileId, isFolder) {
   selectedDetailId = fileId;
+  document.querySelectorAll(".list-item").forEach(el => el.classList.remove("active-detail"));
+  document.getElementById(`item-${fileId}`)?.classList.add("active-detail");
   const rightSidebar = document.getElementById("right-sidebar");
-  rightSidebar.classList.remove("hidden-sidebar");
-  const content = document.getElementById("detail-content");
-  content.innerHTML = `
-    <div class="detail-field">
-      <div class="detail-label">ID souboru</div>
-      <div class="detail-static" style="font-size:11px;word-break:break-all">${fileId}</div>
-    </div>
-    <div class="detail-field">
-      <div class="detail-label">Typ</div>
-      <div class="detail-static">${isFolder ? "Složka" : "Soubor"}</div>
-    </div>
-  `;
+  if (selectedItems.size <= 1) rightSidebar.classList.remove("hidden-sidebar");
+  activeDetailTab = "details";
+  document.querySelectorAll(".detail-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("dtab-details")?.classList.add("active");
+  renderDriveDetailContent(fileId, isFolder);
 }
 
 window.openDriveContextMenu = (e, id, name, isFolder) => {
@@ -985,84 +980,96 @@ window.switchDetailTab = (tab) => {
   renderDetailContent();
 };
 
-function renderDetailContent() {
-  if (!selectedDetailId) return;
-  const doc = window.allDocs[selectedDetailId];
-  const folder = allFolders[selectedDetailId];
-  const item = doc || folder;
-  if (!item) return;
-
+function renderDriveDetailContent(fileId, isFolder) {
   const content = document.getElementById("detail-content");
 
+  // Najdi data ze zdrojů
+  const driveFile = window.driveFiles?.[fileId];
+  const driveFolder = window.driveFolders?.[fileId];
+  const item = driveFile || driveFolder;
+
+  // Zkus najít v /repertoar
+  const song = Object.values(window.repertoar || {}).find(s => {
+    if (!s.pdf) return false;
+    const match = s.pdf.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    return match && match[1] === fileId;
+  });
+
   if (activeDetailTab === "details") {
-    const created = doc?.datumNahrani ? new Date(doc.datumNahrani).toLocaleString("cs-CZ") : "—";
+    const nazev = item?.name || "—";
+    const modifiedTime = item?.modifiedTime
+      ? new Date(item.modifiedTime).toLocaleString("cs-CZ")
+      : "—";
+    const size = item?.size ? formatFileSize(item.size) : "—";
+    const parentId = item?.parentId;
+    const parentName = parentId
+      ? (window.driveFolders?.[parentId]?.name || parentId)
+      : "root";
+
     content.innerHTML = `
       <div class="detail-field">
         <div class="detail-label">Název</div>
-        <input class="detail-input" id="detail-name-input" value="${item.nazev || ""}" 
+        <input class="detail-input" id="detail-name-input" value="${nazev.replace(/"/g, '&quot;')}"
                onfocus="showDetailActions('name')" onblur="hideDetailActions('name', event)">
         <div class="detail-actions hidden" id="detail-name-actions">
-          <button class="detail-save-btn" onclick="saveDetailName()">Uložit</button>
+          <button class="detail-save-btn" onclick="saveDriveDetailName('${fileId}')">Uložit</button>
           <button class="detail-cancel-btn" onclick="cancelDetailName()">Zrušit</button>
         </div>
       </div>
+      ${song ? `
       <div class="detail-field">
-        <div class="detail-label">Komentář</div>
-        <textarea class="detail-input" id="detail-comment-input" rows="3"
-                  onfocus="showDetailActions('comment')" onblur="hideDetailActions('comment', event)"
-                  style="resize:none">${item.komentar || ""}</textarea>
-        <div class="detail-actions hidden" id="detail-comment-actions">
-          <button class="detail-save-btn" onclick="saveDetailComment()">Uložit</button>
-          <button class="detail-cancel-btn" onclick="cancelDetailComment()">Zrušit</button>
-        </div>
+        <div class="detail-label">Evidenční číslo</div>
+        <div class="detail-static" style="color:#EE220C;font-weight:600">${song.code || "—"}</div>
       </div>
       <div class="detail-field">
-        <div class="detail-label">Vytvořeno</div>
-        <div class="detail-static">${created}</div>
+        <div class="detail-label">Skladatel</div>
+        <div class="detail-static">${song.author || "—"}</div>
       </div>
       <div class="detail-field">
-        <div class="detail-label">Nahráno kým</div>
-        <div class="detail-static">${doc?.nahralKdo || "—"}</div>
+        <div class="detail-label">Aranžér</div>
+        <div class="detail-static">${song.arranged_by || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Stopáž</div>
+        <div class="detail-static">${song.length || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Stav</div>
+        <div class="detail-static">${song.status || "—"}</div>
+      </div>
+      ` : ""}
+      <div class="detail-field">
+        <div class="detail-label">Naposledy upraveno</div>
+        <div class="detail-static">${modifiedTime}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Velikost</div>
+        <div class="detail-static">${size}</div>
       </div>
       <div class="detail-field">
         <div class="detail-label">Umístění</div>
-        <div class="location-tree">${renderLocationTree(doc?.slozkaId)}</div>
+        <div class="detail-static">${parentName}</div>
       </div>
     `;
   } else {
-    const verze = doc?.verejneVerze || {};
-    const keys = Object.keys(verze).sort((a,b) => b - a);
-    if (keys.length === 0) {
-      content.innerHTML = `<div class="detail-empty"><p>Žádné verze</p></div>`;
-      return;
-    }
-    content.innerHTML = keys.map(k => {
-      const v = verze[k];
-      const initials = (v.nahralKdo || "?").split("@")[0].slice(0,2).toUpperCase();
-      return `
-        <div class="version-card">
-          <div class="version-card-header">
-            <div class="version-avatar">${initials}</div>
-            <div class="version-info">
-              <div class="version-title">Verze ${k}</div>
-              <div class="version-meta">
-                Nahráno: ${v.nahralKdo || "—"}<br>
-                Datum: ${v.datum || "—"}<br>
-                ${v.poznamka ? `Poznámka: ${v.poznamka}` : ""}
-              </div>
-            </div>
-          </div>
-          <div class="version-dots">
-            <button class="dots-btn" onclick="openVersionMenu(event, '${selectedDetailId}', '${k}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-            </button>
-          </div>
-        </div>
-      `;
-    }).join("");
+    // Záložka Verze — zatím jen pro soubory s RTDB verzováním
+    content.innerHTML = `<div class="detail-empty"><p>Verzování bude dostupné brzy</p></div>`;
   }
 }
 
+function renderDetailContent() {
+  if (!selectedDetailId) return;
+  const isFolder = !!window.driveFolders?.[selectedDetailId];
+  renderDriveDetailContent(selectedDetailId, isFolder);
+}
+
+  window.saveDriveDetailName = async (fileId) => {
+    const val = document.getElementById("detail-name-input").value;
+    if (!val) return;
+    // Přejmenuj přes kontextové menu logiku
+    alert("Přejmenování přes Drive API bude implementováno");
+  };  
+  
 function renderLocationTree(slozkaId) {
   if (!slozkaId) return '<div class="location-item current" style="padding-left:0">10space</div>';
   const trail = [];
