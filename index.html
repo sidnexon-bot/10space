@@ -456,15 +456,53 @@ function showApp() {
 
 // DRIVE API
 async function loadDriveFiles(folderId) {
-  const token = await auth.currentUser.getIdToken();
-  const response = await fetch(FUNCTIONS.listDriveFiles, {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ folderId: folderId || null })
-  });
-  const data = await response.json();
-  if (data.error) throw new Error(data.error);
-  return data.files || [];
+  const parentId = folderId || "0B23cZAlYDWOndmtIZU45WWJrbWM";
+  
+  // Čti z RTDB cache místo Drive API
+  const snap = await get(ref(db, "/driveCache/files"));
+  const allFiles = snap.val() || {};
+  
+  // Filtruj podle parentId
+  const files = Object.entries(allFiles)
+    .filter(([id, f]) => f.parentId === parentId)
+    .map(([id, f]) => ({
+      id,
+      name: f.name,
+      mimeType: f.mimeType,
+      size: f.size,
+      modifiedTime: f.modifiedTime,
+      isFolder: false,
+      driveFileId: f.driveFileId
+    }));
+
+  // Přidej složky
+  const foldersSnap = await get(ref(db, "/driveCache/folders"));
+  const allFolders = foldersSnap.val() || {};
+  const folders = Object.entries(allFolders)
+    .filter(([id, f]) => f.parentId === parentId)
+    .map(([id, f]) => ({
+      id,
+      name: f.name,
+      mimeType: "application/vnd.google-apps.folder",
+      modifiedTime: f.modifiedTime,
+      isFolder: true
+    }));
+
+  return [...folders, ...files];
+}
+
+async function loadAllDriveFiles() {
+  const snap = await get(ref(db, "/driveCache/files"));
+  const allFiles = snap.val() || {};
+  return Object.entries(allFiles).map(([id, f]) => ({
+    id,
+    name: f.name,
+    mimeType: f.mimeType,
+    size: f.size,
+    modifiedTime: f.modifiedTime,
+    isFolder: false,
+    driveFileId: f.driveFileId
+  }));
 }
 
 function getMimeTypeCategory(mimeType) {
@@ -563,8 +601,8 @@ function renderTab() {
   }
 
   if (currentTab === "documents") {
-    area.innerHTML = `<div class="empty-state"><div class="spinner"></div><p style="margin-top:16px">Načítám dokumenty z Drive...</p></div>`;
-    loadDriveFiles(null).then(files => {
+    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám dokumenty...</p></div>`;
+    loadAllDriveFiles().then(files => {
       const docs = files.filter(f => getMimeTypeCategory(f.mimeType) === "document");
       docs.sort((a, b) => a.name.localeCompare(b.name, "cs"));
       renderDriveItems(docs);
@@ -586,8 +624,8 @@ function renderTab() {
   }
 
   if (currentTab === "media") {
-    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám multimédia z Drive...</p></div>`;
-    loadDriveFiles(null).then(files => {
+    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám multimédia...</p></div>`;
+    loadAllDriveFiles().then(files => {
       const media = files.filter(f => {
         const cat = getMimeTypeCategory(f.mimeType);
         return cat === "image" || cat === "video" || cat === "audio";
