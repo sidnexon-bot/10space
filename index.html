@@ -259,6 +259,28 @@
       height: 100%;
       object-fit: cover;
     }
+
+    .mobile-profile-menu {
+      position: absolute;
+      top: 48px;
+      right: 16px;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      border: 1px solid #e5e5ea;
+      min-width: 200px;
+      z-index: 500;
+      overflow: hidden;
+      display: none;
+    }
+    .mobile-profile-menu.active { display: block; }
+    .mobile-profile-menu-header { padding: 12px 16px; border-bottom: 1px solid #f2f2f7; }
+    .mobile-profile-menu-name { font-size: 14px; font-weight: 600; }
+    .mobile-profile-menu-email { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+    .mobile-profile-menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; font-size: 15px; cursor: pointer; color: #1c1c1e; }
+    .mobile-profile-menu-item:active { background: #f2f2f7; }
+    .mobile-profile-menu-item.danger { color: #EE220C; }
+    .mobile-profile-menu-sep { height: 1px; background: #f2f2f7; }
   
     /* Search bar pod hlavičkou */
     .search-bar {
@@ -321,9 +343,31 @@
   }
 
     /* BOTTOM SHEET (mobil) */
-    .bottom-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; display: none; }
-    .bottom-sheet-overlay.active { display: block; }
-    .bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; padding: 12px 0 calc(20px + env(safe-area-inset-bottom)); z-index: 1001; transform: translateY(100%); transition: transform 0.3s ease; }
+    .bottom-sheet-overlay { 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(0,0,0,0.4); 
+      z-index: 1000; 
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .bottom-sheet-overlay.active { 
+      display: block; 
+      opacity: 1;
+    }
+    .bottom-sheet { 
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+      background: #fff; 
+      border-radius: 20px 20px 0 0; 
+      padding: 12px 0 calc(20px + env(safe-area-inset-bottom)); 
+      z-index: 1001; 
+      transform: translateY(100%); 
+      transition: transform 0.3s ease;
+    }
     .bottom-sheet.active { transform: translateY(0); }
     .bottom-sheet-handle { width: 36px; height: 4px; background: #e5e5ea; border-radius: 2px; margin: 0 auto 16px; }
     .bottom-sheet-title { font-size: 13px; color: #8e8e93; padding: 0 20px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -359,10 +403,25 @@
     <div>
       <h1>10space</h1>
     </div>
-    <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet()">
+    <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
       <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
       <span id="mobile-avatar-initials"></span>
     </button>
+    <div class="mobile-profile-menu" id="mobile-profile-menu">
+    <div class="mobile-profile-menu-header">
+      <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
+      <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
+    </div>
+    <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Osobní desky
+    </div>
+    <div class="mobile-profile-menu-sep"></div>
+    <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Odhlásit se
+    </div>
+  </div>
     <div class="topbar-right">
       <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
       <span class="user-name" id="user-name"></span>
@@ -1823,12 +1882,19 @@ window.setSearchCategory = (value) => {
 };
 
 // MOBILNÍ PROFIL
-window.openProfileSheet = () => {
-  openBottomSheet(currentUser?.name || currentUser?.email || "Profil", [
-    { label: "Osobní desky", action: "closeBottomSheet()", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
-    { label: "Tmavý režim", action: "closeBottomSheet()", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>` },
-    { label: "Odhlásit se", action: "handleLogout();closeBottomSheet()", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`, danger: true }
-  ]);
+window.openProfileSheet = (e) => {
+  e.stopPropagation();
+  const menu = document.getElementById("mobile-profile-menu");
+  menu.classList.toggle("active");
+  document.getElementById("mob-profile-name").textContent = currentUser?.name || "";
+  document.getElementById("mob-profile-email").textContent = currentUser?.email || "";
+  if (menu.classList.contains("active")) {
+    setTimeout(() => document.addEventListener("click", closeMobileProfileMenu, { once: true }), 0);
+  }
+};
+
+window.closeMobileProfileMenu = () => {
+  document.getElementById("mobile-profile-menu").classList.remove("active");
 };
   
 // UPLOAD
