@@ -519,12 +519,18 @@ async function loadData() {
   allFolders = foldersSnap.val() || {};
 
   // Načti Drive cache do paměti — jednou, pak reaktivně
-  const [driveFoldersSnap, driveFilesSnap] = await Promise.all([
-    get(ref(db, "/driveCache/folders")),
-    get(ref(db, "/driveCache/files"))
-  ]);
-  window.driveFolders = driveFoldersSnap.val() || {};
-  window.driveFiles = driveFilesSnap.val() || {};
+  const foldersSnap = await get(ref(db, "/driveCache/folders"));
+  window.driveFolders = foldersSnap.val() || {};
+  
+  // Reaktivní listener pro soubory
+  const { onValue } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  onValue(ref(db, "/driveCache/files"), (snap) => {
+    window.driveFiles = snap.val() || {};
+    // Obnov aktuální záložku pokud je relevantní
+    if (["documents", "media", "folders"].includes(currentTab)) {
+      renderTab();
+    }
+  });
 
   renderFolderTree();
   switchTab("recent");
