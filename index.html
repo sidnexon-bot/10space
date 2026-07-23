@@ -266,9 +266,6 @@
           Oblíbené
         </button>
       </div>
-
-      <!-- FOLDER TREE (zobrazí se v záložce Složky) -->
-      <div id="sidebar-folder-tree" class="hidden"></div>
     </div>
     </div>
 
@@ -534,14 +531,7 @@ async function loadData() {
     }
   });
 
-  renderFolderTree();
   switchTab("recent");
-}
-
-// FOLDER TREE
-function renderFolderTree() {
-  const tree = document.getElementById("sidebar-folder-tree");
-  tree.innerHTML = buildFolderTree(null, 0);
 }
 
 function buildFolderTree(parentId, depth) {
@@ -607,7 +597,6 @@ function renderTab() {
     area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám složky z Drive...</p></div>`;
     loadDriveFiles(null).then(files => {
       renderDriveFolderContent(null, files);
-      renderDriveSidebarTree(files);
     }).catch(err => {
       area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
     });
@@ -688,17 +677,6 @@ function renderDriveFolderContent(folderId) {
   }).catch(err => {
     area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
   });
-}
-
-function renderDriveSidebarTree(files) {
-  const tree = document.getElementById("sidebar-folder-tree");
-  const folders = files.filter(f => f.isFolder);
-  tree.innerHTML = folders.map(f => `
-    <div class="folder-tree-item" onclick="navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\'")}')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-      ${f.name}
-    </div>
-  `).join("");
 }
 
 // DRIVE NAVIGACE
