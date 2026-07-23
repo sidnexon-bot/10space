@@ -555,9 +555,6 @@ window.switchTab = (tab) => {
   document.querySelectorAll(".sidebar-tab").forEach(t => t.classList.remove("active"));
   document.getElementById(`tab-${tab}`)?.classList.add("active");
 
-  const folderTree = document.getElementById("sidebar-folder-tree");
-  folderTree.classList.toggle("hidden", tab !== "folders");
-
   const titles = {
     recent: "Nedávné", documents: "Dokumenty",
     folders: "Složky", media: "Multimédia",
