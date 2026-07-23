@@ -233,9 +233,13 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
           Nová složka
         </button>
+      <div style="padding: 0 16px 8px;">
+        <button class="upload-btn" onclick="runDriveIndex()" style="background:#f2f2f7;color:#1c1c1e;margin-top:4px;font-size:13px;" id="index-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Synchronizovat Drive
+        </button>
       </div>
       </div>
-
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" onclick="switchTab('recent')" id="tab-recent">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -392,7 +396,8 @@ const FUNCTIONS = {
   getFileUrl: "https://getfileurl-etp6s2ynnq-uc.a.run.app",
   uploadFile: "https://uploadfile-etp6s2ynnq-uc.a.run.app",
   deleteFile: "https://deletefile-etp6s2ynnq-uc.a.run.app",
-  listDriveFiles: "https://listdrivefiles-etp6s2ynnq-uc.a.run.app"
+  listDriveFiles: "https://listdrivefiles-etp6s2ynnq-uc.a.run.app",
+  indexDrive: "https://indexdrive-etp6s2ynnq-uc.a.run.app"
 };
 
 let currentUser = null;
@@ -1429,6 +1434,32 @@ window.skipEvid = () => {
   } else {
     document.getElementById("evid-modal").classList.remove("active");
     processFilesWithEvid(evidResults);
+  }
+};
+
+// DRIVE INDEX
+window.runDriveIndex = async () => {
+  const btn = document.getElementById("index-btn");
+  btn.textContent = "Synchronizuji...";
+  btn.disabled = true;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(FUNCTIONS.indexDrive, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert(`Synchronizace dokončena!\nSložky: ${data.folders}\nSoubory: ${data.files}`);
+    } else {
+      alert("Chyba: " + (data.error || "Neznámá chyba"));
+    }
+  } catch(err) {
+    alert("Chyba: " + err.message);
+  } finally {
+    btn.textContent = "Synchronizovat Drive";
+    btn.disabled = false;
   }
 };
 
