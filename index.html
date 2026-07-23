@@ -640,6 +640,27 @@ function renderTab() {
   }
 }
 
+function getEvidBadge(fileId) {
+  const driveFile = window.driveFiles?.[fileId];
+  if (!driveFile) return "";
+  
+  // Zkus songId z driveCache
+  if (driveFile.songId) {
+    const song = window.repertoar?.[driveFile.songId];
+    if (song?.evidencniCislo) {
+      return `<span style="font-size:11px;font-weight:600;color:#EE220C;background:#fff0ee;padding:2px 6px;border-radius:4px;flex-shrink:0">${song.evidencniCislo}</span>`;
+    }
+  }
+
+  // Fallback — hledej podle driveFileId v /repertoar
+  const song = Object.values(window.repertoar || {}).find(s => s.driveFileId === fileId);
+  if (song?.evidencniCislo) {
+    return `<span style="font-size:11px;font-weight:600;color:#EE220C;background:#fff0ee;padding:2px 6px;border-radius:4px;flex-shrink:0">${song.evidencniCislo}</span>`;
+  }
+
+  return "";
+}
+
 // DRIVE ITEMS RENDER
 function renderDriveItems(files) {
   const area = document.getElementById("content-area");
@@ -654,7 +675,8 @@ function renderDriveItems(files) {
       </div>
       <div class="list-item-name">
         ${getDriveFileIcon(f.mimeType, 18)}
-        <span class="list-item-name-text" onclick="event.stopPropagation();${f.isFolder ? `navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\'")}')` : `openDriveFile('${f.id}')`}">${f.name}</span>
+        <span class="list-item-name-text" onclick="event.stopPropagation();${f.isFolder ? `navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\\\'")}')` : `openDriveFile('${f.id}')`}">${f.name}</span>
+        ${getEvidBadge(f.id)}
       </div>
       <div class="list-item-code"></div>
       <div class="list-item-date">${f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString("cs-CZ") : "—"}</div>
