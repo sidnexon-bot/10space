@@ -209,13 +209,6 @@
     .right-sidebar { display: none; }
     .app-body { flex-direction: column; }
     .main-content { padding-bottom: 90px; }
-    .topbar { padding: 0 12px; }
-    .topbar-left h1 { display: none; }
-    .topbar-left svg { display: none; }
-    .search-bar { width: calc(100% - 52px); max-width: none; }
-    .user-name { display: none; }
-    .logout-btn { display: none; }
-    .search-bar { width: 100%; max-width: 220px; }
     .list-header { grid-template-columns: 32px 1fr 80px 40px; padding: 8px 12px; }
     .list-header > div:nth-child(4),
     .list-header > div:nth-child(5) { display: none; }
@@ -226,6 +219,24 @@
     .content-title { font-size: 17px; }
     .upload-zone { margin: 8px 12px; padding: 24px 16px; }
     .recent-section-title { padding: 12px 12px 6px; }
+
+    /* TOPBAR MOBIL */
+    .topbar { padding: 0 12px; gap: 8px; }
+    .topbar-left h1 { display: none; }
+    .topbar-left svg { display: none; }
+    .topbar-left { flex: 1; }
+    .user-name { display: none; }
+    .logout-btn { display: none; }
+    .user-avatar { width: 34px; height: 34px; border-radius: 50%; display: block; }
+    
+    /* SEARCH MOBIL */
+    .search-bar { width: 100%; max-width: none; flex: 1; }
+    .search-select { display: none; }
+    .search-hamburger { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: none; border: none; cursor: pointer; flex-shrink: 0; border-right: 1px solid #e5e5ea; }
+    .search-input { font-size: 16px; } /* iOS zoom fix — min 16px */
+    
+    /* NAŠEPTÁVAČ MOBIL */
+    .search-results { left: 8px; right: 8px; width: auto; transform: none; top: 56px; }
   
     /* FLOATING PILL */
     .bottom-wrap { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; padding-bottom: calc(12px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 200; }
@@ -254,7 +265,8 @@
   
   @media (min-width: 769px) {
     .bottom-wrap { display: none; }
-  }
+    .search-hamburger { display: none; }
+}
 
   </style>
 </head>
@@ -286,7 +298,10 @@
         <option value="audio">Audio</option>
         <option value="video">Video</option>
       </select>
-      <input class="search-input" id="search-input" type="text" placeholder="Vyhledat na 10space" oninput="handleSearch(this.value)">
+      <button class="search-hamburger" onclick="openSearchFilterSheet()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <input class="search-input" id="search-input" type="text" placeholder="Hledat..." oninput="handleSearch(this.value)">
     </div>
     <div class="topbar-right">
       <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
@@ -1696,6 +1711,29 @@ function openBottomSheet(title, items) {
 window.closeBottomSheet = () => {
   document.getElementById("bs-overlay").classList.remove("active");
   document.getElementById("bottom-sheet").classList.remove("active");
+};
+
+window.openSearchFilterSheet = () => {
+  const current = document.getElementById("search-category").value;
+  const options = [
+    { value: "all", label: "Vše" },
+    { value: "document", label: "Dokumenty" },
+    { value: "folder", label: "Složky" },
+    { value: "image", label: "Obrázky" },
+    { value: "audio", label: "Audio" },
+    { value: "video", label: "Video" }
+  ];
+  openBottomSheet("Filtrovat podle kategorie", options.map(o => ({
+    label: o.label + (o.value === current ? " ✓" : ""),
+    action: `setSearchCategory('${o.value}');closeBottomSheet()`,
+    icon: ""
+  })));
+};
+
+window.setSearchCategory = (value) => {
+  document.getElementById("search-category").value = value;
+  const query = document.getElementById("search-input").value;
+  if (query) handleSearch(query);
 };
   
 // UPLOAD
