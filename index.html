@@ -1048,7 +1048,7 @@ function renderDriveDetailContent(fileId, isFolder) {
       </div>
       <div class="detail-field">
         <div class="detail-label">Umístění</div>
-        <div class="detail-static">${parentName}</div>
+        <div class="location-tree">${renderDriveLocationTree(parentId)}</div>
       </div>
     `;
   } else {
@@ -1069,6 +1069,28 @@ function renderDetailContent() {
     // Přejmenuj přes kontextové menu logiku
     alert("Přejmenování přes Drive API bude implementováno");
   };  
+
+function renderDriveLocationTree(folderId) {
+  const trail = [];
+  let id = folderId;
+  while (id) {
+    const f = window.driveFolders?.[id];
+    if (!f) break;
+    trail.unshift({ id, name: f.name });
+    id = f.parentId;
+  }
+  trail.unshift({ id: null, name: "10men" });
+
+  return trail.map((c, i, arr) =>
+    i < arr.length - 1
+      ? `<div class="location-item" style="padding-left:${i * 12}px" onclick="navigateToDriveFolder('${c.id}', '${(c.name || "").replace(/'/g, "\\'")}')">
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}›</span>${c.name}
+         </div>`
+      : `<div class="location-item current" style="padding-left:${i * 12}px">
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}›</span>${c.name}
+         </div>`
+  ).join("");
+}
   
 function renderLocationTree(slozkaId) {
   if (!slozkaId) return '<div class="location-item current" style="padding-left:0">10space</div>';
