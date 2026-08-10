@@ -27,6 +27,16 @@
     .topbar-left { display: flex; align-items: center; gap: 10px; }
     .topbar-left h1 { font-size: 17px; font-weight: 700; }
     .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-center { flex: 1; display: flex; justify-content: center; padding: 0 16px; max-width: 500px; margin: 0 auto; }
+    .search-bar { width: 100%; }
+    .desktop-profile-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+    .desktop-profile-btn:hover { background: #f2f2f7; }
+    .desktop-profile-menu { position: absolute; top: 44px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border: 1px solid #e5e5ea; min-width: 200px; z-index: 500; overflow: hidden; }
+    .desktop-profile-menu-header { padding: 12px 16px; border-bottom: 1px solid #f2f2f7; }
+    .desktop-profile-menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 14px; cursor: pointer; color: #1c1c1e; }
+    .desktop-profile-menu-item:hover { background: #f2f2f7; }
+    .desktop-profile-menu-item.danger { color: #EE220C; }
+    .desktop-profile-menu-sep { height: 1px; background: #f2f2f7; }
     .user-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
     .user-name { font-size: 13px; color: #6e6e73; }
     .logout-btn { font-size: 13px; color: #6e6e73; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
@@ -219,6 +229,7 @@
       align-items: stretch;
       border-bottom: none;
       gap: 10px;
+      
     }
     .topbar-left {
       display: flex;
@@ -237,6 +248,9 @@
     .topbar-right { display: none; }
     .user-name { display: none; }
     .logout-btn { display: none; }
+
+    .desktop-profile { display: none; }
+    .topbar-center { padding: 0; }
   
     /* Avatar vpravo nahoře */
     .mobile-avatar-btn {
@@ -380,6 +394,7 @@
   @media (min-width: 769px) {
     .bottom-wrap { display: none; }
     .mobile-avatar-btn { display: none; }
+    .mobile-profile-menu { display: none; }
     .search-hamburger { display: none; }
   }
 
@@ -433,50 +448,75 @@
 <!-- APP -->
 <div id="app-screen" class="hidden">
 
-  <!-- TOPBAR -->
- <div class="topbar" id="topbar">
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
   <div class="topbar-left">
-    <div>
-      <h1>10space</h1>
+    <h1>10space</h1>
+  </div>
+
+  <div class="topbar-center">
+    <div class="search-bar">
+      <select class="search-select" id="search-category">
+        <option value="all">Vše</option>
+        <option value="document">Dokumenty</option>
+        <option value="folder">Složky</option>
+        <option value="image">Obrázky</option>
+        <option value="audio">Audio</option>
+        <option value="video">Video</option>
+      </select>
+      <button class="search-hamburger" onclick="openSearchFilterSheet()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <input class="search-input" id="search-input" type="text" placeholder="Hledat..." oninput="handleSearch(this.value)">
     </div>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Desktop profile -->
+    <div class="desktop-profile" style="position:relative">
+      <button class="desktop-profile-btn" onclick="toggleDesktopProfile(event)">
+        <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
+        <span class="user-name" id="user-name"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="desktop-profile-menu hidden" id="desktop-profile-menu">
+        <div class="desktop-profile-menu-header">
+          <div style="font-size:13px;font-weight:600" id="desktop-profile-name"></div>
+          <div style="font-size:12px;color:#8e8e93" id="desktop-profile-email"></div>
+        </div>
+        <div class="desktop-profile-menu-sep"></div>
+        <div class="desktop-profile-menu-item" onclick="closeDesktopProfile()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Osobní desky
+        </div>
+        <div class="desktop-profile-menu-sep"></div>
+        <div class="desktop-profile-menu-item danger" onclick="handleLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Odhlásit se
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobilní avatar -->
     <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
       <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
       <span id="mobile-avatar-initials"></span>
     </button>
     <div class="mobile-profile-menu" id="mobile-profile-menu">
-    <div class="mobile-profile-menu-header">
-      <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
-      <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
+      <div class="mobile-profile-menu-header">
+        <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
+        <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
+      </div>
+      <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Osobní desky
+      </div>
+      <div class="mobile-profile-menu-sep"></div>
+      <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Odhlásit se
+      </div>
     </div>
-    <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Osobní desky
-    </div>
-    <div class="mobile-profile-menu-sep"></div>
-    <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Odhlásit se
-    </div>
-  </div>
-    <div class="topbar-right">
-      <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
-      <span class="user-name" id="user-name"></span>
-      <button class="logout-btn" onclick="handleLogout()">Odhlásit</button>
-    </div>
-  </div>
-  <div class="search-bar">
-    <select class="search-select" id="search-category">
-      <option value="all">Vše</option>
-      <option value="document">Dokumenty</option>
-      <option value="folder">Složky</option>
-      <option value="image">Obrázky</option>
-      <option value="audio">Audio</option>
-      <option value="video">Video</option>
-    </select>
-    <button class="search-hamburger" onclick="openSearchFilterSheet()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <input class="search-input" id="search-input" type="text" placeholder="Hledat..." oninput="handleSearch(this.value)">
   </div>
 </div>
 
@@ -702,6 +742,8 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function showApp() {
+  document.getElementById("desktop-profile-name").textContent = currentUser.name || "";
+  document.getElementById("desktop-profile-email").textContent = currentUser.email || "";
   document.getElementById("body").classList.remove("login-page");
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app-screen").classList.remove("hidden");
@@ -2227,6 +2269,21 @@ window.pdfToggleFullscreen = async () => {
   } else {
     btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
   }
+};
+
+window.toggleDesktopProfile = (e) => {
+  e.stopPropagation();
+  const menu = document.getElementById("desktop-profile-menu");
+  menu.classList.toggle("hidden");
+  document.getElementById("desktop-profile-name").textContent = currentUser?.name || "";
+  document.getElementById("desktop-profile-email").textContent = currentUser?.email || "";
+  if (!menu.classList.contains("hidden")) {
+    setTimeout(() => document.addEventListener("click", closeDesktopProfile, { once: true }), 0);
+  }
+};
+
+window.closeDesktopProfile = () => {
+  document.getElementById("desktop-profile-menu")?.classList.add("hidden");
 };
   
 // UPLOAD
