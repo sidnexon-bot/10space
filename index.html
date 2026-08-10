@@ -2051,18 +2051,26 @@ async function renderAllPages() {
     canvases.push({ canvas, page, viewport, dpr });
   }
 
-  // Krok 2: Scrolluj na začátek HNED po přidání do DOM
-  wrap.scrollTop = 0;
-  pdfCurrentPage = 1;
-  document.getElementById("pdf-current-page").textContent = 1;
-  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
-
+  // Krok 2: Zobraz loading overlay
+  const loadingOverlay = document.createElement("div");
+  loadingOverlay.style.cssText = "position:absolute;inset:0;background:#1c1c1e;display:flex;align-items:center;justify-content:center;z-index:10;";
+  loadingOverlay.innerHTML = `<div style="color:#fff;display:flex;align-items:center;gap:12px"><div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>Načítám stránky...</div>`;
+  wrap.style.position = "relative";
+  wrap.appendChild(loadingOverlay);
+  
   // Krok 3: Renderuj stránky na pozadí
   for (const { canvas, page, viewport, dpr } of canvases) {
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
     await page.render({ canvasContext: ctx, viewport }).promise;
   }
+  
+  // Krok 4: Schovej loading, scrolluj na začátek
+  wrap.scrollTop = 0;
+  pdfCurrentPage = 1;
+  document.getElementById("pdf-current-page").textContent = 1;
+  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
+  loadingOverlay.remove();
 
   wrap.onscroll = () => {
     for (let i = 1; i <= pdfDoc.numPages; i++) {
