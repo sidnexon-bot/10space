@@ -402,12 +402,13 @@
     }
     .pdf-canvas-wrap { 
       flex: 1; 
-      overflow: auto; 
+      overflow-y: auto;
+      overflow-x: auto;
       display: flex; 
       justify-content: center; 
       align-items: flex-start;
-      touch-action: pan-x pan-y;
-      padding: 16px; 
+      padding: 16px;
+      -webkit-overflow-scrolling: touch;
     }
     #pdf-canvas { box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
     
@@ -2010,8 +2011,7 @@ window.openPdfViewer = async (driveFileId, title) => {
     // Obnov canvas
     document.getElementById("pdf-canvas-wrap").innerHTML = `<canvas id="pdf-canvas" style="box-shadow:0 4px 24px rgba(0,0,0,0.4)"></canvas>`;
 
-    // Swipe stránek
-  let touchStartY = 0;
+  // Scroll mezi stránkami
   document.addEventListener("touchstart", (e) => {
     if (document.getElementById("pdf-overlay")?.classList.contains("hidden")) return;
     if (e.touches.length === 1) touchStartY = e.touches[0].clientY;
@@ -2020,18 +2020,28 @@ window.openPdfViewer = async (driveFileId, title) => {
   document.addEventListener("touchend", async (e) => {
     if (document.getElementById("pdf-overlay")?.classList.contains("hidden")) return;
     if (isPinching) return;
+    const wrap = document.getElementById("pdf-canvas-wrap");
+    if (!wrap) return;
+    
     const diff = touchStartY - e.changedTouches[0].clientY;
-    if (Math.abs(diff) > 80) {
-      if (diff > 0) await pdfNextPage();
-      else await pdfPrevPage();
+    const atBottom = wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
+    const atTop = wrap.scrollTop <= 10;
+    
+    // Přejdi na další stránku jen když jsme na konci/začátku
+    if (diff > 80 && atBottom) {
+      await pdfNextPage();
+      wrap.scrollTop = 0;
+    } else if (diff < -80 && atTop) {
+      await pdfPrevPage();
+      wrap.scrollTop = wrap.scrollHeight;
     }
   }, { passive: true });
-
-    await pdfFitWidth();
-  } catch(err) {
-    document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
-  }
-};
+  
+      await pdfFitWidth();
+    } catch(err) {
+      document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
+    }
+  };
 
 async function pdfRenderPage(pageNum) {
   if (!pdfDoc) return;
