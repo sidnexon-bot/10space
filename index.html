@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <title>10space</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -982,10 +983,15 @@ window.handleDriveItemClick = (e, id, isFolder) => {
 };
 
 window.handleDriveNameClick = (id, mimeType, isFolder) => {
-  if (isFolder) return; // složka se otevře přes navigateToDriveFolder
-  openDriveFile(id);
+  if (isFolder) return;
+  if (mimeType === "application/pdf") {
+    const file = window.driveFiles?.[id];
+    openPdfViewer(id, file?.name || "Dokument");
+  } else {
+    openDriveFile(id);
+  }
 };
-
+  
 window.openDriveFile = async (fileId) => {
   showSpinner();
   try {
@@ -1955,6 +1961,99 @@ window.closeMobileProfileMenu = () => {
     sheet.style.transition = "transform 0.3s ease";
   });
 })();
+
+// PDF VIEWER
+let pdfDoc = null;
+let pdfCurrentPage = 1;
+let pdfScale = 1.0;
+let pdfCurrentFileId = null;
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+window.openPdfViewer = async (driveFileId, title) => {
+  pdfCurrentFileId = driveFileId;
+  document.getElementById("pdf-title").textContent = title || "Dokument";
+  document.getElementById("pdf-overlay").classList.remove("hidden");
+  document.getElementById("pdf-canvas-wrap").innerHTML = `
+    <div style="color:#fff;display:flex;align-items:center;gap:12px;margin:auto">
+      <div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>
+      Načítám PDF...
+    </div>`;
+
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const url = `${FUNCTIONS.getFileStream}?driveFileId=${driveFileId}`;
+
+    const loadingTask = pdfjsLib.getDocument({
+      url,
+      httpHeaders: { "Authorization": `Bearer ${token}` }
+    });
+
+    pdfDoc = await loadingTask.promise;
+    pdfCurrentPage = 1;
+    pdfScale = 1.0;
+
+    document.getElementById("pdf-total-pages").textContent = pdfDoc.numPages;
+
+    // Obnov canvas
+    document.getElementById("pdf-canvas-wrap").innerHTML = `<canvas id="pdf-canvas" style="box-shadow:0 4px 24px rgba(0,0,0,0.4)"></canvas>`;
+
+    await pdfRenderPage(pdfCurrentPage);
+    pdfFitWidth();
+  } catch(err) {
+    document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
+  }
+};
+
+async function pdfRenderPage(pageNum) {
+  if (!pdfDoc) return;
+  const page = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale: pdfScale });
+  const canvas = document.getElementById("pdf-canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  document.getElementById("pdf-current-page").textContent = pageNum;
+  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
+}
+
+window.pdfPrevPage = async () => {
+  if (!pdfDoc || pdfCurrentPage <= 1) return;
+  pdfCurrentPage--;
+  await pdfRenderPage(pdfCurrentPage);
+};
+
+window.pdfNextPage = async () => {
+  if (!pdfDoc || pdfCurrentPage >= pdfDoc.numPages) return;
+  pdfCurrentPage++;
+  await pdfRenderPage(pdfCurrentPage);
+};
+
+window.pdfZoomIn = async () => {
+  pdfScale = Math.min(pdfScale + 0.25, 3.0);
+  await pdfRenderPage(pdfCurrentPage);
+};
+
+window.pdfZoomOut = async () => {
+  pdfScale = Math.max(pdfScale - 0.25, 0.5);
+  await pdfRenderPage(pdfCurrentPage);
+};
+
+window.pdfFitWidth = async () => {
+  if (!pdfDoc) return;
+  const page = await pdfDoc.getPage(pdfCurrentPage);
+  const viewport = page.getViewport({ scale: 1.0 });
+  const wrap = document.getElementById("pdf-canvas-wrap");
+  pdfScale = (wrap.clientWidth - 32) / viewport.width;
+  await pdfRenderPage(pdfCurrentPage);
+};
+
+window.closePdfViewer = () => {
+  document.getElementById("pdf-overlay").classList.add("hidden");
+  pdfDoc = null;
+  pdfCurrentFileId = null;
+};
   
 // UPLOAD
 window.openUpload = () => {
