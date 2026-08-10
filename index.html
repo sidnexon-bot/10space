@@ -1993,116 +1993,118 @@ window.openPdfViewer = async (driveFileId, title) => {
       <div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>
       Načítám PDF...
     </div>`;
-
   try {
     const token = await auth.currentUser.getIdToken();
     const url = `${FUNCTIONS.getFileStream}?driveFileId=${driveFileId}`;
-
     const loadingTask = pdfjsLib.getDocument({
       url,
       httpHeaders: { "Authorization": `Bearer ${token}` }
     });
-
     pdfDoc = await loadingTask.promise;
     pdfCurrentPage = 1;
     pdfScale = 1.0;
-
     document.getElementById("pdf-total-pages").textContent = pdfDoc.numPages;
-
-    // Obnov canvas
-    document.getElementById("pdf-canvas-wrap").innerHTML = `<canvas id="pdf-canvas" style="box-shadow:0 4px 24px rgba(0,0,0,0.4)"></canvas>`;
-
-  // Scroll mezi stránkami
-  document.addEventListener("touchstart", (e) => {
-    if (document.getElementById("pdf-overlay")?.classList.contains("hidden")) return;
-    if (e.touches.length === 1) touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-  
-  document.addEventListener("touchend", async (e) => {
-    if (document.getElementById("pdf-overlay")?.classList.contains("hidden")) return;
-    if (isPinching) return;
-    const wrap = document.getElementById("pdf-canvas-wrap");
-    if (!wrap) return;
-    
-    const diff = touchStartY - e.changedTouches[0].clientY;
-    const atBottom = wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
-    const atTop = wrap.scrollTop <= 10;
-    
-    // Přejdi na další stránku jen když jsme na konci/začátku
-    if (diff > 80 && atBottom) {
-      await pdfNextPage();
-      wrap.scrollTop = 0;
-    } else if (diff < -80 && atTop) {
-      await pdfPrevPage();
-      wrap.scrollTop = wrap.scrollHeight;
-    }
-  }, { passive: true });
-  
-      await pdfFitWidth();
-    } catch(err) {
-      document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
-    }
-  };
+    document.getElementById("pdf-canvas-wrap").innerHTML = "";
+    await pdfFitWidth();
+  } catch(err) {
+    document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
+  }
+};
 
 async function pdfRenderPage(pageNum) {
-  if (!pdfDoc) return;
-  const page = await pdfDoc.getPage(pageNum);
-  const viewport = page.getViewport({ scale: pdfScale });
-  const canvas = document.getElementById("pdf-canvas");
-  canvas.onclick = () => {
-    if (document.getElementById("pdf-overlay").classList.contains("pdf-fullscreen")) {
-      pdfToggleFullscreen();
-    }
-  };
-  
-  const ctx = canvas.getContext("2d");
-  
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = viewport.width * dpr;
-  canvas.height = viewport.height * dpr;
-  canvas.style.width = viewport.width + "px";
-  canvas.style.height = viewport.height + "px";
-  
-  ctx.scale(dpr, dpr);
-  
-  await page.render({ canvasContext: ctx, viewport }).promise;
   document.getElementById("pdf-current-page").textContent = pageNum;
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
+  const pageEl = document.getElementById(`pdf-page-${pageNum}`);
+  if (pageEl) pageEl.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function renderAllPages() {
+  if (!pdfDoc) return;
+  const wrap = document.getElementById("pdf-canvas-wrap");
+  wrap.innerHTML = "";
+  wrap.style.flexDirection = "column";
+  wrap.style.alignItems = "center";
+
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i);
+    const viewport = page.getViewport({ scale: pdfScale });
+
+    const pageWrap = document.createElement("div");
+    pageWrap.id = `pdf-page-${i}`;
+    pageWrap.style.cssText = "margin-bottom:12px;flex-shrink:0;";
+
+    const canvas = document.createElement("canvas");
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = viewport.width * dpr;
+    canvas.height = viewport.height * dpr;
+    canvas.style.width = viewport.width + "px";
+    canvas.style.height = viewport.height + "px";
+    canvas.style.boxShadow = "0 4px 24px rgba(0,0,0,0.4)";
+    canvas.style.display = "block";
+    canvas.onclick = () => {
+      if (document.getElementById("pdf-overlay").classList.contains("pdf-fullscreen")) {
+        pdfToggleFullscreen();
+      }
+    };
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    pageWrap.appendChild(canvas);
+    wrap.appendChild(pageWrap);
+  }
+
+  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
+
+  wrap.onscroll = () => {
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const el = document.getElementById(`pdf-page-${i}`);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
+        document.getElementById("pdf-current-page").textContent = i;
+        pdfCurrentPage = i;
+        break;
+      }
+    }
+  };
 }
 
 window.pdfPrevPage = async () => {
   if (!pdfDoc || pdfCurrentPage <= 1) return;
   pdfCurrentPage--;
-  await pdfRenderPage(pdfCurrentPage);
+  const el = document.getElementById(`pdf-page-${pdfCurrentPage}`);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("pdf-current-page").textContent = pdfCurrentPage;
 };
 
 window.pdfNextPage = async () => {
   if (!pdfDoc || pdfCurrentPage >= pdfDoc.numPages) return;
   pdfCurrentPage++;
-  await pdfRenderPage(pdfCurrentPage);
+  const el = document.getElementById(`pdf-page-${pdfCurrentPage}`);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("pdf-current-page").textContent = pdfCurrentPage;
 };
 
 window.pdfZoomIn = async () => {
   pdfScale = Math.min(pdfScale + 0.25, 3.0);
-  await pdfRenderPage(pdfCurrentPage);
+  await renderAllPages();
 };
 
 window.pdfZoomOut = async () => {
   pdfScale = Math.max(pdfScale - 0.25, 0.5);
-  await pdfRenderPage(pdfCurrentPage);
+  await renderAllPages();
 };
 
 window.pdfFitWidth = async () => {
   if (!pdfDoc) return;
-  const page = await pdfDoc.getPage(pdfCurrentPage);
+  const page = await pdfDoc.getPage(1);
   const viewport = page.getViewport({ scale: 1.0 });
   const wrap = document.getElementById("pdf-canvas-wrap");
   const availableWidth = wrap.clientWidth - 48;
-  const availableHeight = wrap.clientHeight - 48;
-  const scaleW = availableWidth / viewport.width;
-  const scaleH = availableHeight / viewport.height;
-  pdfScale = Math.min(scaleW, scaleH);
-  await pdfRenderPage(pdfCurrentPage);
+  pdfScale = availableWidth / viewport.width;
+  await renderAllPages();
 };
 
 window.closePdfViewer = () => {
@@ -2116,13 +2118,10 @@ window.closePdfViewer = () => {
   let lastTouchDist = 0;
   let lastScale = 1;
   let isPinching = false;
+  let touchStartY = 0;
 
-  const wrap = () => document.getElementById("pdf-canvas-wrap");
-
-  // Pinch to zoom
   document.addEventListener("touchstart", (e) => {
-    if (!document.getElementById("pdf-overlay") || 
-        document.getElementById("pdf-overlay").classList.contains("hidden")) return;
+    if (document.getElementById("pdf-overlay")?.classList.contains("hidden")) return;
     if (e.touches.length === 2) {
       isPinching = true;
       lastTouchDist = Math.hypot(
@@ -2130,6 +2129,8 @@ window.closePdfViewer = () => {
         e.touches[0].clientY - e.touches[1].clientY
       );
       lastScale = pdfScale;
+    } else if (e.touches.length === 1) {
+      touchStartY = e.touches[0].clientY;
     }
   }, { passive: true });
 
@@ -2145,10 +2146,24 @@ window.closePdfViewer = () => {
   }, { passive: true });
 
   document.addEventListener("touchend", async (e) => {
-    if (!isPinching) return;
-    if (e.touches.length < 2) {
+    if (document.getElementById("pdf-overlay")?.classList.contains("hidden")) return;
+    if (isPinching && e.touches.length < 2) {
       isPinching = false;
-      await pdfRenderPage(pdfCurrentPage);
+      await renderAllPages();
+      return;
+    }
+    if (isPinching) return;
+    const wrap = document.getElementById("pdf-canvas-wrap");
+    if (!wrap) return;
+    const diff = touchStartY - e.changedTouches[0].clientY;
+    const atBottom = wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
+    const atTop = wrap.scrollTop <= 10;
+    if (diff > 80 && atBottom) {
+      await pdfNextPage();
+      wrap.scrollTop = 0;
+    } else if (diff < -80 && atTop) {
+      await pdfPrevPage();
+      wrap.scrollTop = wrap.scrollHeight;
     }
   }, { passive: true });
 })();
@@ -2157,7 +2172,6 @@ window.pdfToggleFullscreen = () => {
   const overlay = document.getElementById("pdf-overlay");
   const toolbar = document.querySelector(".pdf-toolbar");
   const isFullscreen = overlay.classList.contains("pdf-fullscreen");
-  
   if (isFullscreen) {
     overlay.classList.remove("pdf-fullscreen");
     toolbar.style.display = "";
