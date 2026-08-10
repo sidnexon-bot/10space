@@ -2044,21 +2044,26 @@ async function renderAllPages() {
         pdfToggleFullscreen();
       }
     };
-    const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
-    await page.render({ canvasContext: ctx, viewport }).promise;
     pageWrap.appendChild(canvas);
     wrap.appendChild(pageWrap);
-  }
+  
+  // Renderuj až po přidání do DOM
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  
+  // Dej prohlížeči čas na zpracování
+  await new Promise(resolve => setTimeout(resolve, 0));
+}
 
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
 
   // Scrolluj na začátek až po vykreslení všech stránek
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       wrap.scrollTop = 0;
-    });
-  });
+      pdfCurrentPage = 1;
+      document.getElementById("pdf-current-page").textContent = 1;
+    }, 100);
 
   wrap.onscroll = () => {
     for (let i = 1; i <= pdfDoc.numPages; i++) {
