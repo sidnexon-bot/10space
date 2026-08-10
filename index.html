@@ -2025,6 +2025,8 @@ async function renderAllPages() {
   wrap.style.flexDirection = "column";
   wrap.style.alignItems = "center";
 
+  // Krok 1: Přidej všechny prázdné stránky najednou
+  const canvases = [];
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     const page = await pdfDoc.getPage(i);
     const viewport = page.getViewport({ scale: pdfScale });
@@ -2046,24 +2048,21 @@ async function renderAllPages() {
     };
     pageWrap.appendChild(canvas);
     wrap.appendChild(pageWrap);
-  
-  // Renderuj až po přidání do DOM
-  const ctx = canvas.getContext("2d");
-  ctx.scale(dpr, dpr);
-  await page.render({ canvasContext: ctx, viewport }).promise;
-  
-  // Dej prohlížeči čas na zpracování
-  await new Promise(resolve => setTimeout(resolve, 0));
-}
+    canvases.push({ canvas, page, viewport, dpr });
+  }
 
+  // Krok 2: Scrolluj na začátek HNED po přidání do DOM
+  wrap.scrollTop = 0;
+  pdfCurrentPage = 1;
+  document.getElementById("pdf-current-page").textContent = 1;
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
 
-  // Scrolluj na začátek až po vykreslení všech stránek
-    setTimeout(() => {
-      wrap.scrollTop = 0;
-      pdfCurrentPage = 1;
-      document.getElementById("pdf-current-page").textContent = 1;
-    }, 100);
+  // Krok 3: Renderuj stránky na pozadí
+  for (const { canvas, page, viewport, dpr } of canvases) {
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+  }
 
   wrap.onscroll = () => {
     for (let i = 1; i <= pdfDoc.numPages; i++) {
