@@ -2107,9 +2107,15 @@ window.pdfFitWidth = async () => {
   const page = await pdfDoc.getPage(1);
   const viewport = page.getViewport({ scale: 1.0 });
   const wrap = document.getElementById("pdf-canvas-wrap");
-  const availableWidth = wrap.clientWidth - 48;
-  pdfScale = availableWidth / viewport.width;
+  const availableWidth = wrap.clientWidth - 32;
+  const availableHeight = wrap.clientHeight - 32;
+  const scaleW = availableWidth / viewport.width;
+  const scaleH = availableHeight / viewport.height;
+  pdfScale = Math.min(scaleW, scaleH);
   await renderAllPages();
+  wrap.scrollTop = 0;
+  pdfCurrentPage = 1;
+  document.getElementById("pdf-current-page").textContent = 1;
 };
 
 window.closePdfViewer = () => {
