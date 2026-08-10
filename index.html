@@ -2053,6 +2053,11 @@ async function renderAllPages() {
 
     pageWrap.appendChild(canvas);
     wrap.appendChild(pageWrap);
+
+    // Po vykreslení vždy scrolluj na začátek
+    wrap.scrollTop = 0;
+    pdfCurrentPage = 1;
+    document.getElementById("pdf-current-page").textContent = 1;
   }
 
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
