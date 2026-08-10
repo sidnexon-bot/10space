@@ -2005,6 +2005,21 @@ window.openPdfViewer = async (driveFileId, title) => {
     // Obnov canvas
     document.getElementById("pdf-canvas-wrap").innerHTML = `<canvas id="pdf-canvas" style="box-shadow:0 4px 24px rgba(0,0,0,0.4)"></canvas>`;
 
+    // Swipe mezi stránkami (vertikální swipe na mobilu)
+    let touchStartY = 0;
+    const canvasWrap = document.getElementById("pdf-canvas-wrap");
+    canvasWrap.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    canvasWrap.addEventListener("touchend", async (e) => {
+      if (isPinching) return;
+      const diff = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(diff) > 60) {
+        if (diff > 0) await pdfNextPage();
+        else await pdfPrevPage();
+      }
+    }, { passive: true });
+
     await pdfFitWidth();
   } catch(err) {
     document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
@@ -2070,6 +2085,59 @@ window.closePdfViewer = () => {
   document.getElementById("pdf-overlay").classList.add("hidden");
   pdfDoc = null;
   pdfCurrentFileId = null;
+};
+
+// PDF TOUCH GESTY
+(function() {
+  let lastTouchDist = 0;
+  let lastScale = 1;
+  let isPinching = false;
+
+  const wrap = () => document.getElementById("pdf-canvas-wrap");
+
+  // Pinch to zoom
+  document.addEventListener("touchstart", (e) => {
+    if (!document.getElementById("pdf-overlay") || 
+        document.getElementById("pdf-overlay").classList.contains("hidden")) return;
+    if (e.touches.length === 2) {
+      isPinching = true;
+      lastTouchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      lastScale = pdfScale;
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!isPinching || e.touches.length !== 2) return;
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const ratio = dist / lastTouchDist;
+    pdfScale = Math.min(Math.max(lastScale * ratio, 0.5), 4.0);
+    document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
+  }, { passive: true });
+
+  document.addEventListener("touchend", async (e) => {
+    if (!isPinching) return;
+    if (e.touches.length < 2) {
+      isPinching = false;
+      await pdfRenderPage(pdfCurrentPage);
+    }
+  }, { passive: true });
+})();
+
+window.pdfToggleFullscreen = () => {
+  const overlay = document.getElementById("pdf-overlay");
+  if (!document.fullscreenElement) {
+    overlay.requestFullscreen?.() || overlay.webkitRequestFullscreen?.();
+    document.getElementById("pdf-fullscreen-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="21" y2="3"/><line x1="3" y1="21" x2="14" y2="10"/></svg>`;
+  } else {
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+    document.getElementById("pdf-fullscreen-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+  }
 };
   
 // UPLOAD
@@ -2292,6 +2360,9 @@ async function processFilesWithEvid(fileResults) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
         </button>
         <button class="pdf-btn" onclick="pdfFitWidth()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+        <button class="pdf-btn" onclick="pdfToggleFullscreen()" id="pdf-fullscreen-btn" title="Celá obrazovka">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
         </button>
       </div>
