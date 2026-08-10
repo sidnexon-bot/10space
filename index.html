@@ -2111,9 +2111,6 @@ window.pdfFitWidth = async () => {
   const scaleH = availableHeight / viewport.height;
   pdfScale = Math.min(scaleW, scaleH);
   await renderAllPages();
-  wrap.scrollTop = 0;
-  pdfCurrentPage = 1;
-  document.getElementById("pdf-current-page").textContent = 1;
 };
 
 window.closePdfViewer = () => {
