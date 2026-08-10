@@ -2034,7 +2034,7 @@ async function renderAllPages() {
     const viewport = page.getViewport({ scale: pdfScale });
     const pageWrap = document.createElement("div");
     pageWrap.id = `pdf-page-${i}`;
-    pageWrap.style.cssText = "margin-bottom:12px;flex-shrink:0;";
+    pageWrap.style.cssText = "margin-bottom:12px;flex-shrink:0;display:flex;justify-content:center;align-items:flex-start;width:100%;";
     const canvas = document.createElement("canvas");
     const dpr = window.devicePixelRatio || 1;
     canvas.width = viewport.width * dpr;
