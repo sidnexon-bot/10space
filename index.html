@@ -2045,7 +2045,11 @@ window.pdfFitWidth = async () => {
   const page = await pdfDoc.getPage(pdfCurrentPage);
   const viewport = page.getViewport({ scale: 1.0 });
   const wrap = document.getElementById("pdf-canvas-wrap");
-  pdfScale = (wrap.clientWidth - 32) / viewport.width;
+  const availableWidth = wrap.clientWidth - 48;
+  const availableHeight = wrap.clientHeight - 48;
+  const scaleW = availableWidth / viewport.width;
+  const scaleH = availableHeight / viewport.height;
+  pdfScale = Math.min(scaleW, scaleH);
   await pdfRenderPage(pdfCurrentPage);
 };
 
