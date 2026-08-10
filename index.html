@@ -997,6 +997,7 @@ function renderDriveFolderContent(folderId) {
   }).catch(err => {
     area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
   });
+  }
 
 // DRIVE NAVIGACE
 let driveBreadcrumb = []; // [{id, name}]
