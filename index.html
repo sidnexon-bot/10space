@@ -954,6 +954,14 @@ function renderDriveItems(files) {
     area.innerHTML = `<div class="empty-state"><p>Žádné položky</p></div>`;
     return;
   }
+
+  // Řaď abecedně — složky nahoře, pak soubory
+  files.sort((a, b) => {
+    if (a.isFolder && !b.isFolder) return -1;
+    if (!a.isFolder && b.isFolder) return 1;
+    return (a.name || "").localeCompare(b.name || "", "cs");
+  });
+    
   area.innerHTML = files.map(f => `
     <div class="list-item" id="item-${f.id}" onclick="handleDriveItemClick(event, '${f.id}', ${f.isFolder})">
       <div class="list-item-checkbox" onclick="event.stopPropagation()">
@@ -980,13 +988,15 @@ function renderDriveFolderContent(folderId) {
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
   
   loadDriveFiles(folderId).then(driveFiles => {
-    const folders = driveFiles.filter(f => f.isFolder);
-    const docs = driveFiles.filter(f => !f.isFolder);
-    renderDriveItems([...folders, ...docs]);
+    const sorted = driveFiles.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return (a.name || "").localeCompare(b.name || "", "cs");
+    });
+    renderDriveItems(sorted);
   }).catch(err => {
     area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
   });
-}
 
 // DRIVE NAVIGACE
 let driveBreadcrumb = []; // [{id, name}]
