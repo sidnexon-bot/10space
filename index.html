@@ -404,13 +404,12 @@
       flex: 1; 
       overflow-y: auto;
       overflow-x: auto;
-      display: flex; 
-      justify-content: center; 
-      align-items: flex-start;
       padding: 16px;
       touch-action: pan-x pan-y;
       -webkit-overflow-scrolling: touch;
+      display: block;
     }
+    
     #pdf-canvas { box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
     
     @media (max-width: 768px) {
@@ -2024,6 +2023,8 @@ async function renderAllPages() {
   wrap.innerHTML = "";
   wrap.style.flexDirection = "column";
   wrap.style.alignItems = "center";
+  wrap.style.justifyContent = "flex-start";
+  wrap.style.display = "block";
 
   // Krok 1: Přidej všechny prázdné stránky najednou
   const canvases = [];
