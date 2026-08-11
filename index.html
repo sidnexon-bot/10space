@@ -578,9 +578,67 @@
         padding: 16px;
       }
 
+    /* SPLASH SCREEN */
+    .splash {
+      position: fixed;
+      inset: 0;
+      background: #f2f2f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+    .splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .splash-logo {
+      font-size: 42px;
+      font-weight: 700;
+      color: #1c1c1e;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: splashIn 0.5s ease 0.2s forwards;
+    }
+    .splash-logo span {
+      color: #EE220C;
+    }
+    @keyframes splashIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* SKELETON */
+    .skeleton {
+      background: linear-gradient(90deg, #e5e5ea 25%, #f2f2f7 50%, #e5e5ea 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      border-bottom: 1px solid #f2f2f7;
+    }
+    .skeleton-icon { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; }
+    .skeleton-text { height: 14px; flex: 1; max-width: 60%; }
+    .skeleton-text-short { height: 14px; width: 80px; }
+
   </style>
 </head>
 <body class="login-page" id="body">
+
+<!-- SPLASH SCREEN -->
+<div class="splash" id="splash">
+  <div class="splash-logo">10<span>space</span></div>
+</div>
 
 <!-- LOGIN -->
 <div class="login-card" id="login-screen">
@@ -855,6 +913,13 @@ let contextItemId = null;
 let activeDetailTab = "details";
 let selectedDetailId = null;
 
+// SPLASH
+function hideSplash() {
+  const splash = document.getElementById("splash");
+  splash.classList.add("hidden");
+  setTimeout(() => splash.remove(), 400);
+}
+
 // AUTH
 window.handleGoogleLogin = async () => {
   try {
@@ -890,14 +955,12 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function showApp() {
-  document.getElementById("desktop-profile-name").textContent = currentUser.name || "";
-  document.getElementById("desktop-profile-email").textContent = currentUser.email || "";
   document.getElementById("body").classList.remove("login-page");
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app-screen").classList.remove("hidden");
   document.getElementById("user-name").textContent = currentUser.name || currentUser.email;
   if (currentUser.photoURL) document.getElementById("user-avatar").src = currentUser.photoURL;
-  loadData();
+  
   // Mobilní avatar
   const mobileAvatarImg = document.getElementById("mobile-avatar-img");
   const mobileAvatarInitials = document.getElementById("mobile-avatar-initials");
@@ -909,6 +972,22 @@ function showApp() {
     const name = currentUser.name || currentUser.email || "?";
     mobileAvatarInitials.textContent = name.slice(0, 2).toUpperCase();
   }
+  document.getElementById("desktop-profile-name").textContent = currentUser.name || "";
+  document.getElementById("desktop-profile-email").textContent = currentUser.email || "";
+
+  // Zobraz skeleton
+  const area = document.getElementById("content-area");
+  area.innerHTML = Array(8).fill(0).map(() => `
+    <div class="skeleton-row">
+      <div class="skeleton skeleton-icon"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text-short"></div>
+    </div>
+  `).join("");
+
+  // Skryj splash a načti data
+  setTimeout(hideSplash, 600);
+  loadData();
 }
 
 // DRIVE API
