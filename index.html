@@ -2333,6 +2333,7 @@ async function renderProjekty() {
         <div class="projekt-card-footer">
           <button class="projekt-card-btn primary" onclick="event.stopPropagation();otevritProjekt('${p.id}')">Otevřít projekt</button>
           ${p.driveFolderId ? `<button class="projekt-card-btn" onclick="event.stopPropagation();navigateToDriveFolder('${p.driveFolderId}', '${(p.nazev || "").replace(/'/g, "\\'")}');switchTab('folders')">Drive složka</button>` : ""}
+          ${currentUser?.role === "ADMIN" ? `<button class="projekt-card-btn" style="color:#EE220C;border-color:#EE220C" onclick="event.stopPropagation();smazatProjekt('${p.id}')">Smazat</button>` : ""}        
         </div>
       </div>
     `;
@@ -3003,6 +3004,12 @@ window.deleteDriveItem = async (fileId) => {
     alert("Chyba: " + data.error);
   }
 };
+
+window.smazatProjekt = async (projektId) => {
+  if (!confirm("Smazat tento projekt? Složky na Drive zůstanou.")) return;
+  await set(ref(db, `/projekty/${projektId}`), null);
+  renderProjekty();
+};  
   
 // UPLOAD
 window.openUpload = () => {
