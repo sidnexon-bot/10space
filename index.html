@@ -341,23 +341,7 @@
   
     /* Zbytek */
     .left-sidebar { display: none; }
-    .right-sidebar {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      z-index: 500;
-      transform: translateY(100%);
-      transition: transform 0.3s ease;
-      box-shadow: none;
-    }
-    .right-sidebar:not(.hidden-sidebar) {
-      transform: translateY(0);
-    }
-    .right-sidebar.hidden-sidebar {
-      width: 100%;
-      border: none;
-      transform: translateY(100%);
-    }
+    .right-sidebar { display: none !important; }
     .detail-close-btn { display: flex; }
     .app-body { flex-direction: column; }
     .main-content { padding-bottom: 100px; }
@@ -489,6 +473,79 @@
       }
        .detail-close-btn { display: flex; }
     }
+
+  /* MOBILNÍ DETAIL MODAL */
+      .mobile-detail-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 2000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .mobile-detail-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .mobile-detail-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.95);
+        width: calc(100% - 32px);
+        max-height: 80vh;
+        background: #fff;
+        border-radius: 16px;
+        z-index: 2001;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .mobile-detail-modal.active {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        pointer-events: all;
+      }
+      .mobile-detail-modal-tabs {
+        display: flex;
+        border-bottom: 1px solid #e5e5ea;
+        flex-shrink: 0;
+        padding: 0 4px;
+      }
+      .mobile-detail-modal-tab {
+        flex: 1;
+        padding: 14px;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: center;
+        cursor: pointer;
+        color: #6e6e73;
+        border: none;
+        background: none;
+        border-bottom: 2px solid transparent;
+      }
+      .mobile-detail-modal-tab.active {
+        color: #EE220C;
+        border-bottom-color: #EE220C;
+      }
+      .mobile-detail-modal-close {
+        padding: 14px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #8e8e93;
+        display: flex;
+        align-items: center;
+      }
+      .mobile-detail-modal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
 
   </style>
 </head>
@@ -1106,6 +1163,17 @@ window.navigateToDriveFolderById = (id) => {
 // DRIVE KLIKNUTÍ
 window.handleDriveItemClick = (e, id, isFolder) => {
   if (e.target.type === "checkbox") return;
+  if (window.innerWidth <= 768) {
+    // Na mobilu klik kamkoli otevře soubor/složku
+    if (isFolder) {
+      const folder = window.driveFolders?.[id];
+      navigateToDriveFolder(id, folder?.name || "");
+    } else {
+      handleDriveNameClick(id, window.driveFiles?.[id]?.mimeType || "", false);
+    }
+    return;
+  }
+  // Desktop/tablet — zobraz detail sidebar
   showDriveDetail(id, isFolder);
 };
 
@@ -2374,6 +2442,99 @@ window.openMobileDetail = (fileId) => {
   document.getElementById("dtab-details")?.classList.add("active");
   renderDriveDetailContent(fileId, isFolder);
 };
+
+// MOBILNÍ DETAIL MODAL
+let mobileDetailTab = "details";
+
+window.openMobileDetail = (fileId) => {
+  const isFolder = !!window.driveFolders?.[fileId];
+  selectedDetailId = fileId;
+  mobileDetailTab = "details";
+  
+  document.querySelectorAll(".mobile-detail-modal-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("mob-dtab-details")?.classList.add("active");
+  
+  renderMobileDetailContent(fileId, isFolder);
+  
+  document.getElementById("mobile-detail-overlay").classList.add("active");
+  document.getElementById("mobile-detail-modal").classList.add("active");
+};
+
+window.closeMobileDetailModal = () => {
+  document.getElementById("mobile-detail-overlay").classList.remove("active");
+  document.getElementById("mobile-detail-modal").classList.remove("active");
+};
+
+window.switchMobileDetailTab = (tab) => {
+  mobileDetailTab = tab;
+  document.querySelectorAll(".mobile-detail-modal-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById(`mob-dtab-${tab}`)?.classList.add("active");
+  renderMobileDetailContent(selectedDetailId, !!window.driveFolders?.[selectedDetailId]);
+};
+
+function renderMobileDetailContent(fileId, isFolder) {
+  const content = document.getElementById("mobile-detail-modal-content");
+  // Použij stejnou logiku jako renderDriveDetailContent ale vlož do mobilního modalu
+  const driveFile = window.driveFiles?.[fileId];
+  const driveFolder = window.driveFolders?.[fileId];
+  const item = driveFile || driveFolder;
+  const song = Object.values(window.repertoar || {}).find(s => {
+    if (!s.pdf) return false;
+    const match = s.pdf.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    return match && match[1] === fileId;
+  });
+
+  if (mobileDetailTab === "details") {
+    const nazev = item?.name || "—";
+    const modifiedTime = item?.modifiedTime ? new Date(item.modifiedTime).toLocaleString("cs-CZ") : "—";
+    const size = item?.size ? formatFileSize(item.size) : "—";
+    const parentId = item?.parentId;
+    const parentName = parentId ? (window.driveFolders?.[parentId]?.name || parentId) : "root";
+
+    content.innerHTML = `
+      <div class="detail-field">
+        <div class="detail-label">Název</div>
+        <div class="detail-value">${nazev}</div>
+      </div>
+      ${song ? `
+      <div class="detail-field">
+        <div class="detail-label">Evidenční číslo</div>
+        <div class="detail-static" style="color:#EE220C;font-weight:600">${song.code || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Skladatel</div>
+        <div class="detail-static">${song.author || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Aranžér</div>
+        <div class="detail-static">${song.arranged_by || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Stopáž</div>
+        <div class="detail-static">${song.length || "—"}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Stav</div>
+        <div class="detail-static">${song.status || "—"}</div>
+      </div>
+      ` : ""}
+      <div class="detail-field">
+        <div class="detail-label">Naposledy upraveno</div>
+        <div class="detail-static">${modifiedTime}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Velikost</div>
+        <div class="detail-static">${size}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Umístění</div>
+        <div class="detail-static">${parentName}</div>
+      </div>
+    `;
+  } else {
+    content.innerHTML = `<div class="detail-empty"><p>Verzování bude dostupné brzy</p></div>`;
+  }
+}
   
 // UPLOAD
 window.openUpload = () => {
@@ -2606,6 +2767,19 @@ async function processFilesWithEvid(fileResults) {
       <canvas id="pdf-canvas"></canvas>
     </div>
   </div>
+</div>
+
+  <!-- MOBILNÍ DETAIL MODAL -->
+<div class="mobile-detail-overlay" id="mobile-detail-overlay" onclick="closeMobileDetailModal()"></div>
+<div class="mobile-detail-modal" id="mobile-detail-modal">
+  <div class="mobile-detail-modal-tabs">
+    <button class="mobile-detail-modal-tab active" onclick="switchMobileDetailTab('details')" id="mob-dtab-details">Podrobnosti</button>
+    <button class="mobile-detail-modal-tab" onclick="switchMobileDetailTab('versions')" id="mob-dtab-versions">Verze</button>
+    <button class="mobile-detail-modal-close" onclick="closeMobileDetailModal()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="mobile-detail-modal-content" id="mobile-detail-modal-content"></div>
 </div>
   
 </body>
