@@ -1315,7 +1315,7 @@ window.openDriveContextMenu = (e, id, name, isFolder) => {
       { label: "Stáhnout", action: `contextAction('download');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>` },
       { label: "Kopírovat odkaz", action: `contextAction('copylink');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
       { label: "Přejmenovat", action: `contextAction('rename');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>` },
-      { label: "Smazat", action: `contextAction('delete');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`, danger: true },
+      { label: "Smazat", action: `deleteDriveItem('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`, danger: true },
       { label: "Podrobnosti", action: `openMobileDetail('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` }
     ]);
     return;
@@ -1733,17 +1733,23 @@ window.contextAction = async (action) => {
 
   if (action === "delete") {
   const isFolder = !!window.driveFolders?.[contextItemId];
-  const itemName = isFolder ? window.driveFolders[contextItemId]?.name : doc?.nazev;
+  const itemName = isFolder ? window.driveFolders[contextItemId]?.name : window.driveFiles[contextItemId]?.name || doc?.nazev;
   if (!confirm(`Smazat "${itemName}"?`)) return;
-    const token = await auth.currentUser.getIdToken();
-    const res = await fetch(FUNCTIONS.deleteFile, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ docId: contextItemId })
-    });
-    const data = await res.json();
-    if (data.success) { delete window.allDocs[contextItemId]; renderTab(); }
-    else alert("Chyba: " + data.error);
+  const token = await auth.currentUser.getIdToken();
+  const res = await fetch(FUNCTIONS.deleteFile, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ driveFileId: contextItemId })
+  });
+  const data = await res.json();
+  if (data.success) {
+    delete window.allDocs[contextItemId];
+    delete window.driveFiles[contextItemId];
+    delete window.driveFolders[contextItemId];
+    renderTab();
+  } else {
+    alert("Chyba: " + data.error);
+  }
 
   } else if (action === "rename") {
     const isFolder = !!allFolders[contextItemId];
@@ -2653,6 +2659,27 @@ function renderMobileDetailContent(fileId, isFolder) {
     content.innerHTML = `<div class="detail-empty"><p>Verzování bude dostupné brzy</p></div>`;
   }
 }
+
+window.deleteDriveItem = async (fileId) => {
+  const isFolder = !!window.driveFolders?.[fileId];
+  const name = isFolder ? window.driveFolders[fileId]?.name : window.driveFiles[fileId]?.name;
+  if (!confirm(`Smazat "${name}"?`)) return;
+  
+  const token = await auth.currentUser.getIdToken();
+  const res = await fetch(FUNCTIONS.deleteFile, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ driveFileId: fileId })
+  });
+  const data = await res.json();
+  if (data.success) {
+    delete window.driveFiles[fileId];
+    delete window.driveFolders[fileId];
+    renderTab();
+  } else {
+    alert("Chyba: " + data.error);
+  }
+};
   
 // UPLOAD
 window.openUpload = () => {
