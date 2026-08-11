@@ -1826,19 +1826,32 @@ window.multiDelete = async () => {
 window.createFolder = async () => {
   const name = prompt("Název složky:");
   if (!name) return;
-  
-  const folderId = crypto.randomUUID().split("-")[0];
-  const folderData = {
-    nazev: name,
-    rodic: window.currentFolder || null
-  };
-  
-  await set(ref(db, `/slozky/${folderId}`), folderData);
-  allFolders[folderId] = folderData;
-  renderFolderTree();
-  
-  if (window.currentFolder !== undefined) {
-    renderFolderContent(window.currentFolder);
+
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(FUNCTIONS.uploadFile, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        createFolder: true,
+        fileName: name,
+        parentFolderId: window.currentFolder || "0B23cZAlYDWOndmtIZU45WWJrbWM"
+      })
+    });
+    const data = await response.json();
+    if (data.driveFileId) {
+      // Přidej do driveCache
+      window.driveFolders[data.driveFileId] = {
+        name: name,
+        parentId: window.currentFolder || "0B23cZAlYDWOndmtIZU45WWJrbWM",
+        modifiedTime: new Date().toISOString()
+      };
+      renderTab();
+    } else {
+      alert("Chyba: " + (data.error || "Nelze vytvořit složku"));
+    }
+  } catch(err) {
+    alert("Chyba: " + err.message);
   }
 };
 
