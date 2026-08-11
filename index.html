@@ -1163,12 +1163,14 @@ function renderTab() {
   const area = document.getElementById("content-area");
 
   if (currentTab === "recent") {
-    const items = Object.entries(window.allDocs)
-      .sort(([,a],[,b]) => (b.datumNahrani||0) - (a.datumNahrani||0))
-      .slice(0, 20);
-    renderListItems(items);
-    return;
-  }
+  const items = Object.entries(window.driveFiles || {})
+    .filter(([id, f]) => f.modifiedTime)
+    .sort(([,a],[,b]) => new Date(b.modifiedTime) - new Date(a.modifiedTime))
+    .slice(0, 20)
+    .map(([id, f]) => [id, { ...f, isFolder: false }]);
+  renderDriveItems(items.map(([id, f]) => ({ id, ...f })));
+  return;
+}
 
   if (currentTab === "documents") {
     area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám dokumenty...</p></div>`;
