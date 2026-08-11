@@ -824,9 +824,10 @@
     <!-- RIGHT DETAIL SIDEBAR -->
     <div class="right-sidebar hidden-sidebar" id="right-sidebar">
       <div class="detail-tabs">
-        <button class="detail-tab active" onclick="switchDetailTab('details')" id="dtab-details">Podrobnosti</button>
-        <button class="detail-tab" onclick="switchDetailTab('versions')" id="dtab-versions">Verze</button>
-        <button class="detail-close-btn" onclick="closeDetailSidebar()">
+          <button class="detail-tab active" onclick="switchDetailTab('details')" id="dtab-details">Podrobnosti</button>
+          <button class="detail-tab" onclick="switchDetailTab('versions')" id="dtab-versions">Verze</button>
+          <button class="detail-tab" onclick="switchDetailTab('preview')" id="dtab-preview">Náhled</button>
+          <button class="detail-close-btn" onclick="closeDetailSidebar()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -3000,6 +3001,7 @@ async function processFilesWithEvid(fileResults) {
   <div class="mobile-detail-modal-tabs">
     <button class="mobile-detail-modal-tab active" onclick="switchMobileDetailTab('details')" id="mob-dtab-details">Podrobnosti</button>
     <button class="mobile-detail-modal-tab" onclick="switchMobileDetailTab('versions')" id="mob-dtab-versions">Verze</button>
+    <button class="mobile-detail-modal-tab" onclick="switchMobileDetailTab('preview')" id="mob-dtab-preview">Náhled</button>
     <button class="mobile-detail-modal-close" onclick="closeMobileDetailModal()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
