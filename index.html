@@ -433,6 +433,14 @@
       .pdf-title { font-size: 12px; }
     }
 
+    @media (max-width: 1024px) {
+      .list-header { grid-template-columns: 32px 1fr 120px 80px 40px; }
+      .list-item { grid-template-columns: 32px 1fr 120px 80px 40px; }
+      /* Skryj jen kód */
+      .list-header > div:nth-child(3),
+      .list-item > div:nth-child(3) { display: none; }
+    }
+
   </style>
 </head>
 <body class="login-page" id="body">
