@@ -341,9 +341,26 @@
   
     /* Zbytek */
     .left-sidebar { display: none; }
-    .right-sidebar { display: none; }
+    .right-sidebar {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      z-index: 500;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      box-shadow: none;
+    }
+    .right-sidebar:not(.hidden-sidebar) {
+      transform: translateY(0);
+    }
+    .right-sidebar.hidden-sidebar {
+      width: 100%;
+      border: none;
+      transform: translateY(100%);
+    }
+    .detail-close-btn { display: flex; }
     .app-body { flex-direction: column; }
-    .main-content { padding-bottom: 90px; }
+    .main-content { padding-bottom: 100px; }
     .list-header { grid-template-columns: 32px 1fr 80px 40px; padding: 8px 12px; }
     .list-header > div:nth-child(4),
     .list-header > div:nth-child(5) { display: none; }
@@ -1149,6 +1166,7 @@ window.openDriveContextMenu = (e, id, name, isFolder) => {
       { label: "Kopírovat odkaz", action: `contextAction('copylink');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
       { label: "Přejmenovat", action: `contextAction('rename');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>` },
       { label: "Smazat", action: `contextAction('delete');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`, danger: true }
+      { label: "Podrobnosti", action: `openMobileDetail('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` },
     ]);
     return;
   }
@@ -2343,6 +2361,18 @@ window.closeDesktopProfile = () => {
 window.closeDetailSidebar = () => {
   document.getElementById("right-sidebar").classList.add("hidden-sidebar");
   selectedDetailId = null;
+};
+
+window.openMobileDetail = (fileId) => {
+  const isFolder = !!window.driveFolders?.[fileId];
+  selectedDetailId = fileId;
+  
+  const rightSidebar = document.getElementById("right-sidebar");
+  rightSidebar.classList.remove("hidden-sidebar");
+  activeDetailTab = "details";
+  document.querySelectorAll(".detail-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("dtab-details")?.classList.add("active");
+  renderDriveDetailContent(fileId, isFolder);
 };
   
 // UPLOAD
