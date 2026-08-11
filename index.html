@@ -387,6 +387,13 @@
     .upload-zone { margin: 8px 12px; padding: 24px 16px; }
     .multi-toolbar { padding: 0 12px; font-size: 13px; }
     .detail-close-btn { display: none; }
+
+    /* PROJEKTY */   
+    .projekty-grid { padding: 12px 16px; gap: 10px; }
+    .projekt-card { padding: 14px; }
+    .projekt-card-name { font-size: 14px; }
+    .projekty-archiv-toggle { padding: 12px 16px; }
+    .projekty-archiv-sekce.open { padding: 0 16px 12px; }
   
     /* FLOATING PILL */
     .bottom-wrap { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; padding-bottom: calc(12px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 200; }
@@ -1230,7 +1237,7 @@ function renderTab() {
   }
 
   if (currentTab === "projects") {
-    area.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="3" width="6" height="18" rx="1"/></svg><p>Projekty budou dostupné brzy</p></div>`;
+    renderProjekty();
     return;
   }
 
@@ -2269,6 +2276,95 @@ window.skipEvid = () => {
     document.getElementById("evid-modal").classList.remove("active");
     processFilesWithEvid(evidResults);
   }
+};
+
+// PROJEKTY
+let archivOtevren = false;
+
+async function renderProjekty() {
+  const area = document.getElementById("content-area");
+  area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
+
+  const snap = await get(ref(db, "/projekty"));
+  const projekty = snap.val() || {};
+
+  if (Object.keys(projekty).length === 0) {
+    area.innerHTML = `<div class="empty-state"><p>Zatím žádné projekty</p></div>`;
+    return;
+  }
+
+  const dnes = new Date().toISOString().split("T")[0];
+
+  // Roztřiď na nadcházející a proběhlé
+  const nadchazejici = [];
+  const probehle = [];
+
+  for (const [id, p] of Object.entries(projekty)) {
+    if (!p.datum || p.datum >= dnes) {
+      nadchazejici.push({ id, ...p });
+    } else {
+      probehle.push({ id, ...p });
+    }
+  }
+
+  // Seřaď nadcházející od nejbližšího, proběhlé od nejnovějšího
+  nadchazejici.sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
+  probehle.sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
+
+  function projektCard(p, archiv = false) {
+    const datum = p.datum ? new Date(p.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
+    return `
+      <div class="projekt-card ${archiv ? "archiv" : ""}" onclick="otevritProjekt('${p.id}')">
+        <div class="projekt-card-header">
+          <div class="projekt-card-name">${p.nazev || "—"}</div>
+          <div class="projekt-card-datum">${datum}</div>
+        </div>
+        ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
+        ${p.wikiText ? `<div class="projekt-card-wiki">${p.wikiText}</div>` : ""}
+        <div class="projekt-card-footer">
+          <button class="projekt-card-btn primary" onclick="event.stopPropagation();otevritProjekt('${p.id}')">Otevřít projekt</button>
+          ${p.driveFolderId ? `<button class="projekt-card-btn" onclick="event.stopPropagation();navigateToDriveFolder('${p.driveFolderId}', '${(p.nazev || "").replace(/'/g, "\\'")}');switchTab('folders')">Drive složka</button>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  let html = `<div class="projekty-grid">`;
+  html += nadchazejici.map(p => projektCard(p)).join("");
+  html += `</div>`;
+
+  if (probehle.length > 0) {
+    html += `
+      <div class="projekty-archiv-toggle" id="archiv-toggle" onclick="toggleArchiv()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="archiv-icon"><polyline points="6 9 12 15 18 9"/></svg>
+        <span id="archiv-label">Starší projekty (${probehle.length})</span>
+      </div>
+      <div class="projekty-archiv-sekce ${archivOtevren ? "open" : ""}" id="archiv-sekce">
+        ${probehle.map(p => projektCard(p, true)).join("")}
+      </div>
+    `;
+  }
+
+  area.innerHTML = html;
+}
+
+window.toggleArchiv = () => {
+  archivOtevren = !archivOtevren;
+  const sekce = document.getElementById("archiv-sekce");
+  const icon = document.getElementById("archiv-icon");
+  const label = document.getElementById("archiv-label");
+  const probehleCount = document.querySelectorAll(".projekty-archiv-sekce .projekt-card").length;
+  
+  sekce.classList.toggle("open", archivOtevren);
+  icon.style.transform = archivOtevren ? "rotate(180deg)" : "";
+  label.textContent = archivOtevren 
+    ? "Skrýt starší projekty" 
+    : `Starší projekty (${probehleCount})`;
+};
+
+window.otevritProjekt = (projektId) => {
+  // Zatím placeholder — detail projektu bude v další session
+  alert(`Projekt ${projektId} — detail bude implementován`);
 };
 
 // VYHLEDÁVÁNÍ
