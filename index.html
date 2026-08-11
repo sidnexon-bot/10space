@@ -311,22 +311,33 @@
   
     /* Search bar pod hlavičkou */
     .search-bar {
-      width: 100%;
-      max-width: none;
-      background: #e9e9ee;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      background: none;
       border: none;
-      border-radius: 12px;
+      border-radius: 0;
     }
     .search-select { display: none; }
     .search-input {
-      font-size: 16px;
-      background: transparent;
+      flex: 1;
+      background: #e9e9ee;
+      border-radius: 12px;
       padding: 10px 14px;
+      border: none;
     }
     .search-hamburger {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #e9e9ee;
+      border: none;
+      flex-shrink: 0;
       display: flex;
+      align-items: center;
+      justify-content: center;
       border-right: none;
-      border-left: 1px solid rgba(0,0,0,0.08);
     }
   
     /* Našeptávač */
