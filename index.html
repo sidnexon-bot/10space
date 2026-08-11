@@ -1732,7 +1732,9 @@ window.contextAction = async (action) => {
   const doc = window.allDocs[contextItemId];
 
   if (action === "delete") {
-    if (!confirm(`Smazat "${doc?.nazev}"?`)) return;
+  const isFolder = !!window.driveFolders?.[contextItemId];
+  const itemName = isFolder ? window.driveFolders[contextItemId]?.name : doc?.nazev;
+  if (!confirm(`Smazat "${itemName}"?`)) return;
     const token = await auth.currentUser.getIdToken();
     const res = await fetch(FUNCTIONS.deleteFile, {
       method: "POST",
