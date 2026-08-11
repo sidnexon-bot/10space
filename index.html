@@ -2285,8 +2285,12 @@ async function renderProjekty() {
   const area = document.getElementById("content-area");
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
 
-  const snap = await get(ref(db, "/projekty"));
-  const projekty = snap.val() || {};
+  const [projektSnap, akceSnap] = await Promise.all([
+    get(ref(db, "/projekty")),
+    get(ref(db, "/akce"))
+  ]);
+  const projekty = projektSnap.val() || {};
+  const akce = akceSnap.val() || {};
 
   if (Object.keys(projekty).length === 0) {
     area.innerHTML = `<div class="empty-state"><p>Zatím žádné projekty</p></div>`;
@@ -2294,12 +2298,12 @@ async function renderProjekty() {
   }
 
   const dnes = new Date().toISOString().split("T")[0];
-
-  // Roztřiď na nadcházející a proběhlé
   const nadchazejici = [];
   const probehle = [];
 
   for (const [id, p] of Object.entries(projekty)) {
+    const akceData = akce[id];
+    if (akceData?.type === "Zkouška") continue;
     if (!p.datum || p.datum >= dnes) {
       nadchazejici.push({ id, ...p });
     } else {
@@ -2307,7 +2311,6 @@ async function renderProjekty() {
     }
   }
 
-  // Seřaď nadcházející od nejbližšího, proběhlé od nejnovějšího
   nadchazejici.sort((a, b) => (a.datum || "").localeCompare(b.datum || ""));
   probehle.sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
 
@@ -2320,7 +2323,13 @@ async function renderProjekty() {
           <div class="projekt-card-datum">${datum}</div>
         </div>
         ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
-        ${p.wikiText ? `<div class="projekt-card-wiki">${p.wikiText}</div>` : ""}
+        ${p.wikiText ? `
+          <div class="projekt-card-wiki">${p.wikiText}</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;color:#8e8e93">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#EE220C" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Shrnuto pomocí Marek AI
+          </div>
+        ` : ""}
         <div class="projekt-card-footer">
           <button class="projekt-card-btn primary" onclick="event.stopPropagation();otevritProjekt('${p.id}')">Otevřít projekt</button>
           ${p.driveFolderId ? `<button class="projekt-card-btn" onclick="event.stopPropagation();navigateToDriveFolder('${p.driveFolderId}', '${(p.nazev || "").replace(/'/g, "\\'")}');switchTab('folders')">Drive složka</button>` : ""}
