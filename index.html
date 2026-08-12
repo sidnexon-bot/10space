@@ -2485,20 +2485,32 @@ window.otevritProjekt = async (projektId) => {
     <div class="projekt-sekce">
       <div class="projekt-sekce-title">Složky projektu</div>
       ${projekt.drivePodkladyId ? `
-        <div class="projekt-slozka-btn" onclick="navigateToDriveFolder('${projekt.drivePodkladyId}', 'Podklady');zavritProjekt();switchTab('folders')">
+        <div class="projekt-slozka-btn" onclick="otevritProjektSlozku('${projekt.drivePodkladyId}', 'Podklady')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Podklady
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>` : ""}
       ${projekt.driveSmlouvyId ? `
-        <div class="projekt-slozka-btn" onclick="navigateToDriveFolder('${projekt.driveSmlouvyId}', 'Smlouvy a faktury');zavritProjekt();switchTab('folders')">
+        <div class="projekt-slozka-btn" onclick="otevritProjektSlozku('${projekt.driveSmlouvyId}', 'Smlouvy a faktury')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Smlouvy a faktury
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>` : ""}
       ${projekt.driveFotkyId ? `
-        <div class="projekt-slozka-btn" onclick="navigateToDriveFolder('${projekt.driveFotkyId}', 'Fotky a nahrávky');zavritProjekt();switchTab('folders')">
+        <div class="projekt-slozka-btn" onclick="otevritProjektSlozku('${projekt.driveFotkyId}', 'Fotky a nahrávky')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Fotky a nahrávky
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>` : ""}
+      
+      <!-- Obsah složky -->
+      <div id="projekt-slozka-obsah" class="hidden">
+        <div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px">
+          <button onclick="zavritProjektSlozku()" style="background:none;border:none;cursor:pointer;color:#8e8e93;font-size:13px">← Zpět</button>
+          <span style="font-size:13px;font-weight:600" id="projekt-slozka-nazev"></span>
+        </div>
+        <div id="projekt-slozka-list"></div>
+      </div>
     </div>
   `;
 };
@@ -3195,6 +3207,44 @@ window.smazatProjekt = async (projektId) => {
   await set(ref(db, `/projekty/${projektId}`), null);
   renderProjekty();
 };  
+
+window.otevritProjektSlozku = async (folderId, nazev) => {
+  document.getElementById("projekt-slozka-obsah").classList.remove("hidden");
+  document.getElementById("projekt-slozka-nazev").textContent = nazev;
+  document.getElementById("projekt-slozka-list").innerHTML = `
+    <div style="color:#8e8e93;font-size:13px;padding:8px 0">Načítám...</div>`;
+
+  const files = Object.entries(window.driveFiles || {})
+    .filter(([id, f]) => f.parentId === folderId)
+    .map(([id, f]) => ({ id, ...f }))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "cs"));
+
+  const folders = Object.entries(window.driveFolders || {})
+    .filter(([id, f]) => f.parentId === folderId)
+    .map(([id, f]) => ({ id, ...f, isFolder: true }))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "cs"));
+
+  const items = [...folders, ...files];
+
+  if (items.length === 0) {
+    document.getElementById("projekt-slozka-list").innerHTML = `
+      <div style="color:#8e8e93;font-size:13px;padding:8px 0">Složka je prázdná</div>`;
+    return;
+  }
+
+  document.getElementById("projekt-slozka-list").innerHTML = items.map(f => `
+    <div class="projekt-slozka-btn" onclick="${f.isFolder ? `otevritProjektSlozku('${f.id}', '${f.name}')` : `handleDriveNameClick('${f.id}', '${f.mimeType || ""}', false)`}">
+      ${getDriveFileIcon(f.mimeType || "application/vnd.google-apps.folder", 18)}
+      <span style="flex:1;font-size:13px">${f.name}</span>
+      ${!f.isFolder ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>` : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`}
+    </div>
+  `).join("");
+};
+
+window.zavritProjektSlozku = () => {
+  document.getElementById("projekt-slozka-obsah").classList.add("hidden");
+  document.getElementById("projekt-slozka-list").innerHTML = "";
+};
   
 // UPLOAD
 window.openUpload = () => {
