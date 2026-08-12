@@ -1150,6 +1150,24 @@ async function loadData() {
     }
   });
 
+  // Hash routing — zkontroluj URL při načtení
+  const hash = window.location.hash;
+  if (hash.startsWith("#/projekt/")) {
+    const akceId = hash.split("/")[2];
+    if (akceId) otevritProjekt(akceId);
+  }
+  
+  // Sleduj změny hashe
+  window.addEventListener("hashchange", () => {
+    const h = window.location.hash;
+    if (h.startsWith("#/projekt/")) {
+      const akceId = h.split("/")[2];
+      if (akceId) otevritProjekt(akceId);
+    } else if (h === "" || h === "#") {
+      zavritProjekt();
+    }
+  });
+
   switchTab("recent");
 }
 
@@ -2372,9 +2390,153 @@ window.toggleArchiv = () => {
     : `Starší projekty (${probehleCount})`;
 };
 
-window.otevritProjekt = (projektId) => {
-  // Zatím placeholder — detail projektu bude v další session
-  alert(`Projekt ${projektId} — detail bude implementován`);
+window.otevritProjekt = async (projektId) => {
+  window.location.hash = `/projekt/${projektId}`;
+  
+  const overlay = document.getElementById("projekt-overlay");
+  overlay.classList.remove("hidden");
+  document.getElementById("projekt-detail-title").textContent = "Načítám...";
+  document.getElementById("projekt-detail-body").innerHTML = `
+    <div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
+
+  const [projektSnap, akceSnap] = await Promise.all([
+    get(ref(db, `/projekty/${projektId}`)),
+    get(ref(db, `/akce/${projektId}`))
+  ]);
+
+  const projekt = projektSnap.val();
+  const akce = akceSnap.val();
+
+  if (!projekt) {
+    document.getElementById("projekt-detail-body").innerHTML = `
+      <div class="empty-state"><p>Projekt nenalezen</p></div>`;
+    return;
+  }
+
+  document.getElementById("projekt-detail-title").textContent = projekt.nazev || "Projekt";
+  
+  const datum = projekt.datum ? new Date(projekt.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
+
+  // Info sekce z 10base
+  const infoRows = [
+    { label: "Datum", value: datum },
+    { label: "Místo", value: akce?.place || projekt.misto || "—" },
+    { label: "Sraz", value: akce?.sraz || "—" },
+    { label: "Doprava", value: akce?.doprava || "—" },
+    { label: "Oblečení", value: akce?.obleceni || "—" },
+    { label: "Hospoda", value: akce?.hospoda || "—" },
+    { label: "Poznámka", value: akce?.note || "—" },
+  ].filter(r => r.value && r.value !== "—");
+
+  document.getElementById("projekt-detail-body").innerHTML = `
+    <!-- INFO -->
+    <div class="projekt-sekce">
+      <div class="projekt-sekce-title">Informace o akci</div>
+      ${infoRows.map(r => `
+        <div class="projekt-info-row">
+          <div class="projekt-info-label">${r.label}</div>
+          <div class="projekt-info-value">${r.value}</div>
+        </div>
+      `).join("")}
+    </div>
+
+    <!-- WIKI -->
+    <div class="projekt-sekce">
+      <div class="projekt-sekce-title">O akci</div>
+      <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === 'ADMIN' ? 'true' : 'false'}">${projekt.wikiText || "Zatím žádný popis."}</div>
+      ${currentUser?.role === "ADMIN" ? `
+        <div class="projekt-wiki-actions">
+          <button class="projekt-wiki-btn" onclick="ulozitWiki('${projektId}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Uložit
+          </button>
+          <button class="projekt-wiki-btn ai" onclick="regenerovatWiki('${projektId}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#EE220C" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Přegenerovat Markem
+          </button>
+        </div>
+      ` : ""}
+    </div>
+
+    <!-- SLOŽKY -->
+    <div class="projekt-sekce">
+      <div class="projekt-sekce-title">Složky projektu</div>
+      ${projekt.drivePodkladyId ? `
+        <div class="projekt-slozka-btn" onclick="navigateToDriveFolder('${projekt.drivePodkladyId}', 'Podklady');zavritProjekt();switchTab('folders')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Podklady
+        </div>` : ""}
+      ${projekt.driveSmlouvyId ? `
+        <div class="projekt-slozka-btn" onclick="navigateToDriveFolder('${projekt.driveSmlouvyId}', 'Smlouvy a faktury');zavritProjekt();switchTab('folders')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Smlouvy a faktury
+        </div>` : ""}
+      ${projekt.driveFotkyId ? `
+        <div class="projekt-slozka-btn" onclick="navigateToDriveFolder('${projekt.driveFotkyId}', 'Fotky a nahrávky');zavritProjekt();switchTab('folders')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Fotky a nahrávky
+        </div>` : ""}
+    </div>
+  `;
+};
+
+window.zavritProjekt = () => {
+  document.getElementById("projekt-overlay").classList.add("hidden");
+  window.location.hash = "";
+};
+
+window.ulozitWiki = async (projektId) => {
+  const text = document.getElementById("wiki-text").textContent;
+  await set(ref(db, `/projekty/${projektId}/wikiText`), text);
+  alert("Wiki text uložen.");
+};
+
+window.regenerovatWiki = async (projektId) => {
+  const btn = document.querySelector(".projekt-wiki-btn.ai");
+  btn.textContent = "Generuji...";
+  btn.disabled = true;
+
+  const akceSnap = await get(ref(db, `/akce/${projektId}`));
+  const akce = akceSnap.val();
+  const projektSnap = await get(ref(db, `/projekty/${projektId}`));
+  const projekt = projektSnap.val();
+
+  const configSnap = await get(ref(db, "/gemini_config/apiKey"));
+  const apiKey = configSnap.val();
+
+  const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty. Piš kultivovaně ale přirozeně, v celých větách. Uváděj POUZE informace které jsou v datech, nic nevymýšlej.
+Název: ${akce?.name || projekt?.nazev || ""}
+Datum: ${projekt?.datum || ""}
+Místo: ${akce?.place || projekt?.misto || ""}
+Sraz: ${akce?.sraz || ""}
+Doprava: ${akce?.doprava || ""}
+Oblečení: ${akce?.obleceni || ""}
+Typ: ${akce?.type || ""}
+Poznámka: ${akce?.note || ""}
+Hospoda: ${akce?.hospoda || ""}`;
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 200
+      })
+    });
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || "";
+    if (text) {
+      document.getElementById("wiki-text").textContent = text;
+      await set(ref(db, `/projekty/${projektId}/wikiText`), text);
+    }
+  } catch(err) {
+    alert("Chyba při generování: " + err.message);
+  }
+
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#EE220C" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Přegenerovat Markem`;
+  btn.disabled = false;
 };
 
 // VYHLEDÁVÁNÍ
