@@ -1844,44 +1844,46 @@ async function renderPreview(fileId, item, content) {
 
   // PDF — první stránka jako miniatura
   if (mime.includes("pdf")) {
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileId}`;
-      const loadingTask = pdfjsLib.getDocument({
-        url,
-        httpHeaders: { "Authorization": `Bearer ${token}` }
-      });
-      const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1.0 });
-      const wrap = document.getElementById("detail-content");
-      const scale = (wrap.clientWidth - 16) / viewport.width;
-      const scaledViewport = page.getViewport({ scale });
-      const canvas = document.createElement("canvas");
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = scaledViewport.width * dpr;
-      canvas.height = scaledViewport.height * dpr;
-      canvas.style.width = scaledViewport.width + "px";
-      canvas.style.height = scaledViewport.height + "px";
-      canvas.style.borderRadius = "8px";
-      canvas.style.cursor = "pointer";
-      canvas.style.display = "block";
-      canvas.title = "Kliknutím otevřeš plný viewer";
-      canvas.onclick = () => openPdfViewer(fileId, item.name);
-      const ctx = canvas.getContext("2d");
-      ctx.scale(dpr, dpr);
-      await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-      content.innerHTML = "";
-      content.appendChild(canvas);
-      const hint = document.createElement("p");
-      hint.style.cssText = "font-size:12px;color:#8e8e93;text-align:center;margin-top:8px";
-      hint.textContent = "Kliknutím otevřeš plný viewer";
-      content.appendChild(hint);
-    } catch(err) {
-      content.innerHTML = `<div class="detail-empty"><p>Nelze načíst náhled PDF</p></div>`;
-    }
-    return;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileId}`;
+    const loadingTask = pdfjsLib.getDocument({
+      url,
+      httpHeaders: { "Authorization": `Bearer ${token}` }
+    });
+    const pdf = await loadingTask.promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1.0 });
+    const scale = (content.clientWidth - 16) / viewport.width;
+    const scaledViewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = scaledViewport.width * dpr;
+    canvas.height = scaledViewport.height * dpr;
+    canvas.style.width = scaledViewport.width + "px";
+    canvas.style.height = scaledViewport.height + "px";
+    canvas.style.borderRadius = "8px";
+    canvas.style.cursor = "pointer";
+    canvas.style.display = "block";
+    canvas.title = "Kliknutím otevřeš plný viewer";
+    canvas.onclick = () => {
+      closeMobileDetailModal();
+      openPdfViewer(fileId, item.name);
+    };
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+    content.innerHTML = "";
+    content.appendChild(canvas);
+    const hint = document.createElement("p");
+    hint.style.cssText = "font-size:12px;color:#8e8e93;text-align:center;margin-top:8px";
+    hint.textContent = "Kliknutím otevřeš plný viewer";
+    content.appendChild(hint);
+  } catch(err) {
+    content.innerHTML = `<div class="detail-empty"><p>Nelze načíst náhled PDF</p></div>`;
   }
+  return;
+}
 
   // Microsoft Office soubory — přes Google Viewer
   if (mime.includes("word") || mime.includes("excel") || mime.includes("powerpoint") ||
