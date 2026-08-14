@@ -3132,7 +3132,6 @@ window.switchMobileDetailTab = (tab) => {
 
 function renderMobileDetailContent(fileId, isFolder) {
   const content = document.getElementById("mobile-detail-modal-content");
-  // Použij stejnou logiku jako renderDriveDetailContent ale vlož do mobilního modalu
   const driveFile = window.driveFiles?.[fileId];
   const driveFolder = window.driveFolders?.[fileId];
   const item = driveFile || driveFolder;
@@ -3189,8 +3188,10 @@ function renderMobileDetailContent(fileId, isFolder) {
         <div class="detail-static">${parentName}</div>
       </div>
     `;
-  } else {
+  } else if (mobileDetailTab === "versions") {
     content.innerHTML = `<div class="detail-empty"><p>Verzování bude dostupné brzy</p></div>`;
+  } else if (mobileDetailTab === "preview") {
+    renderPreview(fileId, item, content);
   }
 }
 
