@@ -2474,10 +2474,11 @@ const hospodaInfo = rider?.hospoda?.nazev
   : (akce?.hospoda || null);
 
 // Garant
+const membersSnap = await get(ref(db, "/members"));
+const members = membersSnap.val() || {};
+
 let garantJmeno = "";
 if (rider?.garant) {
-  const membersSnap = await get(ref(db, "/members"));
-  const members = membersSnap.val() || {};
   const garant = Object.values(members).find(m => m.id === rider.garant || m.uid === rider.garant);
   garantJmeno = garant?.name || garant?.email || "";
 }
@@ -2584,7 +2585,6 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
         <thead><tr><th>Název</th><th>Skladba / Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
         <tbody>
           ${rider.harmonogram_koncertu.map(r => {
-            const members = membersSnap.val() || {};
             const getMemberName = (id) => {
               const m = Object.values(members).find(m => m.id === id || m.uid === id);
               return m?.name || m?.email || id || "—";
