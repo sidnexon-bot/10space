@@ -2630,7 +2630,7 @@ window.handleSearch = (query) => {
     panel.innerHTML = `<div class="search-empty">Nic nenalezeno pro „${query}"</div>`;
   } else {
     panel.innerHTML = results.map(r => `
-      <div class="search-result-item" onclick="handleSearchResultClick('${r.id}', ${r.isFolder}, '${r.name.replace(/'/g, "\\'")}')">
+      <div class="search-result-item" onclick="handleSearchResultClick('${r.id}', ${r.isFolder}, '${r.name.replace(/'/g, "\\'")}', '${r.mimeType || ""}')">
         ${getDriveFileIcon(r.mimeType, 16)}
         <span class="search-result-name">${highlightMatch(r.name, query)}</span>
         ${r.code ? `<span class="search-result-code">${r.code}</span>` : ""}
@@ -2658,13 +2658,13 @@ function closeSearch() {
   document.getElementById("search-input").value = "";
 }
 
-window.handleSearchResultClick = (id, isFolder, name) => {
+window.handleSearchResultClick = (id, isFolder, name, mimeType) => {
   closeSearch();
   if (isFolder) {
     switchTab("folders");
     navigateToDriveFolder(id, name);
   } else {
-    openDriveFile(id);
+    handleDriveNameClick(id, mimeType || "", false);
   }
 };
 
