@@ -702,6 +702,7 @@
     .rider-table th { background: #f2f2f7; padding: 6px 10px; text-align: left; font-weight: 600; font-size: 12px; color: #6e6e73; border: 1px solid #e5e5ea; }
     .rider-table td { padding: 6px 10px; border: 1px solid #e5e5ea; color: #1c1c1e; vertical-align: top; }
     .rider-table tr:nth-child(even) td { background: #fafafa; }
+    .rider-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
   </style>
 </head>
@@ -2550,15 +2551,18 @@ try {
 // Detailní rider tabulka
 let riderHtml = "";
 if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length || rider.ukonceni?.length)) {
-  function riderTable(rows, cols) {
+  
+   function riderTable(rows, cols) {
     if (!rows?.length) return "";
     return `
-      <table class="rider-table">
-        <thead><tr>${cols.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
-        <tbody>
-          ${rows.map(r => `<tr>${cols.map(c => `<td>${r[c.key] || "—"}</td>`).join("")}</tr>`).join("")}
-        </tbody>
-      </table>`;
+      <div class="rider-table-wrap">
+        <table class="rider-table">
+          <thead><tr>${cols.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+          <tbody>
+            ${rows.map(r => `<tr>${cols.map(c => `<td>${r[c.key] || "—"}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`;
   }
 
   riderHtml = `
@@ -2576,12 +2580,11 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
 
       ${rider.harmonogram_koncertu?.length ? `
         <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Harmonogram koncertu</div>
-        <table class="rider-table">
+        <div class="rider-table-wrap"><table class="rider-table">
           <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
           <tbody>
             ${rider.harmonogram_koncertu.map(r => `
               <tr>
-                <td>${r.typ || "—"}</td>
                 <td>${r.nazev || "—"}</td>
                 <td>${r.skladby ? r.skladby.map(s => s.name).join(", ") : (r.moderator || "")}</td>
                 <td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>
@@ -2589,7 +2592,7 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
               </tr>
             `).join("")}
           </tbody>
-        </table>
+        </table></div>
       ` : ""}
 
       ${rider.ukonceni?.length ? `
