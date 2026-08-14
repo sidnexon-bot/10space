@@ -2464,17 +2464,6 @@ window.otevritProjekt = async (projektId) => {
   
   const datum = projekt.datum ? new Date(projekt.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
 
-  // Info sekce z 10base
-  const infoRows = [
-    { label: "Datum", value: datum },
-    { label: "Místo", value: akce?.place || projekt.misto || "—" },
-    { label: "Sraz", value: akce?.sraz || "—" },
-    { label: "Doprava", value: akce?.doprava || "—" },
-    { label: "Oblečení", value: akce?.obleceni || "—" },
-    { label: "Hospoda", value: akce?.hospoda || "—" },
-    { label: "Poznámka", value: akce?.note || "—" },
-  ].filter(r => r.value && r.value !== "—");
-
   // Parsuj rider
 const rider = akce?.rider ? JSON.parse(akce.rider) : null;
 
