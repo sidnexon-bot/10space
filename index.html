@@ -2546,28 +2546,21 @@ window.regenerovatWiki = async (projektId) => {
   const configSnap = await get(ref(db, "/gemini_config/apiKey"));
   const apiKey = configSnap.val();
 
-  const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný interní popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty. 
+  const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný interní popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty.
 
-Pravidla:
-- Používej kultivovaný ale přirozený jazyk, ne formální ani akademický
-- Piš v celých větách, NIKDY ne jako odrážkový seznam
-- Piš v budoucím čase (akce se teprve koná)
-- Uváděj POUZE informace které jsou explicitně vyplněné v datech — pokud je pole prázdné nebo chybí, vůbec ho nezmiňuj
-- NIKDY nevymýšlej informace které nejsou v datech
-- Oblečení a hospoda jsou interní poznámky pro členy sboru, ne dresscode nebo informace pro diváky — pokud je zmiňuješ, formuluj to jako interní info ("sraz v černém", ne "dress code pro diváky" - neformální znamená "trička 10men", formální "košile a kravaty")
-- Popis je určen členům sboru, ne veřejnosti 
-- Pokud nějaký údaj chybí, prostě ho neuváděj
-- Nikdy neuváděj, kdo akci pořádá, pokud není výslovně uveden pořadatel
-
-Název: ${akce?.name || projekt?.nazev || ""}
-Datum: ${projekt?.datum || ""}
-Místo: ${akce?.place || projekt?.misto || ""}
-Sraz: ${akce?.sraz || ""}
-Doprava: ${akce?.doprava || ""}
-Oblečení: ${akce?.obleceni || ""}
-Typ: ${akce?.type || ""}
-Poznámka: ${akce?.note || ""}
-Hospoda: ${akce?.hospoda || ""}`;
+  Pravidla:
+  - Piš kultivovaně ale přirozeně, v celých větách
+  - Zmiň POUZE pole která mají neprázdnou hodnotu
+  - NIKDY nevymýšlej ani nedoplňuj informace které nejsou v datech
+  - Pokud je pole prázdné, prázdný řetězec nebo "undefined", vůbec ho nezmiňuj
+  - Oblečení: "neformální" = tričko 10men, "formální" = košile a kravata — zmiň jen pokud je vyplněno
+  - Hospodu zmiň jen pokud je konkrétně vyplněna — nikdy ji nevymýšlej
+  - Popis je interní pro členy sboru
+  
+  Údaje (ignoruj prázdná pole):
+  Název: ${akce.name || ""}
+  Datum: ${datum}
+  Místo: ${akce.place || ""}${akce.sraz ? `\nSraz: ${akce.sraz}` : ""}${akce.doprava ? `\nDoprava: ${akce.doprava}` : ""}${akce.obleceni ? `\nOblečení: ${akce.obleceni === "neformální" ? "tričko 10men" : akce.obleceni === "formální" ? "košile a kravata" : akce.obleceni}` : ""}${akce.type ? `\nTyp: ${akce.type}` : ""}${akce.note ? `\nPoznámka: ${akce.note}` : ""}${akce.hospoda ? `\nHospoda po akci: ${akce.hospoda}` : ""}`;
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
