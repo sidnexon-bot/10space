@@ -2579,21 +2579,41 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
       ` : ""}
 
       ${rider.harmonogram_koncertu?.length ? `
-        <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Harmonogram koncertu</div>
-        <div class="rider-table-wrap"><table class="rider-table">
-          <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
-          <tbody>
-            ${rider.harmonogram_koncertu.map(r => `
-              <tr>
-                <td>${r.nazev || "—"}</td>
-                <td>${r.skladby ? r.skladby.map(s => s.name).join(", ") : (r.moderator || "")}</td>
-                <td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>
-                <td>${r.poznamka || "—"}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table></div>
-      ` : ""}
+      <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Harmonogram koncertu</div>
+      <div class="rider-table-wrap"><table class="rider-table">
+        <thead><tr><th>Název</th><th>Skladba / Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
+        <tbody>
+          ${rider.harmonogram_koncertu.map(r => {
+            const members = membersSnap.val() || {};
+            const getMemberName = (id) => {
+              const m = Object.values(members).find(m => m.id === id || m.uid === id);
+              return m?.name || m?.email || id || "—";
+            };
+    
+            if (r.typ === "blok" && r.skladby?.length > 0) {
+              return r.skladby.map((s, i) => `
+                <tr>
+                  ${i === 0 ? `<td rowspan="${r.skladby.length}" style="font-weight:600;vertical-align:middle">${r.nazev || "Blok"}</td>` : ""}
+                  <td>${s.name || "—"}</td>
+                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>` : ""}
+                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${r.poznamka || "—"}</td>` : ""}
+                </tr>
+              `).join("");
+            } else {
+              const detail = r.moderator ? getMemberName(r.moderator) : "";
+              return `
+                <tr>
+                  <td>${r.nazev || "—"}</td>
+                  <td>${detail}</td>
+                  <td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>
+                  <td>${r.poznamka || "—"}</td>
+                </tr>
+              `;
+            }
+          }).join("")}
+        </tbody>
+      </table></div>
+    ` : ""}
 
       ${rider.ukonceni?.length ? `
         <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Ukončení</div>
