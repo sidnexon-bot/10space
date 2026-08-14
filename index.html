@@ -2507,7 +2507,7 @@ if (rider?.todo_pred || rider?.todo_den) {
       <div style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
           <span>Před koncertem</span>
-          <span style="color:#8e8e93">${predDone}/${pred.length}</span>
+          <span style="color:#8e8e93">${predPct} %</span>
         </div>
         <div style="background:#f2f2f7;border-radius:4px;height:8px">
           <div style="background:#EE220C;height:8px;border-radius:4px;width:${predPct}%;transition:width 0.3s"></div>
@@ -2516,7 +2516,7 @@ if (rider?.todo_pred || rider?.todo_den) {
       <div>
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
           <span>V den koncertu</span>
-          <span style="color:#8e8e93">${denDone}/${den.length}</span>
+          <span style="color:#8e8e93">${denPct} %</span>
         </div>
         <div style="background:#f2f2f7;border-radius:4px;height:8px">
           <div style="background:#EE220C;height:8px;border-radius:4px;width:${denPct}%;transition:width 0.3s"></div>
@@ -2525,28 +2525,27 @@ if (rider?.todo_pred || rider?.todo_den) {
     </div>`;
 }
 
-// Timeline z obecného harmonogramu
+// Timeline z harmonogram_items
 let timelineHtml = "";
-const harmSnap = await get(ref(db, `/harmonogram/${projektId}`));
-const harmItemsSnap = await get(ref(db, `/harmonogram_items/${projektId}`));
-const harm = harmSnap.val();
-const harmItems = harmItemsSnap.val();
-if (harmItems) {
-  const items = Object.values(harmItems).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-  timelineHtml = `
-    <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Harmonogram</div>
-      <div class="projekt-timeline">
-        ${items.map((item, i) => `
-          <div class="projekt-timeline-item">
-            <div class="projekt-timeline-time">${item.time || "—"}</div>
-            <div class="projekt-timeline-dot ${i === 0 ? "first" : ""}"></div>
-            <div class="projekt-timeline-label">${item.name || item.nazev || ""}</div>
-          </div>
-        `).join("")}
-      </div>
-    </div>`;
-}
+try {
+  const harmItems = akce?.harmonogram_items ? JSON.parse(akce.harmonogram_items) : null;
+  if (harmItems && Array.isArray(harmItems) && harmItems.length > 0) {
+    const items = [...harmItems].sort((a, b) => (a.cas || "").localeCompare(b.cas || ""));
+    timelineHtml = `
+      <div class="projekt-sekce">
+        <div class="projekt-sekce-title">Harmonogram</div>
+        <div class="projekt-timeline">
+          ${items.map((item, i) => `
+            <div class="projekt-timeline-item">
+              <div class="projekt-timeline-time">${item.cas || "—"}</div>
+              <div class="projekt-timeline-dot"></div>
+              <div class="projekt-timeline-label">${item.popis || ""}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>`;
+  }
+} catch(e) {}
 
 // Detailní rider tabulka
 let riderHtml = "";
@@ -2578,7 +2577,7 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
       ${rider.harmonogram_koncertu?.length ? `
         <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Harmonogram koncertu</div>
         <table class="rider-table">
-          <thead><tr><th>Typ</th><th>Název</th><th>Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
+          <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
           <tbody>
             ${rider.harmonogram_koncertu.map(r => `
               <tr>
