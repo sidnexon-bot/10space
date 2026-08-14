@@ -2545,6 +2545,7 @@ window.regenerovatWiki = async (projektId) => {
 
   const configSnap = await get(ref(db, "/gemini_config/apiKey"));
   const apiKey = configSnap.val();
+  const datum = projekt?.datum || "";
 
   const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný interní popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty.
 
