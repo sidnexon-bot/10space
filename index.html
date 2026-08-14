@@ -2546,7 +2546,19 @@ window.regenerovatWiki = async (projektId) => {
   const configSnap = await get(ref(db, "/gemini_config/apiKey"));
   const apiKey = configSnap.val();
 
-  const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty. Piš kultivovaně ale přirozeně, v celých větách. Uváděj POUZE informace které jsou v datech, nic nevymýšlej.
+  const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný interní popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty. 
+
+Pravidla:
+- Používej kultivovaný ale přirozený jazyk, ne formální ani akademický
+- Piš v celých větách, NIKDY ne jako odrážkový seznam
+- Piš v budoucím čase (akce se teprve koná)
+- Uváděj POUZE informace které jsou explicitně vyplněné v datech — pokud je pole prázdné nebo chybí, vůbec ho nezmiňuj
+- NIKDY nevymýšlej informace které nejsou v datech
+- Oblečení a hospoda jsou interní poznámky pro členy sboru, ne dresscode nebo informace pro diváky — pokud je zmiňuješ, formuluj to jako interní info ("sraz v černém", ne "dress code pro diváky")
+- Popis je určen členům sboru, ne veřejnosti 
+- Pokud nějaký údaj chybí, prostě ho neuváděj
+- Nikdy neuváděj, kdo akci pořádá, pokud není výslovně uveden pořadatel
+
 Název: ${akce?.name || projekt?.nazev || ""}
 Datum: ${projekt?.datum || ""}
 Místo: ${akce?.place || projekt?.misto || ""}
