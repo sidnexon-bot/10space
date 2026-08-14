@@ -688,6 +688,21 @@
     .projekt-slozka-btn:hover { background: #f2f2f7; }
     .projekt-slozka-btn:last-child { margin-bottom: 0; }
 
+    /* PROJEKT TIMELINE */
+    .projekt-timeline { display: flex; flex-direction: column; gap: 0; }
+    .projekt-timeline-item { display: grid; grid-template-columns: 52px 16px 1fr; gap: 0 8px; align-items: flex-start; min-height: 32px; }
+    .projekt-timeline-time { font-size: 13px; color: #8e8e93; text-align: right; padding-top: 2px; }
+    .projekt-timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: #EE220C; margin-top: 4px; position: relative; flex-shrink: 0; }
+    .projekt-timeline-dot::before { content: ""; position: absolute; left: 4px; top: 10px; width: 2px; height: calc(100% + 22px); background: #e5e5ea; }
+    .projekt-timeline-item:last-child .projekt-timeline-dot::before { display: none; }
+    .projekt-timeline-label { font-size: 14px; color: #1c1c1e; padding-top: 2px; padding-bottom: 16px; }
+    
+    /* RIDER TABULKA */
+    .rider-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .rider-table th { background: #f2f2f7; padding: 6px 10px; text-align: left; font-weight: 600; font-size: 12px; color: #6e6e73; border: 1px solid #e5e5ea; }
+    .rider-table td { padding: 6px 10px; border: 1px solid #e5e5ea; color: #1c1c1e; vertical-align: top; }
+    .rider-table tr:nth-child(even) td { background: #fafafa; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -2460,10 +2475,155 @@ window.otevritProjekt = async (projektId) => {
     { label: "Poznámka", value: akce?.note || "—" },
   ].filter(r => r.value && r.value !== "—");
 
+  // Parsuj rider
+const rider = akce?.rider ? JSON.parse(akce.rider) : null;
+
+// Hospoda z ridera nebo z akce
+const hospodaInfo = rider?.hospoda?.nazev 
+  ? `${rider.hospoda.nazev}${rider.hospoda.cas ? `, ${rider.hospoda.cas}` : ""}${rider.hospoda.jmeno ? `, rezervace: ${rider.hospoda.jmeno}` : ""}`
+  : (akce?.hospoda || null);
+
+// Garant
+let garantJmeno = "";
+if (rider?.garant) {
+  const membersSnap = await get(ref(db, "/members"));
+  const members = membersSnap.val() || {};
+  const garant = Object.values(members).find(m => m.id === rider.garant || m.uid === rider.garant);
+  garantJmeno = garant?.name || garant?.email || "";
+}
+
+// Info řádky
+const infoRows = [
+  { label: "Datum", value: datum },
+  { label: "Místo", value: akce?.place || projekt.misto || null },
+  { label: "Sraz", value: akce?.sraz || null },
+  { label: "Doprava", value: akce?.doprava || null },
+  { label: "Oblečení", value: akce?.obleceni || null },
+  { label: "Hospoda", value: hospodaInfo },
+  { label: "Poznámka", value: akce?.note || null },
+].filter(r => r.value);
+
+// Progress bar z rider todo
+let progressHtml = "";
+if (rider?.todo_pred || rider?.todo_den) {
+  const pred = rider.todo_pred || [];
+  const den = rider.todo_den || [];
+  const predDone = pred.filter(t => t.done).length;
+  const denDone = den.filter(t => t.done).length;
+  const predPct = pred.length ? Math.round(predDone / pred.length * 100) : 0;
+  const denPct = den.length ? Math.round(denDone / den.length * 100) : 0;
+  progressHtml = `
+    <div class="projekt-sekce">
+      <div class="projekt-sekce-title">Příprava</div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>Před koncertem</span>
+          <span style="color:#8e8e93">${predDone}/${pred.length}</span>
+        </div>
+        <div style="background:#f2f2f7;border-radius:4px;height:8px">
+          <div style="background:#EE220C;height:8px;border-radius:4px;width:${predPct}%;transition:width 0.3s"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>V den koncertu</span>
+          <span style="color:#8e8e93">${denDone}/${den.length}</span>
+        </div>
+        <div style="background:#f2f2f7;border-radius:4px;height:8px">
+          <div style="background:#EE220C;height:8px;border-radius:4px;width:${denPct}%;transition:width 0.3s"></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Timeline z obecného harmonogramu
+let timelineHtml = "";
+const harmSnap = await get(ref(db, `/harmonogram/${projektId}`));
+const harmItemsSnap = await get(ref(db, `/harmonogram_items/${projektId}`));
+const harm = harmSnap.val();
+const harmItems = harmItemsSnap.val();
+if (harmItems) {
+  const items = Object.values(harmItems).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  timelineHtml = `
+    <div class="projekt-sekce">
+      <div class="projekt-sekce-title">Harmonogram</div>
+      <div class="projekt-timeline">
+        ${items.map((item, i) => `
+          <div class="projekt-timeline-item">
+            <div class="projekt-timeline-time">${item.time || "—"}</div>
+            <div class="projekt-timeline-dot ${i === 0 ? "first" : ""}"></div>
+            <div class="projekt-timeline-label">${item.name || item.nazev || ""}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>`;
+}
+
+// Detailní rider tabulka
+let riderHtml = "";
+if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length || rider.ukonceni?.length)) {
+  function riderTable(rows, cols) {
+    if (!rows?.length) return "";
+    return `
+      <table class="rider-table">
+        <thead><tr>${cols.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr>${cols.map(c => `<td>${r[c.key] || "—"}</td>`).join("")}</tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  riderHtml = `
+    <div class="projekt-sekce">
+      <div class="projekt-sekce-title">Detailní program</div>
+      
+      ${rider.pripravne_akce?.length ? `
+        <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Přípravné akce</div>
+        ${riderTable(rider.pripravne_akce, [
+          { label: "Čas", key: "cas" },
+          { label: "Název", key: "nazev" },
+          { label: "Poznámka", key: "poznamka" }
+        ])}
+      ` : ""}
+
+      ${rider.harmonogram_koncertu?.length ? `
+        <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Harmonogram koncertu</div>
+        <table class="rider-table">
+          <thead><tr><th>Typ</th><th>Název</th><th>Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
+          <tbody>
+            ${rider.harmonogram_koncertu.map(r => `
+              <tr>
+                <td>${r.typ || "—"}</td>
+                <td>${r.nazev || "—"}</td>
+                <td>${r.skladby ? r.skladby.map(s => s.name).join(", ") : (r.moderator || "")}</td>
+                <td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>
+                <td>${r.poznamka || "—"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      ` : ""}
+
+      ${rider.ukonceni?.length ? `
+        <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Ukončení</div>
+        ${riderTable(rider.ukonceni, [
+          { label: "Čas", key: "cas" },
+          { label: "Název", key: "nazev" },
+          { label: "Poznámka", key: "poznamka" }
+        ])}
+      ` : ""}
+    </div>`;
+}
+
   document.getElementById("projekt-detail-body").innerHTML = `
     <!-- INFO -->
     <div class="projekt-sekce">
       <div class="projekt-sekce-title">Informace o akci</div>
+      ${garantJmeno ? `
+        <div class="projekt-info-row">
+          <div class="projekt-info-label">Garant</div>
+          <div class="projekt-info-value" style="font-weight:600">${garantJmeno}</div>
+        </div>` : ""}
       ${infoRows.map(r => `
         <div class="projekt-info-row">
           <div class="projekt-info-label">${r.label}</div>
@@ -2471,11 +2631,11 @@ window.otevritProjekt = async (projektId) => {
         </div>
       `).join("")}
     </div>
-
+  
     <!-- WIKI -->
     <div class="projekt-sekce">
       <div class="projekt-sekce-title">O akci</div>
-      <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === 'ADMIN' ? 'true' : 'false'}">${projekt.wikiText || "Zatím žádný popis."}</div>
+      <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === "ADMIN" ? "true" : "false"}">${projekt.wikiText || "Zatím žádný popis."}</div>
       ${currentUser?.role === "ADMIN" ? `
         <div class="projekt-wiki-actions">
           <button class="projekt-wiki-btn" onclick="ulozitWiki('${projektId}')">
@@ -2489,7 +2649,16 @@ window.otevritProjekt = async (projektId) => {
         </div>
       ` : ""}
     </div>
-
+  
+    <!-- TIMELINE -->
+    ${timelineHtml}
+  
+    <!-- RIDER TABULKA -->
+    ${riderHtml}
+  
+    <!-- PROGRESS BAR -->
+    ${progressHtml}
+  
     <!-- SLOŽKY -->
     <div class="projekt-sekce">
       <div class="projekt-sekce-title">Složky projektu</div>
@@ -2512,10 +2681,9 @@ window.otevritProjekt = async (projektId) => {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>` : ""}
       
-      <!-- Obsah složky -->
       <div id="projekt-slozka-obsah" class="hidden">
         <div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px">
-          <button onclick="zavritProjektSlozku()" style="background:none;border:none;cursor:pointer;color:#8e8e93;font-size:13px">← Zpět</button>
+          <button onclick="zavritProjektSlozku()" style="background:#f2f2f7;border:none;cursor:pointer;color:#1c1c1e;font-size:13px;padding:5px 10px;border-radius:6px">← Zpět</button>
           <span style="font-size:13px;font-weight:600" id="projekt-slozka-nazev"></span>
         </div>
         <div id="projekt-slozka-list"></div>
