@@ -1459,7 +1459,22 @@ function showApp() {
   document.getElementById("body").classList.remove("login-page");
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app-screen").classList.remove("hidden");
-  
+
+  // Sidebar profil
+  document.getElementById("sidebar-profile-name").textContent = currentUser.name || currentUser.email || "";
+  document.getElementById("sidebar-profile-role").textContent = currentUser.role || "Člen";
+  const sidebarImg = document.getElementById("sidebar-avatar-img");
+  const sidebarInitials = document.getElementById("sidebar-avatar-initials");
+  if (currentUser.photoURL && sidebarImg) {
+    sidebarImg.src = currentUser.photoURL;
+    sidebarImg.style.display = "block";
+    if (sidebarInitials) sidebarInitials.style.display = "none";
+  } else if (sidebarInitials) {
+    const name = currentUser.name || currentUser.email || "?";
+    sidebarInitials.textContent = name.slice(0, 2).toUpperCase();
+    if (sidebarImg) sidebarImg.style.display = "none";
+  }
+
   // Mobilní avatar
   const mobileAvatarImg = document.getElementById("mobile-avatar-img");
   const mobileAvatarInitials = document.getElementById("mobile-avatar-initials");
@@ -1470,21 +1485,6 @@ function showApp() {
   } else if (mobileAvatarInitials) {
     const name = currentUser.name || currentUser.email || "?";
     mobileAvatarInitials.textContent = name.slice(0, 2).toUpperCase();
-  }
-
-  // Sidebar profil
-  document.getElementById("sidebar-profile-name").textContent = currentUser.name || currentUser.email || "";
-  document.getElementById("sidebar-profile-role").textContent = currentUser.role || "Člen";
-  const sidebarImg = document.getElementById("sidebar-avatar-img");
-  const sidebarInitials = document.getElementById("sidebar-avatar-initials");
-  if (currentUser.photoURL) {
-    sidebarImg.src = currentUser.photoURL;
-    sidebarImg.style.display = "block";
-    sidebarInitials.style.display = "none";
-  } else {
-    const name = currentUser.name || currentUser.email || "?";
-    sidebarInitials.textContent = name.slice(0, 2).toUpperCase();
-    sidebarImg.style.display = "none";
   }
 
   // Zobraz skeleton
@@ -1501,7 +1501,6 @@ function showApp() {
   setTimeout(hideSplash, 600);
   loadData();
 }
-
 // DRIVE API
 async function loadDriveFiles(folderId) {
   const parentId = folderId || "0B23cZAlYDWOndmtIZU45WWJrbWM";
