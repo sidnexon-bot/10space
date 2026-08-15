@@ -767,31 +767,46 @@
 <!-- TOPBAR -->
 <div class="topbar" id="topbar">
   <div class="topbar-left">
-  <h1>10space</h1>
-  <!-- Mobilní avatar -->
-  <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
-    <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
-    <span id="mobile-avatar-initials"></span>
-  </button>
-  <div class="mobile-profile-menu" id="mobile-profile-menu">
-    <div class="mobile-profile-menu-header">
-      <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
-      <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
-    </div>
-    <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Osobní desky
-    </div>
-    <div class="mobile-profile-menu-sep"></div>
-    <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Odhlásit se
+    <h1>10space</h1>
+    <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
+      <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
+      <span id="mobile-avatar-initials"></span>
+    </button>
+    <div class="mobile-profile-menu" id="mobile-profile-menu">
+      <div class="mobile-profile-menu-header">
+        <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
+        <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
+      </div>
+      <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Osobní desky
+      </div>
+      <div class="mobile-profile-menu-sep"></div>
+      <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Odhlásit se
+      </div>
     </div>
   </div>
-</div>
+
+  <div class="topbar-center">
+    <div class="search-bar">
+      <select class="search-select" id="search-category">
+        <option value="all">Vše</option>
+        <option value="document">Dokumenty</option>
+        <option value="folder">Složky</option>
+        <option value="image">Obrázky</option>
+        <option value="audio">Audio</option>
+        <option value="video">Video</option>
+      </select>
+      <button class="search-hamburger" onclick="openSearchFilterSheet()" id="search-filter-btn">
+        <svg id="search-filter-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <input class="search-input" id="search-input" type="text" placeholder="Prohledat 10space" oninput="handleSearch(this.value)">
+    </div>
+  </div>
 
   <div class="topbar-right">
-    <!-- Desktop profile -->
     <div class="desktop-profile" style="position:relative">
       <button class="desktop-profile-btn" onclick="toggleDesktopProfile(event)">
         <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
@@ -813,27 +828,6 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Odhlásit se
         </div>
-      </div>
-    </div>
-
-    <!-- Mobilní avatar -->
-    <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
-      <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
-      <span id="mobile-avatar-initials"></span>
-    </button>
-    <div class="mobile-profile-menu" id="mobile-profile-menu">
-      <div class="mobile-profile-menu-header">
-        <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
-        <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
-      </div>
-      <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Osobní desky
-      </div>
-      <div class="mobile-profile-menu-sep"></div>
-      <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Odhlásit se
       </div>
     </div>
   </div>
