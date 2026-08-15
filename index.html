@@ -750,6 +750,215 @@
     .rider-table tr:nth-child(even) td { background: #fafafa; }
     .rider-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+    /* DARK MODE */
+    body.dark {
+      --bg: #1c1c1e;
+      --card: #2c2c2e;
+      --text: #ffffff;
+      --muted: #8e8e93;
+    }
+    
+    body.dark .app-body,
+    body.dark .main-content,
+    body.dark .content-area,
+    body.dark #content-area { background: #1c1c1e; }
+    
+    body.dark .topbar {
+      background: rgba(28,28,30,0.85);
+      border-bottom-color: #3a3a3c;
+    }
+    
+    body.dark .left-sidebar {
+      background: #1c1c1e;
+      border-right-color: #3a3a3c;
+    }
+    
+    body.dark .sidebar-tab {
+      color: #8e8e93;
+    }
+    body.dark .sidebar-tab.active {
+      background: rgba(255,69,58,0.15);
+      color: #ff453a;
+    }
+    body.dark .sidebar-tab:hover {
+      background: #2c2c2e;
+    }
+    
+    body.dark .upload-btn {
+      background: #2c2c2e;
+      color: #fff;
+      border-color: #3a3a3c;
+    }
+    
+    body.dark .right-sidebar {
+      background: #2c2c2e;
+      border-left-color: #3a3a3c;
+    }
+    
+    body.dark .detail-tab {
+      color: #8e8e93;
+      border-bottom-color: #3a3a3c;
+    }
+    body.dark .detail-tab.active {
+      color: #ff453a;
+      border-bottom-color: #ff453a;
+    }
+    
+    body.dark .list-header {
+      background: #1c1c1e;
+      color: #8e8e93;
+      border-bottom-color: #3a3a3c;
+    }
+    
+    body.dark .list-item {
+      border-bottom-color: #3a3a3c;
+      color: #fff;
+    }
+    body.dark .list-item:hover { background: #2c2c2e; }
+    body.dark .list-item.active-detail {
+      background: rgba(255,69,58,0.1);
+      border-left-color: #ff453a;
+    }
+    
+    body.dark .list-item-date,
+    body.dark .list-item-code { color: #8e8e93; }
+    
+    body.dark .content-header { border-bottom-color: #3a3a3c; }
+    body.dark .content-title { color: #fff; }
+    body.dark .breadcrumb { color: #8e8e93; }
+    
+    body.dark .projekt-card {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+      color: #fff;
+    }
+    body.dark .projekt-card-datum { color: #8e8e93; }
+    body.dark .projekt-card-misto { color: #8e8e93; }
+    body.dark .projekt-card-wiki { color: #8e8e93; }
+    body.dark .projekt-card.archiv { opacity: 0.4; }
+    
+    body.dark .projekt-sekce {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+    body.dark .projekt-info-row { border-bottom-color: #3a3a3c; }
+    body.dark .projekt-info-label { color: #8e8e93; }
+    body.dark .projekt-info-value { color: #fff; }
+    
+    body.dark .rider-table th {
+      background: #3a3a3c;
+      color: #8e8e93;
+      border-color: #48484a;
+    }
+    body.dark .rider-table td {
+      border-color: #48484a;
+      color: #fff;
+    }
+    body.dark .rider-table tr:nth-child(even) td { background: #2c2c2e; }
+    
+    body.dark .projekt-overlay { background: #1c1c1e; }
+    body.dark .projekt-detail-header {
+      background: #2c2c2e;
+      border-bottom-color: #3a3a3c;
+    }
+    body.dark .projekt-detail-title { color: #fff; }
+    body.dark .projekt-slozka-btn {
+      background: #3a3a3c;
+      border-color: #48484a;
+      color: #fff;
+    }
+    
+    body.dark .search-bar {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+    body.dark .search-select { color: #fff; }
+    body.dark .search-input { color: #fff; }
+    body.dark .search-input::placeholder { color: #8e8e93; }
+    body.dark .search-results {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+    body.dark .search-result-item { color: #fff; border-bottom-color: #3a3a3c; }
+    body.dark .search-result-item:hover { background: #3a3a3c; }
+    
+    body.dark .multi-toolbar {
+      background: #2c2c2e;
+      border-bottom-color: #3a3a3c;
+      color: #fff;
+    }
+    body.dark .multi-toolbar-btn {
+      background: #3a3a3c;
+      border-color: #48484a;
+      color: #fff;
+    }
+    
+    body.dark .context-menu {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+    body.dark .context-menu-item { color: #fff; }
+    body.dark .context-menu-item:hover { background: #3a3a3c; }
+    body.dark .context-menu-sep { background: #3a3a3c; }
+    
+    body.dark .bottom-sheet { background: #2c2c2e; }
+    body.dark .bottom-sheet-handle { background: #48484a; }
+    body.dark .bottom-sheet-title { color: #8e8e93; }
+    body.dark .bottom-sheet-item { color: #fff; }
+    body.dark .bottom-sheet-item:active { background: #3a3a3c; }
+    body.dark .bottom-sheet-sep { background: #3a3a3c; }
+    
+    body.dark .desktop-profile-menu {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+    body.dark .desktop-profile-menu-item { color: #fff; }
+    body.dark .desktop-profile-menu-item:hover { background: #3a3a3c; }
+    body.dark .desktop-profile-menu-sep { background: #3a3a3c; }
+    
+    body.dark .mobile-profile-menu {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+    body.dark .mobile-profile-menu-item { color: #fff; }
+    body.dark .mobile-profile-menu-sep { background: #3a3a3c; }
+    
+    body.dark input,
+    body.dark select,
+    body.dark textarea {
+      background: #3a3a3c;
+      color: #fff;
+      border-color: #48484a;
+    }
+    
+    body.dark .splash { background: #1c1c1e; }
+    body.dark .splash-logo { color: #fff; }
+    
+    body.dark .skeleton {
+      background: linear-gradient(90deg, #3a3a3c 25%, #48484a 50%, #3a3a3c 75%);
+      background-size: 800px 100%;
+    }
+    
+    body.dark .empty-state p { color: #8e8e93; }
+    
+    body.dark .bottom {
+      background: rgba(255,255,255,0.01);
+      box-shadow:
+        0 12px 40px rgba(0,0,0,0.4),
+        0 2px 8px rgba(0,0,0,0.2),
+        inset 0 0 0 1px rgba(255,255,255,0.08),
+        inset 0 1px 1px rgba(255,255,255,0.1),
+        inset 0 -1px 2px rgba(0,0,0,0.25);
+    }
+    body.dark .bottom::before {
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.2) 50%, transparent);
+    }
+    body.dark .bottom button { color: #8e8e93; }
+    body.dark .bottom button.active {
+      color: #ff453a;
+      background: rgba(255,69,58,0.15);
+    }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -786,6 +995,11 @@
       <div class="mobile-profile-menu-item" onclick="closeMobileProfileMenu()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Osobní desky
+      </div>
+      <div class="mobile-profile-menu-sep"></div>
+      <div class="mobile-profile-menu-item" onclick="toggleDarkMode();closeMobileProfileMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        Tmavý režim
       </div>
       <div class="mobile-profile-menu-sep"></div>
       <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
@@ -828,6 +1042,11 @@
         <div class="desktop-profile-menu-item" onclick="closeDesktopProfile()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Osobní desky
+        </div>
+        <div class="desktop-profile-menu-sep"></div>
+        <div class="desktop-profile-menu-item" onclick="toggleDarkMode()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          Tmavý režim
         </div>
         <div class="desktop-profile-menu-sep"></div>
         <div class="desktop-profile-menu-item danger" onclick="handleLogout()">
@@ -3483,6 +3702,16 @@ window.zavritProjektSlozku = () => {
   document.getElementById("projekt-slozka-obsah").classList.add("hidden");
   document.getElementById("projekt-slozka-list").innerHTML = "";
 };
+
+window.toggleDarkMode = () => {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("darkMode", document.body.classList.contains("dark") ? "1" : "0");
+};
+
+// Načti uložený režim při startu
+if (localStorage.getItem("darkMode") === "1") {
+  document.body.classList.add("dark");
+}
   
 // UPLOAD
 window.openUpload = () => {
