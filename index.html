@@ -23,12 +23,11 @@
     #app-screen { display: flex; flex-direction: column; height: 100vh; }
 
     /* TOPBAR */
-    .topbar { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 1500; position: relative; }
-    .topbar-left {position: relative; display: flex; justify-content: space-between; align-items: center; width: 100%;}
-    .topbar-left h1 { font-size: 17px; font-weight: 700; }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .topbar-center { flex: 1; display: flex; justify-content: center; padding: 0 16px; max-width: 500px; margin: 0 auto; }
-    .search-bar { width: 100%; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 52px; background: #fff; border-bottom: 1px solid #e5e5ea; position: sticky; top: 0; z-index: 100; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; flex: 1; position: relative; }
+    .topbar-center { flex: 2; display: flex; justify-content: center; padding: 0 16px; }
+    .topbar-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    .search-bar { width: 100%; max-width: 480px; }
     .desktop-profile-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
     .desktop-profile-btn:hover { background: #f2f2f7; }
     .desktop-profile-menu { position: absolute; top: 44px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border: 1px solid #e5e5ea; min-width: 200px; z-index: 500; overflow: hidden; }
