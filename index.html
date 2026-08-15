@@ -244,12 +244,11 @@
       
     }
     .topbar-left {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-}
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+    }
     .topbar-left h1 {
       display: block;
       font-size: 34px;
@@ -812,9 +811,6 @@
     </div>
 
     <!-- Mobilní avatar -->
-    <div class="topbar-left">
-    <h1>10space</h1>
-    <!-- Mobilní avatar -->
     <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
       <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
       <span id="mobile-avatar-initials"></span>
@@ -835,6 +831,7 @@
       </div>
     </div>
   </div>
+</div>
 
   <!-- APP BODY -->
   <div class="app-body">
