@@ -1052,6 +1052,79 @@
     /* Progress bar nápisy */
     body.dark .projekt-sekce span { color: #fff; }
 
+    /* SIDEBAR PROFIL */
+    .sidebar-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f2f2f7;
+      margin: 16px 16px 8px;
+    }
+    .sidebar-profile-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #EE220C;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .sidebar-profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .sidebar-profile-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1c1c1e;
+      line-height: 1.2;
+    }
+    .sidebar-profile-role {
+      font-size: 11px;
+      color: #8e8e93;
+    }
+    .sidebar-divider {
+      border: none;
+      border-top: 1px solid #e5e5ea;
+      margin: 8px 16px;
+    }
+    .sidebar-bottom {
+      padding: 0 8px 16px;
+      margin-top: auto;
+    }
+    .sidebar-action {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b6b70;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      text-align: left;
+      width: 100%;
+    }
+    .sidebar-action:hover { background: #f2f2f7; }
+    .sidebar-action svg { flex-shrink: 0; }
+    
+    /* Dark mode */
+    body.dark .sidebar-profile { background: #2c2c2e; }
+    body.dark .sidebar-profile-name { color: #fff; }
+    body.dark .sidebar-action { color: #8e8e93; }
+    body.dark .sidebar-action:hover { background: #2c2c2e; }
+    body.dark .sidebar-divider { border-top-color: #3a3a3c; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -1119,43 +1192,27 @@
     </div>
   </div>
 
-  <div class="topbar-right">
-    <div class="desktop-profile" style="position:relative">
-      <button class="desktop-profile-btn" onclick="toggleDesktopProfile(event)">
-        <img id="user-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
-        <span class="user-name" id="user-name"></span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="desktop-profile-menu hidden" id="desktop-profile-menu">
-        <div class="desktop-profile-menu-header">
-          <div style="font-size:13px;font-weight:600" id="desktop-profile-name"></div>
-          <div style="font-size:12px;color:#8e8e93" id="desktop-profile-email"></div>
-        </div>
-        <div class="desktop-profile-menu-sep"></div>
-        <div class="desktop-profile-menu-item" onclick="closeDesktopProfile()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          Osobní desky
-        </div>
-        <div class="desktop-profile-menu-sep"></div>
-        <div class="desktop-profile-menu-item" onclick="toggleDarkMode()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <span class="dark-mode-toggle-label"></span>
-        </div>
-        <div class="desktop-profile-menu-sep"></div>
-        <div class="desktop-profile-menu-item danger" onclick="handleLogout()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Odhlásit se
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="topbar-right">
 </div>
 
   <!-- APP BODY -->
   <div class="app-body">
 
     <!-- LEFT SIDEBAR -->
-    <div class="left-sidebar">
+   <div class="left-sidebar">
+      <!-- Profil -->
+      <div class="sidebar-profile">
+        <div class="sidebar-profile-avatar" id="sidebar-avatar">
+          <img id="sidebar-avatar-img" src="" alt="" onerror="this.style.display='none'">
+          <span id="sidebar-avatar-initials"></span>
+        </div>
+        <div>
+          <div class="sidebar-profile-name" id="sidebar-profile-name"></div>
+          <div class="sidebar-profile-role" id="sidebar-profile-role"></div>
+        </div>
+      </div>
+    
+      <!-- Upload tlačítka -->
       <div class="upload-btn-wrap">
         <button class="upload-btn" onclick="openUpload()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1170,6 +1227,8 @@
           Synchronizovat Drive
         </button>
       </div>
+    
+      <!-- Záložky -->
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" onclick="switchTab('recent')" id="tab-recent">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1196,8 +1255,21 @@
           Oblíbené
         </button>
       </div>
+    
+      <hr class="sidebar-divider">
+    
+      <!-- Sidebar bottom -->
+      <div class="sidebar-bottom">
+        <button class="sidebar-action" onclick="toggleDarkMode()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span class="dark-mode-toggle-label"></span>
+        </button>
+        <button class="sidebar-action" onclick="handleLogout()" style="color:#EE220C">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Odhlásit se
+        </button>
+      </div>
     </div>
-
     <!-- MAIN CONTENT -->
     <div class="main-content" id="main-content"
       ondragover="event.preventDefault();document.getElementById('upload-zone').classList.add('dragover')"
@@ -1403,6 +1475,21 @@ function showApp() {
   }
   document.getElementById("desktop-profile-name").textContent = currentUser.name || "";
   document.getElementById("desktop-profile-email").textContent = currentUser.email || "";
+
+  // Sidebar profil
+  document.getElementById("sidebar-profile-name").textContent = currentUser.name || currentUser.email || "";
+  document.getElementById("sidebar-profile-role").textContent = currentUser.role || "Člen";
+  const sidebarImg = document.getElementById("sidebar-avatar-img");
+  const sidebarInitials = document.getElementById("sidebar-avatar-initials");
+  if (currentUser.photoURL) {
+    sidebarImg.src = currentUser.photoURL;
+    sidebarImg.style.display = "block";
+    sidebarInitials.style.display = "none";
+  } else {
+    const name = currentUser.name || currentUser.email || "?";
+    sidebarInitials.textContent = name.slice(0, 2).toUpperCase();
+    sidebarImg.style.display = "none";
+  }
 
   // Zobraz skeleton
   const area = document.getElementById("content-area");
