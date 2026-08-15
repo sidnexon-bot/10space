@@ -23,7 +23,7 @@
     #app-screen { display: flex; flex-direction: column; height: 100vh; }
 
     /* TOPBAR */
-    .topbar { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 100; }
+    .topbar { background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 1500; position: relative; }
     .topbar-left {position: relative; display: flex; justify-content: space-between; align-items: center; width: 100%;}
     .topbar-left h1 { font-size: 17px; font-weight: 700; }
     .topbar-right { display: flex; align-items: center; gap: 10px; }
@@ -295,7 +295,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
       min-width: 220px;
-      z-index: 1000;
+      z-index: 2000;
       overflow: hidden;
       display: none;
     }
