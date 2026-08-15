@@ -1459,8 +1459,6 @@ function showApp() {
   document.getElementById("body").classList.remove("login-page");
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app-screen").classList.remove("hidden");
-  document.getElementById("user-name").textContent = currentUser.name || currentUser.email;
-  if (currentUser.photoURL) document.getElementById("user-avatar").src = currentUser.photoURL;
   
   // Mobilní avatar
   const mobileAvatarImg = document.getElementById("mobile-avatar-img");
