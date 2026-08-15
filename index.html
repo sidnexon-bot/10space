@@ -40,6 +40,9 @@
     .user-name { font-size: 13px; color: #6e6e73; }
     .logout-btn { font-size: 13px; color: #6e6e73; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
     .logout-btn:hover { background: #f2f2f7; }
+    body.dark .desktop-profile-btn { color: #fff; }
+    body.dark #desktop-profile-name { color: #fff; }
+    body.dark #desktop-profile-email { color: #8e8e93; }
 
     /* MAIN AREA */
     .app-body { display: flex; flex: 1; overflow: hidden; }
@@ -140,6 +143,8 @@
     .location-item { display: flex; align-items: center; gap: 6px; padding: 3px 0; cursor: pointer; color: #1c1c1e; }
     .location-item:hover { color: #EE220C; }
     .location-item.current { font-weight: 600; color: #1c1c1e; cursor: default; }
+    body.dark .location-item { color: #fff; }
+    body.dark .location-tree { color: #fff; }
 
     /* VERSION CARDS */
     .version-card { background: #f9f9fb; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative; }
@@ -262,6 +267,10 @@
 
     .desktop-profile { display: none; }
     .topbar-center { padding: 0; }
+
+    /* Topbar nápis */
+    body.dark .topbar h1 { color: #fff; }
+    body.dark .topbar-left h1 { color: #fff; }
   
     /* Avatar vpravo nahoře */
     .mobile-avatar-btn {
@@ -638,6 +647,18 @@
         padding: 16px;
       }
 
+        body.dark .mobile-detail-overlay { background: rgba(0,0,0,0.6); }
+        body.dark .mobile-detail-modal { background: #2c2c2e; }
+        body.dark .mobile-detail-modal-tab { color: #8e8e93; border-bottom-color: #3a3a3c; }
+        body.dark .mobile-detail-modal-tab.active { color: #ff453a; border-bottom-color: #ff453a; }
+        body.dark .mobile-detail-modal-close { color: #8e8e93; }
+        body.dark .mobile-detail-modal-content .detail-label { color: #8e8e93; }
+        body.dark .mobile-detail-modal-content .detail-static { color: #fff; }
+
+    /* Přepínač dark/light mode — dynamický text */
+        body.dark .dark-mode-toggle-label::before { content: "Světlý režim"; }
+        body:not(.dark) .dark-mode-toggle-label::before { content: "Tmavý režim"; }
+
     /* SPLASH SCREEN */
     .splash {
       position: fixed;
@@ -785,10 +806,11 @@
     }
     
     body.dark .upload-btn {
-      background: #2c2c2e;
-      color: #fff;
-      border-color: #3a3a3c;
+      background: #3a3a3c !important;
+      color: #fff !important;
+      border-color: #48484a !important;
     }
+    body.dark .upload-btn:hover { background: #48484a !important; }
     
     body.dark .right-sidebar {
       background: #2c2c2e;
@@ -813,6 +835,7 @@
     body.dark .list-item {
       border-bottom-color: #3a3a3c;
       color: #fff;
+      background: #1c1c1e;
     }
     body.dark .list-item:hover { background: #2c2c2e; }
     body.dark .list-item.active-detail {
@@ -823,7 +846,10 @@
     body.dark .list-item-date,
     body.dark .list-item-code { color: #8e8e93; }
     
-    body.dark .content-header { border-bottom-color: #3a3a3c; }
+    body.dark .content-header {
+      background: #1c1c1e;
+      border-bottom-color: #3a3a3c;
+    }
     body.dark .content-title { color: #fff; }
     body.dark .breadcrumb { color: #8e8e93; }
     
@@ -869,8 +895,8 @@
     }
     
     body.dark .search-bar {
-      background: #2c2c2e;
-      border-color: #3a3a3c;
+      background: #3a3a3c;
+      border-color: #48484a;
     }
     body.dark .search-select { color: #fff; }
     body.dark .search-input { color: #fff; }
@@ -999,7 +1025,7 @@
       <div class="mobile-profile-menu-sep"></div>
       <div class="mobile-profile-menu-item" onclick="toggleDarkMode();closeMobileProfileMenu()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        Tmavý režim
+        <span class="dark-mode-toggle-label"></span>
       </div>
       <div class="mobile-profile-menu-sep"></div>
       <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
@@ -1046,7 +1072,7 @@
         <div class="desktop-profile-menu-sep"></div>
         <div class="desktop-profile-menu-item" onclick="toggleDarkMode()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          Tmavý režim
+          <span class="dark-mode-toggle-label"></span>
         </div>
         <div class="desktop-profile-menu-sep"></div>
         <div class="desktop-profile-menu-item danger" onclick="handleLogout()">
