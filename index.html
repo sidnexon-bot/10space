@@ -1450,9 +1450,16 @@ onAuthStateChanged(auth, async (user) => {
     const snapshot = await get(ref(db, "/members"));
     const members = snapshot.val();
     const member = Object.values(members).find(m => m.email === user.email);
-    if (!member) { await signOut(auth); return; }
+    if (!member) {
+      await signOut(auth);
+      hideSplash();
+      return;
+    }
     currentUser = { ...member, photoURL: user.photoURL };
     showApp();
+  } else {
+    hideSplash();
+    document.getElementById("login-screen")?.classList.remove("hidden");
   }
 });
 
