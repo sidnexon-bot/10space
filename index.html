@@ -27,6 +27,18 @@
     .topbar-left { display: flex; align-items: center; gap: 10px; flex: 1; position: relative; }
     .topbar-center { flex: 2; display: flex; justify-content: center; padding: 0 16px; }
     .topbar-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    .topbar-subtitle {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1c1c1e;
+      margin-top: 2px;
+    }
+    body.dark .topbar-subtitle { color: #fff; }
+    
+    @media (min-width: 769px) {
+      #pageTitle { display: none; }
+      .topbar-subtitle { display: none; }
+    }
     .search-bar { width: 100%; max-width: 480px; }
     .desktop-profile-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
     .desktop-profile-btn:hover { background: #f2f2f7; }
@@ -1150,13 +1162,15 @@
 <div id="app-screen" class="hidden">
 
 <!-- TOPBAR -->
-<div class="topbar" id="topbar">
-  <div class="topbar-left">
-    <h1>10space</h1>
-    <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
-      <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
-      <span id="mobile-avatar-initials"></span>
-    </button>
+<div class="topbar-left">
+  <div>
+    <h1 id="pageTitle">Dashboard</h1>
+    <div class="topbar-subtitle">10<span style="color:#EE220C">space</span></div>
+  </div>
+  <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
+    <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
+    <span id="mobile-avatar-initials"></span>
+  </button>
     <div class="mobile-profile-menu" id="mobile-profile-menu">
       <div class="mobile-profile-menu-header">
         <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
@@ -1678,27 +1692,43 @@ function buildFolderTree(parentId, depth) {
   `).join("");
 }
 
-// TABS
 window.switchTab = (tab) => {
   currentTab = tab;
   selectedItems.clear();
   window.currentFolder = null;
-
   document.querySelectorAll(".sidebar-tab").forEach(t => t.classList.remove("active"));
   document.getElementById(`tab-${tab}`)?.classList.add("active");
-
+  
   const titles = {
-    recent: "Nedávné", documents: "Dokumenty",
-    folders: "Složky", media: "Multimédia",
-    projects: "Projekty", favorites: "Oblíbené"
+    recent: "Dashboard",
+    documents: "Dokumenty",
+    folders: "Drive",
+    media: "Multimédia",
+    projects: "Projekty",
+    favorites: "Oblíbené"
   };
+  
   const title = titles[tab] || tab;
   document.getElementById("content-title").textContent = title;
   document.getElementById("breadcrumb").innerHTML = `<span style="color:#8e8e93">10space</span><span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${title}</span>`;
-
+  
+  // Mobilní header
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = title;
+  
   renderTab();
 };
-
+  
+  const title = titles[tab] || tab;
+  document.getElementById("content-title").textContent = title;
+  document.getElementById("breadcrumb").innerHTML = `<span style="color:#8e8e93">10space</span><span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${title}</span>`;
+  
+  // Mobilní header
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = title;
+  
+  renderTab();
+};
 function renderTab() {
   const area = document.getElementById("content-area");
 
