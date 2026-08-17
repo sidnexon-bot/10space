@@ -1709,7 +1709,8 @@ window.switchTab = (tab) => {
   };
   
   const title = titles[tab] || tab;
-  document.getElementById("content-title").textContent = title;
+  const contentTitleEl = document.getElementById("content-title");
+  if (contentTitleEl) contentTitleEl.textContent = title;
   document.getElementById("breadcrumb").innerHTML = `<span style="color:#8e8e93">10space</span><span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${title}</span>`;
   
   // Mobilní header
@@ -1856,7 +1857,10 @@ window.navigateToDriveFolder = (folderId, folderName) => {
 function renderDriveBreadcrumb() {
   const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
   const currentName = crumbs[crumbs.length - 1].name;
-  document.getElementById("content-title").textContent = currentName;
+  const contentTitleEl = document.getElementById("content-title");
+  if (contentTitleEl) contentTitleEl.textContent = currentName;
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = currentName;
   document.getElementById("breadcrumb").innerHTML = crumbs.slice(0, -1).map(c =>
     `<span onclick="navigateToDriveFolderById('${c.id}')">${c.name}</span><span class="sep">›</span>`
   ).join("") + `<span style="color:#1c1c1e;font-weight:500">${currentName}</span>`;
@@ -2035,8 +2039,11 @@ function renderBreadcrumb(folderId) {
   }
 
   // Dominantní název = aktuální složka nebo záložka
+  const contentTitleEl = document.getElementById("content-title");
   const currentName = trail.length > 0 ? trail[trail.length - 1].name : document.getElementById("content-title").textContent;
-  document.getElementById("content-title").textContent = currentName;
+  if (contentTitleEl) contentTitleEl.textContent = currentName;
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = currentName;
 
   // Breadcrumb = cesta k aktuální složce
   const crumbs = [{ id: null, name: "10space" }, ...trail.slice(0, -1)];
