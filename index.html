@@ -3955,23 +3955,26 @@ if (localStorage.getItem("darkMode") === "1") {
 
 // GOOGLE DOCS VIEWER
 window.openGdocsViewer = async (fileId, title, mimeType) => {
-  document.getElementById("gdocs-title").textContent = title || "Dokument";
-  document.getElementById("gdocs-overlay").classList.remove("hidden");
-  document.getElementById("gdocs-iframe").src = "";
-  
+  showSpinner();
   try {
     const token = await auth.currentUser.getIdToken();
-    // Nasdílej soubor uživateli přes getFileUrl (má logiku permissions.create)
-    await fetch(FUNCTIONS.getFileUrl, {
+    const response = await fetch(FUNCTIONS.getFileUrl, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ driveFileId: fileId })
     });
-    
-    const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-    document.getElementById("gdocs-iframe").src = embedUrl;
+    const data = await response.json();
+    hideSpinner();
+    if (data.url) {
+      const a = document.createElement("a");
+      a.href = data.url; a.target = "_blank"; a.rel = "noopener";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else {
+      alert("Chyba: " + (data.error || "Nelze otevřít"));
+    }
   } catch(err) {
-    document.getElementById("gdocs-iframe").outerHTML = `<div style="padding:20px;text-align:center;color:#8e8e93">Nelze načíst náhled: ${err.message}</div>`;
+    hideSpinner();
+    alert("Chyba: " + err.message);
   }
 };
 
