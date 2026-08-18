@@ -1846,10 +1846,17 @@ function renderDriveFolderContent(folderId) {
 let driveBreadcrumb = []; // [{id, name}]
 
 window.navigateToDriveFolder = (folderId, folderName) => {
-  // Zabraň duplicitnímu přidání
   if (window.currentFolder === folderId) return;
   window.currentFolder = folderId;
-  driveBreadcrumb.push({ id: folderId, name: folderName });
+  
+  // Zkontroluj jestli složka už je v breadcrumb — pokud ano, ořízni na tuto pozici
+  const existingIdx = driveBreadcrumb.findIndex(c => c.id === folderId);
+  if (existingIdx >= 0) {
+    driveBreadcrumb = driveBreadcrumb.slice(0, existingIdx + 1);
+  } else {
+    driveBreadcrumb.push({ id: folderId, name: folderName });
+  }
+  
   renderDriveBreadcrumb();
   renderDriveFolderContent(folderId);
 };
@@ -1857,10 +1864,29 @@ window.navigateToDriveFolder = (folderId, folderName) => {
 function renderDriveBreadcrumb() {
   const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
   const currentName = crumbs[crumbs.length - 1].name;
-  document.getElementById("breadcrumb").innerHTML = crumbs.slice(0, -1).map(c =>
+  const backHtml = crumbs.length > 1 ? `
+    <button onclick="driveGoBack()" style="background:none;border:none;cursor:pointer;color:#6e6e73;display:flex;align-items:center;padding:0;margin-right:4px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  ` : "";
+  document.getElementById("breadcrumb").innerHTML = backHtml + crumbs.slice(0, -1).map(c =>
     `<span onclick="navigateToDriveFolderById('${c.id}')">${c.name}</span><span class="sep">›</span>`
   ).join("") + `<span style="color:#1c1c1e;font-weight:500">${currentName}</span>`;
 }
+
+window.driveGoBack = () => {
+  if (driveBreadcrumb.length === 0) return;
+  driveBreadcrumb.pop();
+  if (driveBreadcrumb.length === 0) {
+    window.currentFolder = null;
+    renderDriveFolderContent(null);
+  } else {
+    const prev = driveBreadcrumb[driveBreadcrumb.length - 1];
+    window.currentFolder = prev.id;
+    renderDriveFolderContent(prev.id);
+  }
+  renderDriveBreadcrumb();
+};
 
 window.navigateToDriveFolderById = (id) => {
   if (!id || id === "null") {
