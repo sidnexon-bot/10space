@@ -184,7 +184,7 @@
     .recent-section-title { font-size: 13px; font-weight: 600; color: #8e8e93; padding: 16px 24px 8px; }
 
     /* LOADING SPINNER */
-    .spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
+    .spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
     .spinner-overlay.active { display: flex; }
     .spinner { width: 36px; height: 36px; border: 3px solid #e5e5ea; border-top-color: #EE220C; border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -1955,7 +1955,7 @@ window.handleDriveNameClick = (id, mimeType, isFolder) => {
 };
   
 window.openDriveFile = async (fileId) => {
-  showSpinner();
+  showSpinner("Otevírání dokumentu...");
   try {
     const token = await auth.currentUser.getIdToken();
     const response = await fetch(FUNCTIONS.getFileUrl, {
@@ -2661,8 +2661,21 @@ window.createFolder = async () => {
 };
 
   // SPINNER
-function showSpinner() { document.getElementById("spinner").classList.add("active"); }
-function hideSpinner() { document.getElementById("spinner").classList.remove("active"); }
+function showSpinner(text) {
+  const overlay = document.getElementById("spinner");
+  overlay.classList.add("active");
+  let label = document.getElementById("spinner-label");
+  if (!label) {
+    label = document.createElement("div");
+    label.id = "spinner-label";
+    label.style.cssText = "margin-top:12px;color:#1c1c1e;font-size:14px;text-align:center";
+    overlay.appendChild(label);
+  }
+  label.textContent = text || "";
+}
+function hideSpinner() {
+  document.getElementById("spinner").classList.remove("active");
+}
 
 // UPLOAD PROGRESS
 function initUploadProgress(files) {
@@ -3955,7 +3968,7 @@ if (localStorage.getItem("darkMode") === "1") {
 
 // GOOGLE DOCS VIEWER
 window.openGdocsViewer = async (fileId, title, mimeType) => {
-  showSpinner();
+  showSpinner("Otevírání dokumentu...");
   try {
     const token = await auth.currentUser.getIdToken();
     const response = await fetch(FUNCTIONS.getFileUrl, {
