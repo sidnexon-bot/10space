@@ -188,7 +188,11 @@
     .spinner-overlay.active { display: flex; }
     .spinner { width: 36px; height: 36px; border: 3px solid #e5e5ea; border-top-color: #EE220C; border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    
+
+    body.dark .spinner-overlay { background: rgba(28,28,30,0.7); }
+    body.dark #spinner-label { color: #fff; }
+    body.dark .spinner { border-color: #3a3a3c; border-top-color: #ff453a; }
+        
     /* UPLOAD PROGRESS */
     .upload-progress-panel { position: fixed; bottom: 24px; right: 24px; width: 320px; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border: 1px solid #e5e5ea; z-index: 1500; overflow: hidden; }
     .upload-progress-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f2f2f7; font-size: 14px; font-weight: 600; }
@@ -801,8 +805,8 @@
     body.dark #content-area { background: #1c1c1e; }
     
     body.dark .topbar {
-      background: rgba(28,28,30,0.85);
-      border-bottom-color: #3a3a3c;
+      background: rgba(0,0,0,0.85);
+      border-bottom-color: #1c1c1e;
     }
     
     body.dark .left-sidebar {
@@ -973,7 +977,7 @@
       border-color: #48484a;
     }
     
-    body.dark .splash { background: #1c1c1e; }
+    body.dark .splash { background: #000; }
     body.dark .splash-logo { color: #fff; }
     
     body.dark .skeleton {
@@ -3953,7 +3957,7 @@ window.toggleDarkMode = () => {
   document.querySelector('meta[name="theme-color"]')?.remove();
   const meta = document.createElement("meta");
   meta.name = "theme-color";
-  meta.content = isDark ? "#1c1c1e" : "#f2f2f7";
+  meta.content = isDark ? "#000000" : "#f2f2f7";
   document.head.appendChild(meta);
 };
   
@@ -3962,7 +3966,7 @@ if (localStorage.getItem("darkMode") === "1") {
   document.body.classList.add("dark");
   const meta = document.createElement("meta");
   meta.name = "theme-color";
-  meta.content = "#1c1c1e";
+  meta.content = "#000000";
   document.head.appendChild(meta);
 }
 
