@@ -1857,10 +1857,6 @@ window.navigateToDriveFolder = (folderId, folderName) => {
 function renderDriveBreadcrumb() {
   const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
   const currentName = crumbs[crumbs.length - 1].name;
-  const contentTitleEl = document.getElementById("content-title");
-  if (contentTitleEl) contentTitleEl.textContent = currentName;
-  const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = currentName;
   document.getElementById("breadcrumb").innerHTML = crumbs.slice(0, -1).map(c =>
     `<span onclick="navigateToDriveFolderById('${c.id}')">${c.name}</span><span class="sep">›</span>`
   ).join("") + `<span style="color:#1c1c1e;font-weight:500">${currentName}</span>`;
@@ -2037,15 +2033,7 @@ function renderBreadcrumb(folderId) {
     trail.unshift({ id, name: f.nazev });
     id = f.rodic;
   }
-
-  // Dominantní název = aktuální složka nebo záložka
-  const contentTitleEl = document.getElementById("content-title");
-  const currentName = trail.length > 0 ? trail[trail.length - 1].name : document.getElementById("content-title").textContent;
-  if (contentTitleEl) contentTitleEl.textContent = currentName;
-  const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = currentName;
-
-  // Breadcrumb = cesta k aktuální složce
+  const currentName = trail.length > 0 ? trail[trail.length - 1].name : "";
   const crumbs = [{ id: null, name: "10space" }, ...trail.slice(0, -1)];
   document.getElementById("breadcrumb").innerHTML = crumbs.map((c, i) =>
     i < crumbs.length - 1
