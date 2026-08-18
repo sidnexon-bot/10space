@@ -1141,6 +1141,13 @@
     body.dark .sidebar-action:hover { background: #2c2c2e; }
     body.dark .sidebar-divider { border-top-color: #3a3a3c; }
 
+    /* GOOGLE DOCS VIEWER */
+    .gdocs-overlay { position: fixed; inset: 0; background: #fff; z-index: 3000; display: flex; flex-direction: column; }
+    .gdocs-overlay.hidden { display: none; }
+    .gdocs-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 52px; background: #f2f2f7; flex-shrink: 0; gap: 8px; border-bottom: 1px solid #e5e5ea; }
+    .gdocs-toolbar .pdf-btn { background: #fff; color: #1c1c1e; border: 1px solid #e5e5ea; }
+    .gdocs-toolbar .pdf-title { color: #1c1c1e; flex: 1; text-align: center; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -1930,9 +1937,18 @@ window.handleDriveItemClick = (e, id, isFolder) => {
 
 window.handleDriveNameClick = (id, mimeType, isFolder) => {
   if (isFolder) return;
-  if (mimeType === "application/pdf") {
-    const file = window.driveFiles?.[id];
+  const mime = (mimeType || "").toLowerCase();
+  const file = window.driveFiles?.[id];
+  
+  if (mime === "application/pdf") {
     openPdfViewer(id, file?.name || "Dokument");
+  } else if (
+    mime.includes("word") || mime.includes("excel") || mime.includes("powerpoint") ||
+    mime.includes("msword") || mime.includes("spreadsheetml") ||
+    mime.includes("presentationml") || mime.includes("wordprocessingml") ||
+    mime.includes("google-apps")
+  ) {
+    openGdocsViewer(id, file?.name || "Dokument", mime);
   } else {
     openDriveFile(id);
   }
@@ -3936,6 +3952,19 @@ if (localStorage.getItem("darkMode") === "1") {
   meta.content = "#1c1c1e";
   document.head.appendChild(meta);
 }
+
+// GOOGLE DOCS VIEWER
+window.openGdocsViewer = (fileId, title, mimeType) => {
+  document.getElementById("gdocs-title").textContent = title || "Dokument";
+  const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+  document.getElementById("gdocs-iframe").src = embedUrl;
+  document.getElementById("gdocs-overlay").classList.remove("hidden");
+};
+
+window.closeGdocsViewer = () => {
+  document.getElementById("gdocs-overlay").classList.add("hidden");
+  document.getElementById("gdocs-iframe").src = "";
+};
   
 // UPLOAD
 window.openUpload = () => {
@@ -4196,6 +4225,18 @@ async function processFilesWithEvid(fileResults) {
     </div>
     <div class="projekt-detail-body" id="projekt-detail-body"></div>
   </div>
+</div>
+
+<!-- GOOGLE DOCS VIEWER -->
+<div class="gdocs-overlay hidden" id="gdocs-overlay">
+  <div class="gdocs-toolbar">
+    <button class="pdf-btn" onclick="closeGdocsViewer()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="pdf-title" id="gdocs-title"></span>
+    <div style="width:36px"></div>
+  </div>
+  <iframe id="gdocs-iframe" style="width:100%;height:100%;border:none;flex:1"></iframe>
 </div>
   
 </body>
