@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f2f2f7" id="theme-color-meta">
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <title>10space</title>
   <style>
@@ -1448,7 +1449,11 @@ let selectedDetailId = null;
 // Načti uložený režim při startu
 if (localStorage.getItem("darkMode") === "1") {
   document.body.classList.add("dark");
-  document.getElementById("theme-color-meta")?.setAttribute("content", "#000000");
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
+  const meta = document.createElement("meta");
+  meta.name = "theme-color";
+  meta.content = "#000000";
+  document.head.appendChild(meta);
 }
 
 // SPLASH
@@ -3959,7 +3964,13 @@ window.zavritProjektSlozku = () => {
 window.toggleDarkMode = () => {
   const isDark = document.body.classList.toggle("dark");
   localStorage.setItem("darkMode", isDark ? "1" : "0");
-  document.getElementById("theme-color-meta")?.setAttribute("content", isDark ? "#000000" : "#f2f2f7");
+  
+  // Smaž všechny theme-color meta tagy a nahraď jedním dynamickým
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
+  const meta = document.createElement("meta");
+  meta.name = "theme-color";
+  meta.content = isDark ? "#000000" : "#f2f2f7";
+  document.head.appendChild(meta);
 };
 
 // GOOGLE DOCS VIEWER
