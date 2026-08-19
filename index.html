@@ -1774,6 +1774,10 @@ window.switchTab = (tab) => {
   document.querySelectorAll(".sidebar-tab").forEach(t => t.classList.remove("active"));
   document.getElementById(`tab-${tab}`)?.classList.add("active");
   
+  // Zobraz drive toolbar jen v záložce Drive
+  const driveToolbar = document.getElementById("drive-toolbar");
+  if (driveToolbar) driveToolbar.classList.toggle("hidden", tab !== "folders");
+  
   const titles = {
     recent: "Dashboard",
     documents: "Dokumenty",
