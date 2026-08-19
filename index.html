@@ -1812,18 +1812,6 @@ window.switchTab = (tab) => {
   renderTab();
 };
   
-  const title = titles[tab] || tab;
-  const contentTitleEl = document.getElementById("content-title");
-  if (contentTitleEl) contentTitleEl.textContent = title;
-  document.getElementById("breadcrumb").innerHTML = `<span style="color:#8e8e93">10space</span><span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${title}</span>`;
-  
-  // Mobilní header
-  const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = title;
-  
-  renderTab();
-};
-  
 function renderTab() {
   const area = document.getElementById("content-area");
 
