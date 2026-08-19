@@ -1784,6 +1784,14 @@ window.switchTab = (tab) => {
   const driveToolbar = document.getElementById("drive-toolbar");
   if (driveToolbar) driveToolbar.classList.toggle("hidden", tab !== "folders");
   
+  // Breadcrumb jen v Drive
+  const breadcrumbEl = document.getElementById("breadcrumb");
+  if (breadcrumbEl) breadcrumbEl.style.display = (tab === "folders") ? "flex" : "none";
+  
+  // List header jen v Drive a Oblíbené
+  const listHeaderEl = document.getElementById("list-header");
+  if (listHeaderEl) listHeaderEl.style.display = (tab === "folders" || tab === "favorites") ? "grid" : "none";
+  
   const titles = {
     recent: "Dashboard",
     documents: "Dokumenty",
@@ -1792,6 +1800,17 @@ window.switchTab = (tab) => {
     projects: "Projekty",
     favorites: "Oblíbené"
   };
+  
+  const title = titles[tab] || tab;
+  const contentTitleEl = document.getElementById("content-title");
+  if (contentTitleEl) contentTitleEl.textContent = title;
+  if (breadcrumbEl) breadcrumbEl.innerHTML = `<span style="color:#8e8e93">10space</span><span class="sep">›</span><span style="color:#1c1c1e;font-weight:500">${title}</span>`;
+  
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = title;
+  
+  renderTab();
+};
   
   const title = titles[tab] || tab;
   const contentTitleEl = document.getElementById("content-title");
