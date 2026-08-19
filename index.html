@@ -1157,6 +1157,35 @@
     .gdocs-toolbar .pdf-btn { background: #fff; color: #1c1c1e; border: 1px solid #e5e5ea; }
     .gdocs-toolbar .pdf-title { color: #1c1c1e; flex: 1; text-align: center; }
 
+    /* DASHBOARD */
+    .dashboard-header { padding: 24px; }
+    .dashboard-greeting { font-size: 24px; font-weight: 700; color: #1c1c1e; margin-bottom: 4px; }
+    .dashboard-date { font-size: 14px; color: #8e8e93; }
+    .dashboard-grid { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+    .dashboard-card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e5e5ea; }
+    .dashboard-card-title { font-size: 11px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .dashboard-empty { font-size: 13px; color: #c7c7cc; text-align: center; padding: 16px 0; }
+    .dashboard-projekt-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f2f2f7; cursor: pointer; }
+    .dashboard-projekt-row:last-child { border-bottom: none; }
+    .dashboard-projekt-row:hover { color: #EE220C; }
+    .dashboard-projekt-name { font-size: 14px; font-weight: 500; }
+    .dashboard-projekt-days { font-size: 12px; color: #8e8e93; background: #f2f2f7; padding: 3px 8px; border-radius: 6px; }
+    .dashboard-file-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
+    .dashboard-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dashboard-file-time { color: #8e8e93; font-size: 12px; flex-shrink: 0; }
+    .dashboard-note-textarea { width: 100%; border: none; background: #f9f9fb; border-radius: 8px; padding: 10px; font-size: 13px; font-family: inherit; resize: none; min-height: 80px; outline: none; }
+    .dashboard-note-textarea:focus { background: #f2f2f7; }
+    .dashboard-todo-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+    .dashboard-todo-item input[type="checkbox"] { accent-color: #EE220C; }
+    .dashboard-todo-project { font-size: 11px; color: #8e8e93; margin-left: auto; flex-shrink: 0; }
+    
+    body.dark .dashboard-greeting { color: #fff; }
+    body.dark .dashboard-card { background: #2c2c2e; border-color: #3a3a3c; }
+    body.dark .dashboard-projekt-row { border-bottom-color: #3a3a3c; color: #fff; }
+    body.dark .dashboard-projekt-days { background: #3a3a3c; }
+    body.dark .dashboard-note-textarea { background: #3a3a3c; color: #fff; }
+    body.dark .dashboard-file-name { color: #fff; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -1751,14 +1780,9 @@ function renderTab() {
   const area = document.getElementById("content-area");
 
   if (currentTab === "recent") {
-  const items = Object.entries(window.driveFiles || {})
-    .filter(([id, f]) => f.modifiedTime)
-    .sort(([,a],[,b]) => new Date(b.modifiedTime) - new Date(a.modifiedTime))
-    .slice(0, 20)
-    .map(([id, f]) => [id, { ...f, isFolder: false }]);
-  renderDriveItems(items.map(([id, f]) => ({ id, ...f })));
-  return;
-}
+    renderDashboard();
+    return;
+  }
 
   if (currentTab === "documents") {
     area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám dokumenty...</p></div>`;
@@ -1815,6 +1839,143 @@ function getEvidCode(fileId) {
     return match && match[1] === fileId;
   });
   return song?.code || "";
+}
+
+// DASHBOARD
+async function renderDashboard() {
+  const area = document.getElementById("content-area");
+  area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
+
+  const jmeno = (currentUser?.name || "").split(" ")[0] || "";
+  const hodina = new Date().getHours();
+  const pozdrav = hodina < 12 ? "Dobré ráno" : hodina < 18 ? "Dobrý den" : "Dobrý večer";
+  const datum = new Date().toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const [projektSnap, akceSnap, poznamkySnap] = await Promise.all([
+    get(ref(db, "/projekty")),
+    get(ref(db, "/akce")),
+    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`))
+  ]);
+
+  const projekty = projektSnap.val() || {};
+  const akce = akceSnap.val() || {};
+  const dnes = new Date().toISOString().split("T")[0];
+
+  // Nadcházející projekty
+  const nadchazejici = Object.entries(projekty)
+    .map(([id, p]) => ({ id, ...p }))
+    .filter(p => {
+      const a = akce[p.id];
+      if (a?.type === "Zkouška") return false;
+      return p.datum && p.datum >= dnes;
+    })
+    .sort((a, b) => (a.datum || "").localeCompare(b.datum || ""))
+    .slice(0, 5);
+
+  function dnyDo(datum) {
+    const diff = Math.ceil((new Date(datum) - new Date(dnes)) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return "dnes";
+    if (diff === 1) return "zítra";
+    return `za ${diff} dní`;
+  }
+
+  const projektyHtml = nadchazejici.length > 0
+    ? nadchazejici.map(p => `
+        <div class="dashboard-projekt-row" onclick="otevritProjekt('${p.id}')">
+          <span class="dashboard-projekt-name">${p.nazev || "—"}</span>
+          <span class="dashboard-projekt-days">${dnyDo(p.datum)}</span>
+        </div>
+      `).join("")
+    : `<div class="dashboard-empty">Zatím žádné nadcházející projekty</div>`;
+
+  // Nedávno nahráno
+  const nedavneSoubory = Object.entries(window.driveFiles || {})
+    .filter(([id, f]) => f.modifiedTime)
+    .sort(([,a],[,b]) => new Date(b.modifiedTime) - new Date(a.modifiedTime))
+    .slice(0, 5);
+
+  function formatCas(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const hod = Math.floor(diff / 3600000);
+    if (hod < 1) return "před chvílí";
+    if (hod < 24) return `před ${hod} hod`;
+    const dny = Math.floor(hod / 24);
+    if (dny === 1) return "včera";
+    return `před ${dny} dny`;
+  }
+
+  const souboryHtml = nedavneSoubory.length > 0
+    ? nedavneSoubory.map(([id, f]) => `
+        <div class="dashboard-file-row">
+          ${getDriveFileIcon(f.mimeType, 16)}
+          <span class="dashboard-file-name">${f.name}</span>
+          <span class="dashboard-file-time">${formatCas(f.modifiedTime)}</span>
+        </div>
+      `).join("")
+    : `<div class="dashboard-empty">Zatím žádná nedávná aktivita</div>`;
+
+  // To-do z projektů (rider)
+  let todoItems = [];
+  for (const [id, p] of Object.entries(projekty)) {
+    const a = akce[id];
+    if (!a?.rider) continue;
+    try {
+      const rider = JSON.parse(a.rider);
+      const vsechnyTodo = [...(rider.todo_pred || []), ...(rider.todo_den || [])];
+      vsechnyTodo.filter(t => !t.done).forEach(t => {
+        todoItems.push({ co: t.co, projekt: p.nazev, projektId: id });
+      });
+    } catch(e) {}
+  }
+  todoItems = todoItems.slice(0, 8);
+
+  const todoHtml = todoItems.length > 0
+    ? todoItems.map(t => `
+        <div class="dashboard-todo-item">
+          <input type="checkbox" disabled>
+          <span>${t.co}</span>
+          <span class="dashboard-todo-project">${t.projekt}</span>
+        </div>
+      `).join("")
+    : `<div class="dashboard-empty">Žádné úkoly k řešení</div>`;
+
+  // Osobní poznámky
+  const poznamky = poznamkySnap.val() || "";
+
+  area.innerHTML = `
+    <div class="dashboard-header">
+      <div class="dashboard-greeting">${pozdrav}${jmeno ? ", " + jmeno : ""} 👋</div>
+      <div class="dashboard-date">${datum}</div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Nadcházející projekty</div>
+        ${projektyHtml}
+      </div>
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Nedávno nahráno</div>
+        ${souboryHtml}
+      </div>
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Mé poznámky</div>
+        <textarea class="dashboard-note-textarea" id="dashboard-notes" placeholder="Napiš si poznámku...">${poznamky}</textarea>
+      </div>
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">To-do z projektů</div>
+        ${todoHtml}
+      </div>
+    </div>
+  `;
+
+  // Autosave poznámek
+  let saveTimeout;
+  document.getElementById("dashboard-notes").addEventListener("input", (e) => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      const emailSafe = (currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_");
+      await set(ref(db, `/userActivity/${emailSafe}/poznamky`), e.target.value);
+    }, 800);
+  });
 }
   
 // DRIVE ITEMS RENDER
