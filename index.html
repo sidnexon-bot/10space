@@ -2079,7 +2079,6 @@ window.navigateToDriveFolder = (folderId, folderName) => {
   if (window.currentFolder === folderId) return;
   window.currentFolder = folderId;
   
-  // Zkontroluj jestli složka už je v breadcrumb — pokud ano, ořízni na tuto pozici
   const existingIdx = driveBreadcrumb.findIndex(c => c.id === folderId);
   if (existingIdx >= 0) {
     driveBreadcrumb = driveBreadcrumb.slice(0, existingIdx + 1);
@@ -2088,8 +2087,22 @@ window.navigateToDriveFolder = (folderId, folderName) => {
   }
   
   renderDriveBreadcrumb();
-  renderDriveFolderContent(folderId);
+  
+  // Respektuj aktivní filtr při navigaci
+  if (driveFilterType !== "all") {
+    setDriveFilterInFolder(folderId);
+  } else {
+    renderDriveFolderContent(folderId);
+  }
 };
+
+function setDriveFilterInFolder(folderId) {
+  loadDriveFiles(folderId).then(driveFiles => {
+    const filtered = filterDriveItems(driveFiles);
+    const sorted = sortDriveItems(filtered);
+    renderDriveItems(sorted, true);
+  });
+}
 
 function renderDriveBreadcrumb() {
   const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
