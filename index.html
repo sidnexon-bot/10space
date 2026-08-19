@@ -2002,11 +2002,19 @@ async function renderDashboard() {
 }
   
 // DRIVE ITEMS RENDER
-function renderDriveItems(files) {
+function renderDriveItems(files, skipSort) {
   const area = document.getElementById("content-area");
   if (files.length === 0) {
     area.innerHTML = `<div class="empty-state"><p>Žádné položky</p></div>`;
     return;
+  }
+
+  if (!skipSort) {
+    files.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return (a.name || "").localeCompare(b.name || "", "cs");
+    });
   }
 
   // Řaď abecedně — složky nahoře, pak soubory
@@ -2042,16 +2050,13 @@ function renderDriveFolderContent(folderId) {
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
   
   loadDriveFiles(folderId).then(driveFiles => {
-    const sorted = driveFiles.sort((a, b) => {
-      if (a.isFolder && !b.isFolder) return -1;
-      if (!a.isFolder && b.isFolder) return 1;
-      return (a.name || "").localeCompare(b.name || "", "cs");
-    });
-    renderDriveItems(sorted);
+    const filtered = filterDriveItems(driveFiles);
+    const sorted = sortDriveItems(filtered);
+    renderDriveItems(sorted, true); // true = neřaď znovu uvnitř renderDriveItems
   }).catch(err => {
     area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
   });
-  }
+}
 
 // DRIVE NAVIGACE
 let driveBreadcrumb = []; // [{id, name}]
@@ -4178,6 +4183,83 @@ window.closeGdocsViewer = () => {
   document.getElementById("gdocs-overlay").classList.add("hidden");
   document.getElementById("gdocs-iframe").src = "";
 };
+
+// DRIVE SORT & FILTER
+let driveSortBy = "name"; // "name" | "created" | "modified"
+let driveSortDir = "asc"; // "asc" | "desc"
+let driveFilterType = "all"; // "all" | "folder" | "document" | "image" | "audio" | "video"
+
+window.openSortSheet = () => {
+  const options = [
+    { value: "name", label: "Abecedně" },
+    { value: "created", label: "Datum přidání" },
+    { value: "modified", label: "Datum změny" }
+  ];
+  openBottomSheet("Seřadit podle", options.map(o => ({
+    label: o.label + (o.value === driveSortBy ? (driveSortDir === "asc" ? " ↑" : " ↓") : ""),
+    action: `setDriveSort('${o.value}');closeBottomSheet()`,
+    icon: ""
+  })));
+};
+
+window.setDriveSort = (sortBy) => {
+  if (driveSortBy === sortBy) {
+    driveSortDir = driveSortDir === "asc" ? "desc" : "asc";
+  } else {
+    driveSortBy = sortBy;
+    driveSortDir = sortBy === "name" ? "asc" : "desc"; // datum defaultně nejnovější první
+  }
+  const labels = { name: "Abecedně", created: "Datum přidání", modified: "Datum změny" };
+  document.getElementById("sort-label").textContent = labels[sortBy];
+  renderTab();
+};
+
+window.openDriveFilterSheet = () => {
+  const options = [
+    { value: "all", label: "Vše" },
+    { value: "folder", label: "Složky" },
+    { value: "document", label: "Dokumenty" },
+    { value: "image", label: "Obrázky" },
+    { value: "audio", label: "Audio" },
+    { value: "video", label: "Video" }
+  ];
+  openBottomSheet("Filtrovat podle typu", options.map(o => ({
+    label: o.label + (o.value === driveFilterType ? " ✓" : ""),
+    action: `setDriveFilter('${o.value}');closeBottomSheet()`,
+    icon: ""
+  })));
+};
+
+window.setDriveFilter = (type) => {
+  driveFilterType = type;
+  const labels = { all: "Filtrovat", folder: "Složky", document: "Dokumenty", image: "Obrázky", audio: "Audio", video: "Video" };
+  document.getElementById("drive-filter-label").textContent = labels[type];
+  const btn = document.getElementById("drive-filter-btn");
+  btn.classList.toggle("active-filter", type !== "all");
+  renderTab();
+};
+
+function sortDriveItems(items) {
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    let cmp = 0;
+    if (driveSortBy === "name") {
+      cmp = (a.name || "").localeCompare(b.name || "", "cs");
+    } else if (driveSortBy === "modified") {
+      cmp = new Date(a.modifiedTime || 0) - new Date(b.modifiedTime || 0);
+    } else if (driveSortBy === "created") {
+      cmp = new Date(a.modifiedTime || 0) - new Date(b.modifiedTime || 0); // Drive API nemá createdTime v cache, fallback na modified
+    }
+    return driveSortDir === "asc" ? cmp : -cmp;
+  });
+  return sorted;
+}
+
+function filterDriveItems(items) {
+  if (driveFilterType === "all") return items;
+  if (driveFilterType === "folder") return items.filter(f => f.isFolder);
+  return items.filter(f => !f.isFolder && getMimeTypeCategory(f.mimeType) === driveFilterType);
+}
   
 // UPLOAD
 window.openUpload = () => {
