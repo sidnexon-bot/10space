@@ -1186,6 +1186,17 @@
     body.dark .dashboard-note-textarea { background: #3a3a3c; color: #fff; }
     body.dark .dashboard-file-name { color: #fff; }
 
+    /* DRIVE TOOLBAR */
+    .drive-toolbar { display: flex; gap: 8px; padding: 12px 24px; border-bottom: 1px solid #f2f2f7; }
+    .drive-toolbar-btn { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; border: 1px solid #e5e5ea; background: #fff; font-size: 13px; color: #1c1c1e; cursor: pointer; }
+    .drive-toolbar-btn:hover { background: #f9f9fb; }
+    .drive-toolbar-btn.active-filter { border-color: #EE220C; color: #EE220C; background: #fff0ee; }
+    
+    body.dark .drive-toolbar { border-bottom-color: #3a3a3c; }
+    body.dark .drive-toolbar-btn { background: #2c2c2e; border-color: #3a3a3c; color: #fff; }
+    body.dark .drive-toolbar-btn:hover { background: #3a3a3c; }
+    body.dark .drive-toolbar-btn.active-filter { background: rgba(255,69,58,0.15); border-color: #ff453a; color: #ff453a; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -1363,6 +1374,18 @@
       <div class="upload-zone hidden" id="upload-zone">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
         <p>Přetáhni soubory sem nebo <label style="color:#EE220C;cursor:pointer;font-weight:600">vyber ze zařízení<input type="file" multiple style="display:none" onchange="handleFileSelect(event)"></label></p>
+      </div>
+
+      <!-- DRIVE TOOLBAR -->
+      <div class="drive-toolbar hidden" id="drive-toolbar">
+        <button class="drive-toolbar-btn" onclick="openSortSheet()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+          <span id="sort-label">Seřadit</span>
+        </button>
+        <button class="drive-toolbar-btn" id="drive-filter-btn" onclick="openDriveFilterSheet()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+          <span id="drive-filter-label">Filtrovat</span>
+        </button>
       </div>
 
       <!-- LIST HEADER -->
