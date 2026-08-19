@@ -4250,7 +4250,24 @@ window.setDriveFilter = (type) => {
   document.getElementById("drive-filter-label").textContent = labels[type];
   const btn = document.getElementById("drive-filter-btn");
   btn.classList.toggle("active-filter", type !== "all");
-  renderTab();
+
+  if (type === "all") {
+    // Vrať se k normálnímu zobrazení aktuální složky
+    renderDriveFolderContent(window.currentFolder);
+  } else {
+    // Zobraz VŠECHNY soubory daného typu z celého Drive
+    const allFiles = Object.entries(window.driveFiles || {})
+      .map(([id, f]) => ({ id, ...f, isFolder: false }))
+      .filter(f => type === "folder" ? false : getMimeTypeCategory(f.mimeType) === type);
+    
+    const allFolders = type === "folder" 
+      ? Object.entries(window.driveFolders || {}).map(([id, f]) => ({ id, ...f, isFolder: true }))
+      : [];
+
+    const combined = [...allFolders, ...allFiles];
+    const sorted = sortDriveItems(combined);
+    renderDriveItems(sorted, true);
+  }
 };
 
 function sortDriveItems(items) {
