@@ -242,7 +242,21 @@
     .search-bar { display: flex; align-items: center; border: 1px solid #e5e5ea; border-radius: 8px; overflow: hidden; background: #f2f2f7; width: 320px; }
     .search-select { border: none; background: none; padding: 8px 10px; font-size: 13px; color: #1c1c1e; cursor: pointer; border-right: 1px solid #e5e5ea; outline: none; flex-shrink: 0; width: 110px; }
     .search-input { border: none; background: none; padding: 8px 12px; font-size: 14px; outline: none; flex: 1; }
-    .search-results {position: fixed; top: 130px; left: 8px; right: 8px; width: auto; transform: none; z-index: 500; }
+    .search-results {
+      position: fixed;
+      top: 130px;
+      left: 8px;
+      right: 8px;
+      width: auto;
+      transform: none;
+      z-index: 500;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      border: 1px solid #e5e5ea;
+      max-height: 400px;
+      overflow-y: auto;
+    }
     .search-result-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f2f2f7; font-size: 14px; }
     .search-result-item:last-child { border-bottom: none; }
     .search-result-item:hover { background: #f9f9fb; }
