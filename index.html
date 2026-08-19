@@ -1317,8 +1317,8 @@
       <!-- Záložky -->
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" onclick="switchTab('recent')" id="tab-recent">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Nedávné
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
         </button>
         <button class="sidebar-tab" onclick="switchTab('documents')" id="tab-documents">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -1821,37 +1821,10 @@ function renderTab() {
     return;
   }
 
-  if (currentTab === "documents") {
-    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám dokumenty...</p></div>`;
-    loadAllDriveFiles().then(files => {
-      const docs = files.filter(f => getMimeTypeCategory(f.mimeType) === "document");
-      docs.sort((a, b) => a.name.localeCompare(b.name, "cs"));
-      renderDriveItems(docs);
-    }).catch(err => {
-      area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
-    });
-    return;
-  }
-
   if (currentTab === "folders") {
     area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám složky z Drive...</p></div>`;
     loadDriveFiles(null).then(files => {
       renderDriveFolderContent(null, files);
-    }).catch(err => {
-      area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
-    });
-    return;
-  }
-
-  if (currentTab === "media") {
-    area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div><p style="margin-top:16px">Načítám multimédia...</p></div>`;
-    loadAllDriveFiles().then(files => {
-      const media = files.filter(f => {
-        const cat = getMimeTypeCategory(f.mimeType);
-        return cat === "image" || cat === "video" || cat === "audio";
-      });
-      media.sort((a, b) => a.name.localeCompare(b.name, "cs"));
-      renderDriveItems(media);
     }).catch(err => {
       area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
     });
@@ -4458,9 +4431,9 @@ async function processFilesWithEvid(fileResults) {
   <div class="bottom">
     <button id="mob-recent" class="active" onclick="mobileSwitchTab('recent')">
       <span class="icon">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
       </span>
-      <small>Nedávné</small>
+      <small>Dashboard</small>
     </button>
     <button id="mob-folders" onclick="mobileSwitchTab('folders')">
       <span class="icon">
