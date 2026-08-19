@@ -2445,7 +2445,7 @@ async function renderPreview(fileId, item, content) {
   if (mime.includes("google-apps")) {
   let embedUrl;
   if (mime.includes("spreadsheet")) {
-    embedUrl = `https://docs.google.com/spreadsheets/d/${fileId}/preview`;
+    embedUrl = `https://docs.google.com/spreadsheets/d/${fileId}/htmlview`;
   } else if (mime.includes("document")) {
     embedUrl = `https://docs.google.com/document/d/${fileId}/preview`;
   } else if (mime.includes("presentation")) {
