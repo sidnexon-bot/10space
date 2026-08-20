@@ -1856,8 +1856,15 @@ async function renderDashboard() {
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
 
   const jmeno = (currentUser?.name || "").split(" ")[0] || "";
+  const jmenoVokativ = getVokativ(jmeno);
+
   const hodina = new Date().getHours();
-  const pozdrav = hodina < 12 ? "Dobré ráno" : hodina < 18 ? "Dobrý den" : "Dobrý večer";
+  let pozdrav;
+  if (hodina < 9) pozdrav = "Dobré ráno";
+  else if (hodina < 12) pozdrav = "Dobré dopoledne";
+  else if (hodina < 17) pozdrav = "Dobré odpoledne";
+  else pozdrav = "Dobrý večer";
+
   const datum = new Date().toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const [projektSnap, akceSnap, poznamkySnap] = await Promise.all([
@@ -1953,7 +1960,7 @@ async function renderDashboard() {
 
   area.innerHTML = `
     <div class="dashboard-header">
-      <div class="dashboard-greeting">${pozdrav}${jmeno ? ", " + jmeno : ""} 👋</div>
+      <div class="dashboard-greeting">${pozdrav}${jmenoVokativ ? ", " + jmenoVokativ : ""} 👋</div>
       <div class="dashboard-date">${datum}</div>
     </div>
     <div class="dashboard-grid">
@@ -4275,6 +4282,24 @@ function filterDriveItems(items) {
   if (driveFilterType === "all") return items;
   if (driveFilterType === "folder") return items.filter(f => f.isFolder);
   return items.filter(f => !f.isFolder && getMimeTypeCategory(f.mimeType) === driveFilterType);
+}
+
+const vokativMap = {
+  "Zdeněk": "Zdendo",
+  "Lukáš": "Lukáši",
+  "Štěpán": "Štěpáne",
+  "Ctirad": "Ctirade",
+  "Martin": "Martine",
+  "Adrian": "Adriane",
+  "Antonín": "Tondo",
+  "Kryštof": "Kryštofe",
+  "Karel": "Kájo",
+  "Bartoloměj": "Barte",
+  "Vavřinec": "Vávro"
+};
+
+function getVokativ(jmeno) {
+  return vokativMap[jmeno] || jmeno;
 }
   
 // UPLOAD
