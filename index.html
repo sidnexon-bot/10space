@@ -1777,6 +1777,12 @@ async function loadData() {
     const akceId = hash.split("/")[2];
     if (akceId) otevritProjekt(akceId);
   }
+    if (hash.startsWith("#/file/")) {
+    const fileId = hash.split("/")[2];
+    if (fileId) {
+      setTimeout(() => openFileFromDeepLink(fileId), 1500);
+    }
+  }
   
   // Sleduj změny hashe
   window.addEventListener("hashchange", () => {
@@ -1784,12 +1790,33 @@ async function loadData() {
     if (h.startsWith("#/projekt/")) {
       const akceId = h.split("/")[2];
       if (akceId) otevritProjekt(akceId);
+    } else if (h.startsWith("#/file/")) {
+      const fileId = h.split("/")[2];
+      if (fileId) openFileFromDeepLink(fileId);
     } else if (h === "" || h === "#") {
       zavritProjekt();
     }
   });
 
   switchTab("recent");
+}
+
+function openFileFromDeepLink(fileId) {
+  const file = window.driveFiles?.[fileId];
+  const folder = window.driveFolders?.[fileId];
+  
+  if (file) {
+    if (file.mimeType === "application/pdf") {
+      openPdfViewer(fileId, file.name);
+    } else {
+      handleDriveNameClick(fileId, file.mimeType, false);
+    }
+  } else if (folder) {
+    switchTab("folders");
+    navigateToDriveFolder(fileId, folder.name);
+  } else {
+    alert("Soubor nebyl nalezen — možná ještě není synchronizován.");
+  }
 }
 
 function buildFolderTree(parentId, depth) {
@@ -2892,7 +2919,7 @@ window.contextAction = async (action) => {
   }
 
   } else if (action === "copylink10space") {
-  const link = `https://space.10men.cz/${contextItemId}`;
+  const link = `https://space.10men.cz/#/file/${contextItemId}`;
   await navigator.clipboard.writeText(link);
   alert("Odkaz 10space zkopírován");
 
