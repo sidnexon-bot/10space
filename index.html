@@ -2907,7 +2907,7 @@ window.contextAction = async (action) => {
   if (data.url) { await navigator.clipboard.writeText(data.url); alert("Odkaz Google Drive zkopírován"); }
 }
 
-  } else if (action === "download") {
+  else if (action === "download") {
   const isFolder = !!window.driveFolders?.[contextItemId];
   if (isFolder) {
     alert("Stahování celých složek zatím není podporováno.");
