@@ -4530,28 +4530,25 @@ window.extendShareTokenFromModal = async () => {
   renderDashboard();
 };
 
-window.deactivateShareToken = async (token) => {
+window.deactivateShareToken = async () => {
+  if (!shareManageToken) return;
   if (!confirm("Deaktivovat tento sdílený odkaz?")) return;
-  await set(ref(db, `/shareTokens/${token}/expiruje`), 0);
+  await set(ref(db, `/shareTokens/${shareManageToken}/expiruje`), 0);
   closeShareManageModal();
   renderDashboard();
 };
 
-window.deleteShareToken = async (token) => {
+window.deleteShareToken = async () => {
+  if (!shareManageToken) return;
   if (!confirm("Trvale smazat tento sdílený odkaz?")) return;
-  await remove(ref(db, `/shareTokens/${token}`));
+  await remove(ref(db, `/shareTokens/${shareManageToken}`));
   closeShareManageModal();
   renderDashboard();
 };
 
-window.copyShareTokenLink = async (token) => {
-  const url = `https://space.10men.cz/share.html?token=${token}`;
-  await navigator.clipboard.writeText(url);
-  alert("Odkaz zkopírován");
-};
-
-window.copyShareTokenLink = async (token) => {
-  const url = `https://space.10men.cz/share.html?token=${token}`;
+window.copyShareTokenLink = async () => {
+  if (!shareManageToken) return;
+  const url = `https://space.10men.cz/share.html?token=${shareManageToken}`;
   await navigator.clipboard.writeText(url);
   alert("Odkaz zkopírován");
 };
@@ -4864,10 +4861,10 @@ async function processFilesWithEvid(fileResults) {
       <option value="90">90 dní</option>
     </select>
     <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:8px">
-      <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink(shareManageToken)" style="width:100%">Kopírovat odkaz</button>
+      <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink()" style="width:100%">Kopírovat odkaz</button>
       <button class="modal-btn modal-btn-primary" onclick="extendShareTokenFromModal()" style="width:100%">Prodloužit platnost</button>
-      <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken(shareManageToken)" style="width:100%;color:#EE220C">Deaktivovat</button>
-      <button class="modal-btn modal-btn-secondary" onclick="deleteShareToken(shareManageToken)" style="width:100%;color:#EE220C">Smazat</button>
+      <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken()" style="width:100%;color:#EE220C">Deaktivovat</button>
+      <button class="modal-btn modal-btn-secondary" onclick="deleteShareToken()" style="width:100%;color:#EE220C">Smazat</button>
       <button class="modal-btn modal-btn-secondary" onclick="closeShareManageModal()" style="width:100%">Zavřít</button>
     </div>
   </div>
