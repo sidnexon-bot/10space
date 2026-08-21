@@ -1657,6 +1657,7 @@ async function loadDriveFiles(folderId) {
 
   const folders = Object.entries(window.driveFolders || {})
     .filter(([id, f]) => f.parentId === parentId)
+    .filter(([id]) => getUserAccess(id) !== "none")
     .map(([id, f]) => ({
       id, name: f.name, mimeType: "application/vnd.google-apps.folder",
       modifiedTime: f.modifiedTime, isFolder: true
@@ -1664,6 +1665,7 @@ async function loadDriveFiles(folderId) {
 
   const files = Object.entries(window.driveFiles || {})
     .filter(([id, f]) => f.parentId === parentId)
+    .filter(([id]) => getUserAccess(id) !== "none")
     .map(([id, f]) => ({
       id, name: f.name, mimeType: f.mimeType, size: f.size,
       modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
@@ -1673,10 +1675,12 @@ async function loadDriveFiles(folderId) {
 }
 
 async function loadAllDriveFiles() {
-  return Object.entries(window.driveFiles || {}).map(([id, f]) => ({
-    id, name: f.name, mimeType: f.mimeType, size: f.size,
-    modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
-  }));
+  return Object.entries(window.driveFiles || {})
+    .filter(([id]) => getUserAccess(id) !== "none")
+    .map(([id, f]) => ({
+      id, name: f.name, mimeType: f.mimeType, size: f.size,
+      modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
+    }));
 }
 
 function getMimeTypeCategory(mimeType) {
@@ -1795,6 +1799,38 @@ async function loadData() {
       setTimeout(() => openFileFromDeepLink(fileId), 1500);
     }
   }
+
+  // Načti ACL pro aktuálního uživatele
+  const aclSnap = await get(ref(db, "/acl"));
+  const allAcl = aclSnap.val() || {};
+  window.userAccessCache = {}; // cache výsledků kontroly přístupu
+  
+  function getUserAccess(fileId) {
+    if (window.userAccessCache[fileId] !== undefined) {
+      return window.userAccessCache[fileId];
+    }
+    
+    let current = fileId;
+    let access = "read"; // výchozí
+    
+    for (let i = 0; i < 15; i++) {
+      const fileAcl = allAcl[current];
+      if (fileAcl && fileAcl[currentUser.uid] !== undefined) {
+        access = fileAcl[currentUser.uid];
+        break;
+      }
+      const folder = window.driveFolders?.[current];
+      const file = window.driveFiles?.[current];
+      const parentId = folder?.parentId || file?.parentId;
+      if (!parentId) break;
+      current = parentId;
+    }
+    
+    window.userAccessCache[fileId] = access;
+    return access;
+  }
+  
+  window.getUserAccess = getUserAccess;
   
   // Sleduj změny hashe
   window.addEventListener("hashchange", () => {
@@ -3699,6 +3735,7 @@ window.handleSearch = (query) => {
   // Hledej v Drive souborech
   const fileResults = Object.entries(window.driveFiles || {})
     .filter(([id, f]) => {
+      if (getUserAccess(id) === "none") return false;
       if (category !== "all" && getMimeTypeCategory(f.mimeType) !== category) return false;
       return f.name?.toLowerCase().includes(query.toLowerCase());
     })
@@ -3715,7 +3752,7 @@ window.handleSearch = (query) => {
   // Hledej ve složkách
   const folderResults = (category === "all" || category === "folder")
     ? Object.entries(window.driveFolders || {})
-        .filter(([id, f]) => f.name?.toLowerCase().includes(query.toLowerCase()))
+        .filter(([id, f]) => getUserAccess(id) !== "none" && f.name?.toLowerCase().includes(query.toLowerCase()))
         .slice(0, 5)
         .map(([id, f]) => ({ id, name: f.name, mimeType: "folder", parent: window.driveFolders?.[f.parentId]?.name || "", code: "", isFolder: true }))
     : [];
