@@ -169,8 +169,7 @@
     };
 
     // Vytáhni token z URL: space.10men.cz/share/{token}
-    const pathParts = window.location.pathname.split("/").filter(Boolean);
-    const shareToken = pathParts[pathParts.length - 1];
+    const shareToken = new URLSearchParams(window.location.search).get("token");
 
     let fileData = null;
 
