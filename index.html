@@ -1463,9 +1463,13 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     Duplikovat
   </div>
-  <div class="context-menu-item" onclick="contextAction('copylink')">
+  <div class="context-menu-item" onclick="contextAction('copylink10space')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-    Kopírovat odkaz
+    Odkaz 10space
+  </div>
+  <div class="context-menu-item" onclick="contextAction('copylinkdrive')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Odkaz Google Drive
   </div>
   <div class="context-menu-item" onclick="contextAction('shareWithPin')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -2271,7 +2275,8 @@ window.openDriveContextMenu = (e, id, name, isFolder) => {
     openBottomSheet(name, [
       { label: "Otevřít", action: `openDriveFile('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>` },
       { label: "Stáhnout", action: `contextAction('download');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>` },
-      { label: "Kopírovat odkaz", action: `contextAction('copylink');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
+      { label: "Odkaz 10space", action: `contextAction('copylink10space');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
+      { label: "Odkaz Google Drive", action: `contextAction('copylinkdrive');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
       { label: "Sdílet mimo 10men s PIN kódem", action: `openShareModalMobile('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>` },
       { label: "Přejmenovat", action: `contextAction('rename');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>` },
       { label: "Smazat", action: `deleteDriveItem('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`, danger: true },
@@ -2886,15 +2891,21 @@ window.contextAction = async (action) => {
     }
   }
 
-  } else if (action === "copylink") {
-    const token = await auth.currentUser.getIdToken();
-    const res = await fetch(FUNCTIONS.getFileUrl, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ docId: contextItemId })
-    });
-    const data = await res.json();
-    if (data.url) { await navigator.clipboard.writeText(data.url); alert("Odkaz zkopírován"); }
+  } else if (action === "copylink10space") {
+  const link = `https://space.10men.cz/${contextItemId}`;
+  await navigator.clipboard.writeText(link);
+  alert("Odkaz 10space zkopírován");
+
+  } else if (action === "copylinkdrive") {
+  const token = await auth.currentUser.getIdToken();
+  const res = await fetch(FUNCTIONS.getFileUrl, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ driveFileId: contextItemId })
+  });
+  const data = await res.json();
+  if (data.url) { await navigator.clipboard.writeText(data.url); alert("Odkaz Google Drive zkopírován"); }
+}
 
   } else if (action === "download") {
   const isFolder = !!window.driveFolders?.[contextItemId];
