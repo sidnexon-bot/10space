@@ -67,6 +67,37 @@
 
     .hidden { display: none !important; }
 
+    /* FOLDER EXPLORER */
+    .explorer-card {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .explorer-header {
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid #f2f2f7;
+    }
+    .explorer-logo { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .explorer-logo span { color: #EE220C; }
+    .explorer-breadcrumb {
+      font-size: 13px; color: #6e6e73; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .explorer-breadcrumb span { cursor: pointer; }
+    .explorer-breadcrumb span:hover { color: #EE220C; }
+    .explorer-breadcrumb .sep { color: #c7c7cc; }
+    .explorer-list { max-height: 60vh; overflow-y: auto; }
+    .explorer-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+      cursor: pointer; border-bottom: 1px solid #f9f9fb; text-align: left;
+    }
+    .explorer-item:hover { background: #f9f9fb; }
+    .explorer-item:last-child { border-bottom: none; }
+    .explorer-item-name { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .explorer-empty { padding: 40px 20px; text-align: center; color: #8e8e93; font-size: 14px; }
+
     /* FILE VIEW */
     .file-icon { margin-bottom: 16px; }
     .file-name { font-size: 16px; font-weight: 600; margin-bottom: 24px; word-break: break-word; }
@@ -133,6 +164,14 @@
     <p class="error hidden" id="pin-error"></p>
   </div>
 
+  <div class="explorer-card hidden" id="explorer-card">
+    <div class="explorer-header">
+      <div class="explorer-logo">10<span>space</span></div>
+      <div class="explorer-breadcrumb" id="explorer-breadcrumb"></div>
+    </div>
+    <div class="explorer-list" id="explorer-list"></div>
+  </div>
+
   <div class="card hidden" id="file-card">
     <div class="file-icon" id="file-icon"></div>
     <div class="file-name" id="file-name"></div>
@@ -165,7 +204,8 @@
   <script>
     const FUNCTIONS = {
       verifyShareToken: "https://verifysharetoken-etp6s2ynnq-uc.a.run.app",
-      getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app"
+      getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
+      listSharedFolder: "https://listsharedfolder-etp6s2ynnq-uc.a.run.app"
     };
 
     // Vytáhni token z URL: space.10men.cz/share/{token}
@@ -193,12 +233,19 @@
 
         if (data.success) {
           fileData = data;
-          document.getElementById("file-card").classList.remove("hidden");
-          document.getElementById("file-name").textContent = data.nazev;
-          document.getElementById("file-icon").innerHTML = getFileIconSvg(data.mimeType);
-
-          if (data.mimeType !== "application/pdf") {
-            document.getElementById("view-btn").classList.add("hidden");
+        
+          if (data.mimeType === "application/vnd.google-apps.folder") {
+            // Otevři jako explorer
+            document.getElementById("explorer-card").classList.remove("hidden");
+            loadSharedFolder(data.driveFileId, data.nazev);
+          } else {
+            document.getElementById("file-card").classList.remove("hidden");
+            document.getElementById("file-name").textContent = data.nazev;
+            document.getElementById("file-icon").innerHTML = getFileIconSvg(data.mimeType);
+        
+            if (data.mimeType !== "application/pdf") {
+              document.getElementById("view-btn").classList.add("hidden");
+            }
           }
         } else {
           document.getElementById("pin-card").classList.remove("hidden");
@@ -239,6 +286,84 @@
         document.body.removeChild(a);
       } catch(err) {
         alert("Chyba při stahování: " + err.message);
+      }
+    };
+
+    // FOLDER EXPLORER
+    let explorerPath = []; // [{id, name}]
+    
+    async function loadSharedFolder(folderId, folderName) {
+      document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty"><div class="spinner"></div></div>`;
+    
+      try {
+        const res = await fetch(FUNCTIONS.listSharedFolder, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shareToken, folderId })
+        });
+        const data = await res.json();
+    
+        if (!data.success) {
+          document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Chyba: ${data.error}</div>`;
+          return;
+        }
+    
+        renderExplorerBreadcrumb(folderName);
+    
+        if (data.files.length === 0) {
+          document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Složka je prázdná</div>`;
+          return;
+        }
+    
+        const sorted = data.files.sort((a, b) => {
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          return a.name.localeCompare(b.name, "cs");
+        });
+    
+        document.getElementById("explorer-list").innerHTML = sorted.map(f => `
+          <div class="explorer-item" onclick="${f.isFolder ? `openSharedSubfolder('${f.id}', '${f.name.replace(/'/g, "\\'")}')` : `openSharedFile('${f.id}', '${f.name.replace(/'/g, "\\'")}', '${f.mimeType}')`}">
+            ${f.isFolder
+              ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+              : getFileIconSvg(f.mimeType).replace('width="48" height="48"', 'width="20" height="20"')
+            }
+            <span class="explorer-item-name">${f.name}</span>
+          </div>
+        `).join("");
+      } catch(err) {
+        document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Chyba: ${err.message}</div>`;
+      }
+    }
+    
+    function renderExplorerBreadcrumb(currentName) {
+      const crumbs = explorerPath.slice(0, -1);
+      document.getElementById("explorer-breadcrumb").innerHTML =
+        crumbs.map((c, i) => `<span onclick="goToExplorerCrumb(${i})">${c.name}</span><span class="sep">›</span>`).join("") +
+        `<span style="color:#1c1c1e;font-weight:500">${currentName}</span>`;
+    }
+    
+    window.openSharedSubfolder = (folderId, folderName) => {
+      explorerPath.push({ id: folderId, name: folderName });
+      loadSharedFolder(folderId, folderName);
+    };
+    
+    window.goToExplorerCrumb = (idx) => {
+      explorerPath = explorerPath.slice(0, idx + 1);
+      const target = explorerPath[explorerPath.length - 1];
+      loadSharedFolder(target.id, target.name);
+    };
+    
+    window.openSharedFile = (fileId, fileName, mimeType) => {
+      fileData = { driveFileId: fileId, nazev: fileName, mimeType };
+      document.getElementById("explorer-card").classList.add("hidden");
+      document.getElementById("file-card").classList.remove("hidden");
+      document.getElementById("file-name").textContent = fileName;
+      document.getElementById("file-icon").innerHTML = getFileIconSvg(mimeType);
+    
+      if (mimeType !== "application/pdf") {
+        document.getElementById("view-btn").classList.add("hidden");
+      } else {
+        document.getElementById("view-btn").classList.remove("hidden");
       }
     };
 
