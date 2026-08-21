@@ -1527,6 +1527,7 @@ let selectedItems = new Set();
 let contextItemId = null;
 let activeDetailTab = "details";
 let selectedDetailId = null;
+let shareManageToken = null;
 
 // Načti uložený režim při startu
 if (localStorage.getItem("darkMode") === "1") {
@@ -4469,8 +4470,6 @@ window.openShareModalMobile = (id) => {
   document.getElementById("share-modal").classList.add("active");
 };
 
-let shareManageToken = null;
-
 window.openShareManageSheet = async (token) => {
   shareManageToken = token;
   const snap = await get(ref(db, `/shareTokens/${token}`));
@@ -4523,16 +4522,8 @@ window.closeShareManageModal = () => {
   shareManageToken = null;
 };
 
-window.openExtendShareSheet = () => {
-  const options = [7, 14, 30, 90];
-  openBottomSheet("Prodloužit o", options.map(days => ({
-    label: `${days} dní`,
-    action: `extendShareTokenBy(${days});closeBottomSheet()`,
-    icon: ""
-  })));
-};
-
-window.extendShareTokenBy = async (days) => {
+window.extendShareTokenFromModal = async () => {
+  const days = parseInt(document.getElementById("extend-days-select").value);
   const newExpiry = Date.now() + days * 24 * 60 * 60 * 1000;
   await set(ref(db, `/shareTokens/${shareManageToken}/expiruje`), newExpiry);
   closeShareManageModal();
@@ -4865,9 +4856,16 @@ async function processFilesWithEvid(fileResults) {
   <div class="modal" style="width:380px">
     <h2>Spravovat odkaz</h2>
     <div id="share-manage-content"></div>
-    <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:16px">
+    <div class="modal-section-title">Prodloužit o</div>
+    <select id="extend-days-select" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:14px;margin-bottom:12px">
+      <option value="7">7 dní</option>
+      <option value="14">14 dní</option>
+      <option value="30" selected>30 dní</option>
+      <option value="90">90 dní</option>
+    </select>
+    <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:8px">
       <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink(shareManageToken)" style="width:100%">Kopírovat odkaz</button>
-      <button class="modal-btn modal-btn-secondary" onclick="openExtendShareSheet()" style="width:100%">Upravit platnost</button>
+      <button class="modal-btn modal-btn-primary" onclick="extendShareTokenFromModal()" style="width:100%">Prodloužit platnost</button>
       <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken(shareManageToken)" style="width:100%;color:#EE220C">Deaktivovat</button>
       <button class="modal-btn modal-btn-secondary" onclick="deleteShareToken(shareManageToken)" style="width:100%;color:#EE220C">Smazat</button>
       <button class="modal-btn modal-btn-secondary" onclick="closeShareManageModal()" style="width:100%">Zavřít</button>
