@@ -1200,6 +1200,16 @@
     body.dark .dashboard-note-textarea { background: #3a3a3c; color: #fff; }
     body.dark .dashboard-file-name { color: #fff; }
 
+    .dashboard-share-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f2f2f7; cursor: pointer; }
+    .dashboard-share-row:last-child { border-bottom: none; }
+    .dashboard-share-row:hover { color: #EE220C; }
+    .dashboard-share-name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 8px; }
+    .dashboard-share-days { font-size: 12px; color: #8e8e93; background: #f2f2f7; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; }
+    .dashboard-share-days.expiring { color: #EE220C; background: #fff0ee; }
+    body.dark .dashboard-share-row { border-bottom-color: #3a3a3c; color: #fff; }
+    body.dark .dashboard-share-days { background: #3a3a3c; }
+    body.dark .dashboard-share-days.expiring { background: rgba(255,69,58,0.15); color: #ff453a; }
+
     /* DRIVE TOOLBAR */
     .drive-toolbar { display: flex; gap: 8px; padding: 12px 24px; border-bottom: 1px solid #f2f2f7; }
     .drive-toolbar-btn { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; border: 1px solid #e5e5ea; background: #fff; font-size: 13px; color: #1c1c1e; cursor: pointer; }
@@ -1874,10 +1884,11 @@ async function renderDashboard() {
 
   const datum = new Date().toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  const [projektSnap, akceSnap, poznamkySnap] = await Promise.all([
+  const [projektSnap, akceSnap, poznamkySnap, shareSnap] = await Promise.all([
     get(ref(db, "/projekty")),
     get(ref(db, "/akce")),
-    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`))
+    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`)),
+    get(ref(db, "/shareTokens"))
   ]);
 
   const projekty = projektSnap.val() || {};
@@ -1964,6 +1975,32 @@ async function renderDashboard() {
 
   // Osobní poznámky
   const poznamky = poznamkySnap.val() || "";
+  
+  // Sdílené tokeny
+  const shareTokens = shareSnap.val() || {};
+  const now = Date.now();
+  const activeShares = Object.entries(shareTokens)
+    .filter(([token, s]) => s.expiruje > now)
+    .sort((a, b) => a[1].expiruje - b[1].expiruje);
+  
+  function dnyDoExpirace(expiruje) {
+    const diff = Math.ceil((expiruje - now) / (1000 * 60 * 60 * 24));
+    if (diff <= 1) return "vyprší dnes";
+    return `${diff} dní`;
+  }
+  
+  const shareHtml = activeShares.length > 0
+    ? activeShares.map(([token, s]) => {
+        const dny = Math.ceil((s.expiruje - now) / (1000 * 60 * 60 * 24));
+        const expiringClass = dny <= 3 ? "expiring" : "";
+        return `
+          <div class="dashboard-share-row" onclick="openShareManageSheet('${token}')">
+            <span class="dashboard-share-name">${s.nazev || "—"}</span>
+            <span class="dashboard-share-days ${expiringClass}">${dnyDoExpirace(s.expiruje)}</span>
+          </div>
+        `;
+      }).join("")
+    : `<div class="dashboard-empty">Žádné aktivní sdílené odkazy</div>`;
 
   area.innerHTML = `
     <div class="dashboard-header">
@@ -1986,6 +2023,10 @@ async function renderDashboard() {
       <div class="dashboard-card">
         <div class="dashboard-card-title">To-do z projektů</div>
         ${todoHtml}
+      </div>
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Sdílené odkazy</div>
+        ${shareHtml}
       </div>
     </div>
   `;
@@ -4418,6 +4459,35 @@ window.closeShareModal = () => {
 window.openShareModalMobile = (id) => {
   shareContextId = id;
   document.getElementById("share-modal").classList.add("active");
+};
+
+window.openShareManageSheet = (token) => {
+  openBottomSheet("Spravovat odkaz", [
+    { label: "Kopírovat odkaz", action: `copyShareTokenLink('${token}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
+    { label: "Prodloužit o 30 dní", action: `extendShareToken('${token}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` },
+    { label: "Deaktivovat odkaz", action: `deactivateShareToken('${token}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, danger: true }
+  ]);
+};
+
+window.copyShareTokenLink = async (token) => {
+  const url = `https://space.10men.cz/share.html?token=${token}`;
+  await navigator.clipboard.writeText(url);
+  alert("Odkaz zkopírován");
+};
+
+window.extendShareToken = async (token) => {
+  const snap = await get(ref(db, `/shareTokens/${token}`));
+  const data = snap.val();
+  if (!data) return;
+  const newExpiry = Math.max(data.expiruje, Date.now()) + 30 * 24 * 60 * 60 * 1000;
+  await set(ref(db, `/shareTokens/${token}/expiruje`), newExpiry);
+  renderDashboard();
+};
+
+window.deactivateShareToken = async (token) => {
+  if (!confirm("Deaktivovat tento sdílený odkaz? Nebude se dát obnovit.")) return;
+  await set(ref(db, `/shareTokens/${token}/expiruje`), 0);
+  renderDashboard();
 };
   
 // UPLOAD
