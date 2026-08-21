@@ -1449,6 +1449,10 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
     Kopírovat odkaz
   </div>
+  <div class="context-menu-item" onclick="contextAction('shareWithPin')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Sdílet mimo 10men s PIN kódem
+  </div>
   <div class="context-menu-item" onclick="contextAction('info')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     Informace
@@ -1492,6 +1496,8 @@ const FUNCTIONS = {
   indexDrive: "https://indexdrive-etp6s2ynnq-uc.a.run.app",
   getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
   renameFile: "https://renamefile-etp6s2ynnq-uc.a.run.app"
+  createShareToken: "https://createsharetoken-etp6s2ynnq-uc.a.run.app",
+  verifyShareToken: "https://verifysharetoken-etp6s2ynnq-uc.a.run.app"
 };
 
 let currentUser = null;
@@ -2860,6 +2866,10 @@ window.contextAction = async (action) => {
   } catch(err) {
     alert("Chyba při stahování: " + err.message);
   }
+
+  } else if (action === "shareWithPin") {
+  shareContextId = contextItemId;
+  document.getElementById("share-modal").classList.add("active");
 
   } else if (action === "info") {
     showDetail(contextItemId, false);
@@ -4358,6 +4368,51 @@ const vokativMap = {
 function getVokativ(jmeno) {
   return vokativMap[jmeno] || jmeno;
 }
+
+// SHARE WITH PIN
+let shareContextId = null;
+
+window.confirmShare = async () => {
+  const pin = document.getElementById("share-pin-input").value;
+  if (!pin || pin.length < 4) {
+    alert("Zadej PIN alespoň 4 číslice");
+    return;
+  }
+  const expiryDays = document.getElementById("share-expiry-select").value;
+
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(FUNCTIONS.createShareToken, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ driveFileId: shareContextId, pin, expiryDays: parseInt(expiryDays) })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById("share-modal-step1").classList.add("hidden");
+      document.getElementById("share-modal-step2").classList.remove("hidden");
+      document.getElementById("share-result-url").textContent = data.url;
+      window._lastShareUrl = data.url;
+    } else {
+      alert("Chyba: " + data.error);
+    }
+  } catch(err) {
+    alert("Chyba: " + err.message);
+  }
+};
+
+window.copyShareLink = async () => {
+  await navigator.clipboard.writeText(window._lastShareUrl);
+  alert("Odkaz zkopírován");
+  closeShareModal();
+};
+
+window.closeShareModal = () => {
+  document.getElementById("share-modal").classList.remove("active");
+  document.getElementById("share-modal-step1").classList.remove("hidden");
+  document.getElementById("share-modal-step2").classList.add("hidden");
+  document.getElementById("share-pin-input").value = "";
+};
   
 // UPLOAD
 window.openUpload = () => {
@@ -4624,6 +4679,34 @@ async function processFilesWithEvid(fileResults) {
     <div style="width:36px"></div>
   </div>
   <iframe id="gdocs-iframe" style="width:100%;height:100%;border:none;flex:1"></iframe>
+</div>
+
+<!-- SHARE PIN MODAL -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="width:360px">
+    <h2>Sdílet s PIN kódem</h2>
+    <div id="share-modal-step1">
+      <div class="modal-section-title">PIN kód (4-6 číslic)</div>
+      <input type="text" id="share-pin-input" maxlength="6" placeholder="1234" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:16px;text-align:center;letter-spacing:4px;margin-top:8px" inputmode="numeric">
+      <div class="modal-section-title">Platnost</div>
+      <select id="share-expiry-select" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:14px;margin-top:8px">
+        <option value="7">7 dní</option>
+        <option value="30" selected>30 dní</option>
+        <option value="90">90 dní</option>
+      </select>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeShareModal()">Zrušit</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmShare()">Vytvořit odkaz</button>
+      </div>
+    </div>
+    <div id="share-modal-step2" class="hidden">
+      <div class="modal-section-title">Odkaz vytvořen</div>
+      <div style="background:#f9f9fb;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;margin-top:8px" id="share-result-url"></div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-primary" onclick="copyShareLink()" style="width:100%">Kopírovat odkaz</button>
+      </div>
+    </div>
+  </div>
 </div>
   
 </body>
