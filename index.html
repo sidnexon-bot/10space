@@ -1515,6 +1515,7 @@ const FUNCTIONS = {
   getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
   renameFile: "https://renamefile-etp6s2ynnq-uc.a.run.app",
   createShareToken: "https://createsharetoken-etp6s2ynnq-uc.a.run.app",
+  regenerateSharePin: "https://regeneratesharepin-etp6s2ynnq-uc.a.run.app",
   verifyShareToken: "https://verifysharetoken-etp6s2ynnq-uc.a.run.app"
 };
 
@@ -4552,6 +4553,31 @@ window.copyShareTokenLink = async () => {
   await navigator.clipboard.writeText(url);
   alert("Odkaz zkopírován");
 };
+
+window.openRegeneratePinPrompt = async () => {
+  if (!shareManageToken) return;
+  const newPin = prompt("Zadej nový PIN (4-6 číslic):");
+  if (!newPin || newPin.length < 4) return;
+
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(FUNCTIONS.regenerateSharePin, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ shareToken: shareManageToken, newPin })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const url = `https://space.10men.cz/share.html?token=${shareManageToken}`;
+      await navigator.clipboard.writeText(url);
+      alert(`Nový PIN nastaven a odkaz zkopírován.\n\nPIN: ${newPin}\nOdkaz: ${url}`);
+    } else {
+      alert("Chyba: " + data.error);
+    }
+  } catch(err) {
+    alert("Chyba: " + err.message);
+  }
+};
   
 // UPLOAD
 window.openUpload = () => {
@@ -4861,7 +4887,7 @@ async function processFilesWithEvid(fileResults) {
       <option value="90">90 dní</option>
     </select>
     <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:8px">
-      <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink()" style="width:100%">Kopírovat odkaz</button>
+      <button class="modal-btn modal-btn-secondary" onclick="openRegeneratePinPrompt()" style="width:100%">Vygenerovat nový PIN a odkaz</button>
       <button class="modal-btn modal-btn-primary" onclick="extendShareTokenFromModal()" style="width:100%">Prodloužit platnost</button>
       <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken()" style="width:100%;color:#EE220C">Deaktivovat</button>
       <button class="modal-btn modal-btn-secondary" onclick="deleteShareToken()" style="width:100%;color:#EE220C">Smazat</button>
