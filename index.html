@@ -1490,7 +1490,8 @@ const FUNCTIONS = {
   deleteFile: "https://deletefile-etp6s2ynnq-uc.a.run.app",
   listDriveFiles: "https://listdrivefiles-etp6s2ynnq-uc.a.run.app",
   indexDrive: "https://indexdrive-etp6s2ynnq-uc.a.run.app",
-  getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app"
+  getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
+  renameFile: "https://renamefile-etp6s2ynnq-uc.a.run.app"
 };
 
 let currentUser = null;
@@ -2777,19 +2778,33 @@ window.contextAction = async (action) => {
   }
 
   } else if (action === "rename") {
-    const isFolder = !!allFolders[contextItemId];
-    const currentName = isFolder ? allFolders[contextItemId].nazev : doc?.nazev;
-    const newName = prompt("Nový název:", currentName);
-    if (newName && newName !== currentName) {
-      if (isFolder) {
-        await set(ref(db, `/slozky/${contextItemId}/nazev`), newName);
-        allFolders[contextItemId].nazev = newName;
+  const isFolder = !!window.driveFolders?.[contextItemId];
+  const item = isFolder ? window.driveFolders[contextItemId] : window.driveFiles?.[contextItemId];
+  const currentName = item?.name || "";
+  const newName = prompt("Nový název:", currentName);
+  if (newName && newName !== currentName) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(FUNCTIONS.renameFile, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId: contextItemId, newName })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (isFolder) {
+          window.driveFolders[contextItemId].name = newName;
+        } else {
+          window.driveFiles[contextItemId].name = newName;
+        }
+        renderTab();
       } else {
-        await set(ref(db, `/dokumenty/${contextItemId}/nazev`), newName);
-        window.allDocs[contextItemId].nazev = newName;
+        alert("Chyba: " + data.error);
       }
-      renderTab();
+    } catch(err) {
+      alert("Chyba: " + err.message);
     }
+  }
 
   } else if (action === "copylink") {
     const token = await auth.currentUser.getIdToken();
