@@ -1221,6 +1221,14 @@
     body.dark .drive-toolbar-btn:hover { background: #3a3a3c; }
     body.dark .drive-toolbar-btn.active-filter { background: rgba(255,69,58,0.15); border-color: #ff453a; color: #ff453a; }
 
+    .share-manage-row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f2f2f7; font-size: 14px; }
+    .share-manage-row:last-child { border-bottom: none; }
+    .share-manage-label { color: #8e8e93; width: 130px; flex-shrink: 0; }
+    .share-manage-value { color: #1c1c1e; flex: 1; }
+    body.dark .share-manage-row { border-bottom-color: #3a3a3c; }
+    body.dark .share-manage-label { color: #8e8e93; }
+    body.dark .share-manage-value { color: #fff; }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -4461,12 +4469,88 @@ window.openShareModalMobile = (id) => {
   document.getElementById("share-modal").classList.add("active");
 };
 
-window.openShareManageSheet = (token) => {
-  openBottomSheet("Spravovat odkaz", [
-    { label: "Kopírovat odkaz", action: `copyShareTokenLink('${token}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
-    { label: "Prodloužit o 30 dní", action: `extendShareToken('${token}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` },
-    { label: "Deaktivovat odkaz", action: `deactivateShareToken('${token}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`, danger: true }
-  ]);
+let shareManageToken = null;
+
+window.openShareManageSheet = async (token) => {
+  shareManageToken = token;
+  const snap = await get(ref(db, `/shareTokens/${token}`));
+  const data = snap.val();
+  if (!data) return;
+
+  function getFileTypeLabel(mimeType) {
+    const m = (mimeType || "").toLowerCase();
+    if (m === "application/vnd.google-apps.folder") return "Složka";
+    if (m.includes("pdf")) return "PDF";
+    if (m.includes("spreadsheet")) return "Tabulka";
+    if (m.includes("document")) return "Dokument";
+    if (m.includes("presentation")) return "Prezentace";
+    if (m.includes("image")) return "Fotka";
+    if (m.includes("video")) return "Video";
+    return "Soubor";
+  }
+
+  const dny = Math.max(0, Math.ceil((data.expiruje - Date.now()) / (1000 * 60 * 60 * 24)));
+  const vytvoreno = new Date(data.vytvoreno).toLocaleDateString("cs-CZ");
+
+  document.getElementById("share-manage-content").innerHTML = `
+    <div class="share-manage-row">
+      <div class="share-manage-label">Název</div>
+      <div class="share-manage-value">${data.nazev || "—"}</div>
+    </div>
+    <div class="share-manage-row">
+      <div class="share-manage-label">Typ</div>
+      <div class="share-manage-value">${getFileTypeLabel(data.mimeType)}</div>
+    </div>
+    <div class="share-manage-row">
+      <div class="share-manage-label">Vytvořeno</div>
+      <div class="share-manage-value">${vytvoreno}</div>
+    </div>
+    <div class="share-manage-row">
+      <div class="share-manage-label">Vytvořil</div>
+      <div class="share-manage-value">${data.vytvoril || "—"}</div>
+    </div>
+    <div class="share-manage-row">
+      <div class="share-manage-label">Zbývá dní</div>
+      <div class="share-manage-value" style="color:${dny <= 3 ? '#EE220C' : '#1c1c1e'};font-weight:600">${dny}</div>
+    </div>
+  `;
+
+  document.getElementById("share-manage-modal").classList.add("active");
+};
+
+window.closeShareManageModal = () => {
+  document.getElementById("share-manage-modal").classList.remove("active");
+  shareManageToken = null;
+};
+
+window.openExtendShareSheet = () => {
+  const options = [7, 14, 30, 90];
+  openBottomSheet("Prodloužit o", options.map(days => ({
+    label: `${days} dní`,
+    action: `extendShareTokenBy(${days});closeBottomSheet()`,
+    icon: ""
+  })));
+};
+
+window.extendShareTokenBy = async (days) => {
+  const newExpiry = Date.now() + days * 24 * 60 * 60 * 1000;
+  await set(ref(db, `/shareTokens/${shareManageToken}/expiruje`), newExpiry);
+  closeShareManageModal();
+  renderDashboard();
+};
+
+window.deactivateShareToken = async (token) => {
+  if (!confirm("Deaktivovat tento sdílený odkaz?")) return;
+  await set(ref(db, `/shareTokens/${token}/expiruje`), 0);
+  closeShareManageModal();
+  renderDashboard();
+};
+
+window.deleteShareToken = async (token) => {
+  if (!confirm("Trvale smazat tento sdílený odkaz?")) return;
+  await remove(ref(db, `/shareTokens/${token}`));
+  closeShareManageModal();
+  renderDashboard();
 };
 
 window.copyShareTokenLink = async (token) => {
@@ -4475,19 +4559,10 @@ window.copyShareTokenLink = async (token) => {
   alert("Odkaz zkopírován");
 };
 
-window.extendShareToken = async (token) => {
-  const snap = await get(ref(db, `/shareTokens/${token}`));
-  const data = snap.val();
-  if (!data) return;
-  const newExpiry = Math.max(data.expiruje, Date.now()) + 30 * 24 * 60 * 60 * 1000;
-  await set(ref(db, `/shareTokens/${token}/expiruje`), newExpiry);
-  renderDashboard();
-};
-
-window.deactivateShareToken = async (token) => {
-  if (!confirm("Deaktivovat tento sdílený odkaz? Nebude se dát obnovit.")) return;
-  await set(ref(db, `/shareTokens/${token}/expiruje`), 0);
-  renderDashboard();
+window.copyShareTokenLink = async (token) => {
+  const url = `https://space.10men.cz/share.html?token=${token}`;
+  await navigator.clipboard.writeText(url);
+  alert("Odkaz zkopírován");
 };
   
 // UPLOAD
@@ -4781,6 +4856,21 @@ async function processFilesWithEvid(fileResults) {
       <div class="modal-footer">
         <button class="modal-btn modal-btn-primary" onclick="copyShareLink()" style="width:100%">Kopírovat odkaz</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MANAGE MODAL -->
+<div class="modal-overlay" id="share-manage-modal">
+  <div class="modal" style="width:380px">
+    <h2>Spravovat odkaz</h2>
+    <div id="share-manage-content"></div>
+    <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:16px">
+      <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink(shareManageToken)" style="width:100%">Kopírovat odkaz</button>
+      <button class="modal-btn modal-btn-secondary" onclick="openExtendShareSheet()" style="width:100%">Upravit platnost</button>
+      <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken(shareManageToken)" style="width:100%;color:#EE220C">Deaktivovat</button>
+      <button class="modal-btn modal-btn-secondary" onclick="deleteShareToken(shareManageToken)" style="width:100%;color:#EE220C">Smazat</button>
+      <button class="modal-btn modal-btn-secondary" onclick="closeShareManageModal()" style="width:100%">Zavřít</button>
     </div>
   </div>
 </div>
