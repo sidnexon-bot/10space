@@ -2488,11 +2488,33 @@ function renderDetailContent() {
 }
 
   window.saveDriveDetailName = async (fileId) => {
-    const val = document.getElementById("detail-name-input").value;
-    if (!val) return;
-    // Přejmenuj přes kontextové menu logiku
-    alert("Přejmenování přes Drive API bude implementováno");
-  };  
+  const val = document.getElementById("detail-name-input").value;
+  if (!val) return;
+  
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(FUNCTIONS.renameFile, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ fileId, newName: val })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const isFolder = !!window.driveFolders?.[fileId];
+      if (isFolder) {
+        window.driveFolders[fileId].name = val;
+      } else {
+        window.driveFiles[fileId].name = val;
+      }
+      document.getElementById("detail-name-actions")?.classList.add("hidden");
+      renderTab();
+    } else {
+      alert("Chyba: " + data.error);
+    }
+  } catch(err) {
+    alert("Chyba: " + err.message);
+  }
+};
 
 function renderDriveLocationTree(folderId) {
   const trail = [];
