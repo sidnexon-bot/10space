@@ -2839,7 +2839,27 @@ window.contextAction = async (action) => {
     if (data.url) { await navigator.clipboard.writeText(data.url); alert("Odkaz zkopírován"); }
 
   } else if (action === "download") {
-    await openDocument(contextItemId);
+  const isFolder = !!window.driveFolders?.[contextItemId];
+  if (isFolder) {
+    alert("Stahování celých složek zatím není podporováno.");
+    return;
+  }
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(FUNCTIONS.getFileStream + `?driveFileId=${contextItemId}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const blob = await response.blob();
+    const file = window.driveFiles?.[contextItemId];
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = file?.name || "soubor";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch(err) {
+    alert("Chyba při stahování: " + err.message);
+  }
 
   } else if (action === "info") {
     showDetail(contextItemId, false);
