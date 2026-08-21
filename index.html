@@ -1236,6 +1236,16 @@
     body.dark .acl-member-row { border-bottom-color: #3a3a3c; }
     body.dark .acl-member-select { background: #3a3a3c; color: #fff; border-color: #48484a; }
 
+    .impersonate-banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5000;
+      background: #EE220C; color: #fff; padding: 8px 16px;
+      font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .impersonate-banner button {
+      background: rgba(255,255,255,0.2); border: none; color: #fff;
+      padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    }
+
   </style>
 </head>
 <body class="login-page" id="body">
@@ -1243,6 +1253,12 @@
 <!-- SPLASH SCREEN -->
 <div class="splash" id="splash">
   <div class="splash-logo">10<span>space</span></div>
+</div>
+
+<!-- Zobrazit jako -->
+<div class="impersonate-banner hidden" id="impersonate-banner">
+  <span id="impersonate-text"></span>
+  <button onclick="stopImpersonate()">Ukončit</button>
 </div>
 
 <!-- LOGIN -->
@@ -1366,6 +1382,10 @@
         <button class="sidebar-action" onclick="toggleDarkMode()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <span class="dark-mode-toggle-label"></span>
+        </button>
+        <button class="sidebar-action" id="impersonate-btn" onclick="openImpersonateSheet()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Zobrazit jako
         </button>
         <button class="sidebar-action" onclick="handleLogout()" style="color:#EE220C">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1545,6 +1565,7 @@ let contextItemId = null;
 let activeDetailTab = "details";
 let selectedDetailId = null;
 let shareManageToken = null;
+let impersonateUid = null;
 
 // Načti uložený režim při startu
 if (localStorage.getItem("darkMode") === "1") {
@@ -1609,6 +1630,7 @@ function showApp() {
   document.getElementById("body").classList.remove("login-page");
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app-screen").classList.remove("hidden");
+  document.getElementById("impersonate-btn").style.display = currentUser.role === "ADMIN" ? "flex" : "none";
 
   // Sidebar profil
   document.getElementById("sidebar-profile-name").textContent = currentUser.name || currentUser.email || "";
@@ -1806,17 +1828,19 @@ async function loadData() {
   window.userAccessCache = {}; // cache výsledků kontroly přístupu
   
   function getUserAccess(fileId) {
-    if (window.userAccessCache[fileId] !== undefined) {
-      return window.userAccessCache[fileId];
+    const effectiveUid = impersonateUid || currentUser.uid;
+    const cacheKey = `${effectiveUid}_${fileId}`;
+    if (window.userAccessCache[cacheKey] !== undefined) {
+      return window.userAccessCache[cacheKey];
     }
     
     let current = fileId;
-    let access = "read"; // výchozí
+    let access = "read";
     
     for (let i = 0; i < 15; i++) {
       const fileAcl = allAcl[current];
-      if (fileAcl && fileAcl[currentUser.uid] !== undefined) {
-        access = fileAcl[currentUser.uid];
+      if (fileAcl && fileAcl[effectiveUid] !== undefined) {
+        access = fileAcl[effectiveUid];
         break;
       }
       const folder = window.driveFolders?.[current];
@@ -1825,10 +1849,10 @@ async function loadData() {
       if (!parentId) break;
       current = parentId;
     }
-    
-    window.userAccessCache[fileId] = access;
-    return access;
-  }
+  
+  window.userAccessCache[cacheKey] = access;
+  return access;
+}
   
   window.getUserAccess = getUserAccess;
   
@@ -4707,6 +4731,31 @@ window.updateAcl = async (fileId, uid, access) => {
 
 window.closeAclModal = () => {
   document.getElementById("acl-modal").classList.remove("active");
+};
+
+window.openImpersonateSheet = async () => {
+  const membersSnap = await get(ref(db, "/members"));
+  const members = Object.values(membersSnap.val() || {});
+  openBottomSheet("Zobrazit jako", members.map(m => ({
+    label: m.name || m.email,
+    action: `startImpersonate('${m.uid || m.id}', '${(m.name || m.email).replace(/'/g, "\\'")}');closeBottomSheet()`,
+    icon: ""
+  })));
+};
+
+window.startImpersonate = (uid, name) => {
+  impersonateUid = uid;
+  window.userAccessCache = {}; // reset cache
+  document.getElementById("impersonate-text").textContent = `Zobrazuješ jako: ${name}`;
+  document.getElementById("impersonate-banner").classList.remove("hidden");
+  renderTab();
+};
+
+window.stopImpersonate = () => {
+  impersonateUid = null;
+  window.userAccessCache = {};
+  document.getElementById("impersonate-banner").classList.add("hidden");
+  renderTab();
 };
   
 // UPLOAD
