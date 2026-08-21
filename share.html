@@ -164,13 +164,15 @@
     <p class="error hidden" id="pin-error"></p>
   </div>
 
-  <div class="explorer-card hidden" id="explorer-card">
-    <div class="explorer-header">
-      <div class="explorer-logo">10<span>space</span></div>
-      <div class="explorer-breadcrumb" id="explorer-breadcrumb"></div>
-    </div>
-    <div class="explorer-list" id="explorer-list"></div>
+  <div class="explorer-header">
+  <div style="display:flex;align-items:center;gap:8px">
+    <button id="explorer-back-btn" onclick="explorerGoBack()" class="hidden" style="background:none;border:none;cursor:pointer;color:#6e6e73;display:flex;align-items:center;padding:0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="explorer-logo">10<span>space</span></div>
   </div>
+  <div class="explorer-breadcrumb" id="explorer-breadcrumb"></div>
+</div>
 
   <div class="card hidden" id="file-card">
     <div class="file-icon" id="file-icon"></div>
@@ -336,6 +338,9 @@
     }
     
     function renderExplorerBreadcrumb(currentName) {
+      const backBtn = document.getElementById("explorer-back-btn");
+      backBtn.classList.toggle("hidden", explorerPath.length <= 1);
+      
       const crumbs = explorerPath.slice(0, -1);
       document.getElementById("explorer-breadcrumb").innerHTML =
         crumbs.map((c, i) => `<span onclick="goToExplorerCrumb(${i})">${c.name}</span><span class="sep">›</span>`).join("") +
@@ -365,6 +370,13 @@
       } else {
         document.getElementById("view-btn").classList.remove("hidden");
       }
+    };
+
+    window.explorerGoBack = () => {
+      if (explorerPath.length <= 1) return;
+      explorerPath.pop();
+      const target = explorerPath[explorerPath.length - 1];
+      loadSharedFolder(target.id, target.name);
     };
 
     // PDF VIEWER
