@@ -3087,7 +3087,6 @@ window.multiDelete = async () => {
   renderTab();
 };
 
-// VYTVOŘENÍ SLOŽKY
 window.createFolder = async () => {
   const name = prompt("Název složky:");
   if (!name) return;
@@ -3105,12 +3104,14 @@ window.createFolder = async () => {
     });
     const data = await response.json();
     if (data.driveFileId) {
-      // Přidej do driveCache
-      window.driveFolders[data.driveFileId] = {
+      const folderData = {
         name: name,
         parentId: window.currentFolder || "0B23cZAlYDWOndmtIZU45WWJrbWM",
         modifiedTime: new Date().toISOString()
       };
+      // Zapiš do RTDB, ne jen do paměti
+      await set(ref(db, `/driveCache/folders/${data.driveFileId}`), folderData);
+      window.driveFolders[data.driveFileId] = folderData;
       renderTab();
     } else {
       alert("Chyba: " + (data.error || "Nelze vytvořit složku"));
