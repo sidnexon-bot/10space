@@ -4869,6 +4869,7 @@ window.confirmShare = async () => {
   }
   const expiryDays = document.getElementById("share-expiry-select").value;
 
+  showSpinner("Generování odkazu");
   try {
     const token = await auth.currentUser.getIdToken();
     const res = await fetch(FUNCTIONS.createShareToken, {
@@ -4887,6 +4888,8 @@ window.confirmShare = async () => {
     }
   } catch(err) {
     alert("Chyba: " + err.message);
+  } finally {
+    hideSpinner();
   }
 };
 
