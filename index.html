@@ -4249,10 +4249,10 @@ function renderPdfToolOptions(tool) {
       { label: "ppp", type: "dynamic" }, { label: "pp", type: "dynamic" }, { label: "p", type: "dynamic" },
       { label: "mp", type: "dynamic" }, { label: "mf", type: "dynamic" }, { label: "f", type: "dynamic" },
       { label: "ff", type: "dynamic" }, { label: "fff", type: "dynamic" },
-      { label: "⌣", type: "ligature", title: "Ligatura" },
-      { label: "◅", type: "crescendo", title: "Crescendo" },
-      { label: "▻", type: "decrescendo", title: "Decrescendo" },
-      { label: "◠•", type: "fermata", title: "Koruna" }
+      { label: "ligatura", type: "ligature", title: "Ligatura" },
+      { label: "<", type: "crescendo", title: "Crescendo" },
+      { label: ">", type: "decrescendo", title: "Decrescendo" },
+      { label: "𝄐", type: "fermata", title: "Koruna" }
     ];
     box.innerHTML = `<div class="pdf-option-group">${symbols.map(s => `<button class="pdf-tool-btn" onclick="addMusicSymbol('${s.type}','${(s.title||s.label).replace(/'/g,"\\'")}')" title="${s.title||s.label}">${s.label}</button>`).join("")}</div>`;
   } else {
@@ -4286,7 +4286,7 @@ window.addMusicSymbol = (type, label) => {
     obj = new fabric.Path("M 60 10 L 0 0 M 60 10 L 0 20", { left: cx - 30, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
   } else if (type === "fermata") {
     const arc = new fabric.Path("M 0 20 A 20 20 0 0 1 40 20", { fill: "", stroke: "#EE220C", strokeWidth: 2 });
-    const dot = new fabric.Circle({ left: 17, top: -4, radius: 3, fill: "#EE220C" });
+    const dot = new fabric.Circle({ left: 17, top: 8, radius: 3, fill: "#EE220C" });
     obj = new fabric.Group([arc, dot], { left: cx - 20, top: cy });
   }
 
