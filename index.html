@@ -4869,8 +4869,12 @@ window.confirmShare = async () => {
   }
   const expiryDays = document.getElementById("share-expiry-select").value;
 
+  document.getElementById("share-modal-step1").classList.remove("hidden");
+  document.getElementById("share-modal-step2").classList.add("hidden");
+
   closeShareModal();
-  showSpinner("Generování odkazu");
+  showSpinner();
+
   try {
     const token = await auth.currentUser.getIdToken();
     const res = await fetch(FUNCTIONS.createShareToken, {
@@ -4880,6 +4884,7 @@ window.confirmShare = async () => {
     });
     const data = await res.json();
     if (data.success) {
+      document.getElementById("share-modal").classList.add("active");
       document.getElementById("share-modal-step1").classList.add("hidden");
       document.getElementById("share-modal-step2").classList.remove("hidden");
       document.getElementById("share-result-url").textContent = data.url;
@@ -4902,11 +4907,9 @@ window.copyShareLink = async () => {
 
 window.closeShareModal = () => {
   document.getElementById("share-modal").classList.remove("active");
-  document.getElementById("share-modal-step1").classList.remove("hidden");
-  document.getElementById("share-modal-step2").classList.add("hidden");
   document.getElementById("share-pin-input").value = "";
 };
-
+  
 window.openShareModalMobile = (id) => {
   shareContextId = id;
   document.getElementById("share-modal").classList.add("active");
