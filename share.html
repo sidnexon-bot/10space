@@ -154,6 +154,53 @@
       flex: 1; overflow-y: auto; overflow-x: auto; padding: 16px;
       -webkit-overflow-scrolling: touch; display: block;
     }
+
+    .share-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e5e5ea;
+      margin-bottom: 16px;
+    }
+    .share-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .share-info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f2f2f7;
+      font-size: 14px;
+    }
+    .share-info-row:last-child { border-bottom: none; }
+    .share-info-row span:first-child { color: #8e8e93; flex-shrink: 0; }
+    .share-info-row span:last-child { color: #1c1c1e; text-align: right; }
+    .share-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .share-table th {
+      background: #f2f2f7;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      color: #6e6e73;
+      border: 1px solid #e5e5ea;
+    }
+    .share-table td {
+      padding: 6px 10px;
+      border: 1px solid #e5e5ea;
+      color: #1c1c1e;
+      vertical-align: top;
+    }
   </style>
 </head>
 <body>
@@ -225,12 +272,15 @@
     <div class="pdf-canvas-wrap" id="pdf-canvas-wrap"></div>
   </div>
 
-  <!-- NASDÍLENÉ PROJEKTY -->
+  <!-- PROJEKT PAGE -->
   <div id="page-projekt" class="hidden">
-    <div class="explorer-header">
-      <div class="explorer-title" id="projekt-share-title"></div>
+    <div class="page-header">
+      <span class="page-header-title" id="projekt-share-title"></span>
+      <span class="page-header-logo">10<span>space</span></span>
     </div>
-    <div id="projekt-share-body" style="padding:16px"></div>
+    <div class="page-content">
+      <div id="projekt-share-body"></div>
+    </div>
   </div>
 
   <script>
