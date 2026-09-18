@@ -4869,6 +4869,7 @@ window.confirmShare = async () => {
   }
   const expiryDays = document.getElementById("share-expiry-select").value;
 
+  closeShareModal();
   showSpinner("Generování odkazu");
   try {
     const token = await auth.currentUser.getIdToken();
