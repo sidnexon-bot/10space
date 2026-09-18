@@ -3041,6 +3041,9 @@ window.contextAction = async (action) => {
 
   } else if (action === "shareWithPin") {
   shareContextId = contextItemId;
+  document.getElementById("share-modal-step1").classList.remove("hidden");
+  document.getElementById("share-modal-step2").classList.add("hidden");
+  document.getElementById("share-pin-input").value = "";
   document.getElementById("share-modal").classList.add("active");
 
   } else if (action === "info") {
@@ -4912,6 +4915,9 @@ window.closeShareModal = () => {
   
 window.openShareModalMobile = (id) => {
   shareContextId = id;
+  document.getElementById("share-modal-step1").classList.remove("hidden");
+  document.getElementById("share-modal-step2").classList.add("hidden");
+  document.getElementById("share-pin-input").value = "";
   document.getElementById("share-modal").classList.add("active");
 };
 
