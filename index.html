@@ -535,6 +535,7 @@
     .bottom button.active .icon svg { transform: scale(1.1); }
     .bottom button small { font-size: 10px; }
     .multi-toolbar { padding: 0 12px; font-size: 13px; }
+    .pdf-btn.editing { background: #EE220C; }
 
     .bottom-sheet.active { transform: translateY(0); }
     .bottom-sheet-handle { width: 36px; height: 4px; background: #e5e5ea; border-radius: 2px; margin: 0 auto 16px; }
@@ -3953,6 +3954,9 @@ let pdfDoc = null;
 let pdfCurrentPage = 1;
 let pdfScale = 1.0;
 let pdfCurrentFileId = null;
+let pdfEditMode = false;
+window.pdfPageRefs = [];
+window.pdfAnnotationsData = null;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
@@ -3999,14 +4003,20 @@ async function renderAllPages() {
   wrap.style.justifyContent = "flex-start";
   wrap.style.display = "block";
 
-  // Krok 1: Přidej všechny prázdné stránky najednou
+  window.pdfPageRefs = [];
   const canvases = [];
+
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     const page = await pdfDoc.getPage(i);
     const viewport = page.getViewport({ scale: pdfScale });
+
     const pageWrap = document.createElement("div");
     pageWrap.id = `pdf-page-${i}`;
     pageWrap.style.cssText = "margin-bottom:12px;flex-shrink:0;display:flex;justify-content:center;align-items:flex-start;width:100%;";
+
+    const pageInner = document.createElement("div");
+    pageInner.style.cssText = "position:relative;display:inline-block;";
+
     const canvas = document.createElement("canvas");
     const dpr = window.devicePixelRatio || 1;
     canvas.width = viewport.width * dpr;
@@ -4016,30 +4026,37 @@ async function renderAllPages() {
     canvas.style.boxShadow = "0 4px 24px rgba(0,0,0,0.4)";
     canvas.style.display = "block";
     canvas.onclick = () => {
-      if (document.getElementById("pdf-overlay").classList.contains("pdf-fullscreen")) {
+      if (document.getElementById("pdf-overlay").classList.contains("pdf-fullscreen") && !pdfEditMode) {
         pdfToggleFullscreen();
       }
     };
-    pageWrap.appendChild(canvas);
+
+    const annotCanvas = document.createElement("canvas");
+    annotCanvas.id = `pdf-annot-${i}`;
+    annotCanvas.width = viewport.width;
+    annotCanvas.height = viewport.height;
+
+    pageInner.appendChild(canvas);
+    pageInner.appendChild(annotCanvas);
+    pageWrap.appendChild(pageInner);
     wrap.appendChild(pageWrap);
+
     canvases.push({ canvas, page, viewport, dpr });
+    window.pdfPageRefs.push({ pageNum: i, pdfCanvas: canvas, annotCanvasEl: annotCanvas, viewportW: viewport.width, viewportH: viewport.height });
   }
 
-  // Krok 2: Zobraz loading overlay
   const loadingOverlay = document.createElement("div");
   loadingOverlay.style.cssText = "position:absolute;inset:0;background:#1c1c1e;display:flex;align-items:center;justify-content:center;z-index:10;";
   loadingOverlay.innerHTML = `<div style="color:#fff;display:flex;align-items:center;gap:12px"><div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>Načítám stránky...</div>`;
   wrap.style.position = "relative";
   wrap.appendChild(loadingOverlay);
-  
-  // Krok 3: Renderuj stránky na pozadí
+
   for (const { canvas, page, viewport, dpr } of canvases) {
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
     await page.render({ canvasContext: ctx, viewport }).promise;
   }
-  
-  // Krok 4: Schovej loading, scrolluj na začátek
+
   wrap.scrollTop = 0;
   pdfCurrentPage = 1;
   document.getElementById("pdf-current-page").textContent = 1;
@@ -4058,8 +4075,89 @@ async function renderAllPages() {
       }
     }
   };
+
+  await loadAndRenderAnnotations();
 }
 
+async function loadAndRenderAnnotations() {
+  if (!pdfCurrentFileId || !window.pdfPageRefs?.length) return;
+  const uid = auth.currentUser.uid;
+  try {
+    const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages`));
+    window.pdfAnnotationsData = snap.val() || {};
+  } catch(e) {
+    window.pdfAnnotationsData = {};
+  }
+
+  for (const pageRef of window.pdfPageRefs) {
+    const fabricCanvas = new fabric.Canvas(pageRef.annotCanvasEl, {
+      isDrawingMode: false,
+      selection: false
+    });
+    fabricCanvas.wrapperEl.style.position = "absolute";
+    fabricCanvas.wrapperEl.style.top = "0";
+    fabricCanvas.wrapperEl.style.left = "0";
+    fabricCanvas.wrapperEl.style.pointerEvents = "none";
+    pageRef.fabricCanvas = fabricCanvas;
+
+    const pageData = window.pdfAnnotationsData[pageRef.pageNum];
+    if (pageData?.json) {
+      const scaleFactor = pageData.width ? (pageRef.viewportW / pageData.width) : 1;
+      fabricCanvas.loadFromJSON(pageData.json, () => {
+        fabricCanvas.setZoom(scaleFactor);
+        fabricCanvas.setWidth(pageRef.viewportW);
+        fabricCanvas.setHeight(pageRef.viewportH);
+        fabricCanvas.renderAll();
+      });
+    }
+  }
+}
+
+window.pdfToggleEditMode = async () => {
+  if (!window.pdfPageRefs?.length) return;
+
+  if (!pdfEditMode) {
+    pdfEditMode = true;
+    document.getElementById("pdf-edit-btn").classList.add("editing");
+    document.getElementById("pdf-edit-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    for (const pageRef of window.pdfPageRefs) {
+      const fc = pageRef.fabricCanvas;
+      if (!fc) continue;
+      fc.isDrawingMode = true;
+      fc.freeDrawingBrush.width = 3;
+      fc.freeDrawingBrush.color = "#EE220C";
+      fc.wrapperEl.style.pointerEvents = "auto";
+    }
+  } else {
+    pdfEditMode = false;
+    document.getElementById("pdf-edit-btn").classList.remove("editing");
+    document.getElementById("pdf-edit-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+    for (const pageRef of window.pdfPageRefs) {
+      const fc = pageRef.fabricCanvas;
+      if (!fc) continue;
+      fc.isDrawingMode = false;
+      fc.wrapperEl.style.pointerEvents = "none";
+    }
+    await savePdfAnnotations();
+  }
+};
+
+async function savePdfAnnotations() {
+  if (!pdfCurrentFileId || !window.pdfPageRefs?.length) return;
+  const uid = auth.currentUser.uid;
+  for (const pageRef of window.pdfPageRefs) {
+    const fc = pageRef.fabricCanvas;
+    if (!fc) continue;
+    const json = JSON.stringify(fc.toJSON());
+    await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pageRef.pageNum}`), {
+      json,
+      width: pageRef.viewportW,
+      height: pageRef.viewportH
+    });
+  }
+  await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/updatedAt`), Date.now());
+}
+  
 window.pdfPrevPage = async () => {
   if (!pdfDoc || pdfCurrentPage <= 1) return;
   pdfCurrentPage--;
@@ -4077,11 +4175,13 @@ window.pdfNextPage = async () => {
 };
 
 window.pdfZoomIn = async () => {
+  if (pdfEditMode) { alert("Nejdřív dokonči úpravy (Hotovo)."); return; }
   pdfScale = Math.min(pdfScale + 0.25, 3.0);
   await renderAllPages();
 };
 
 window.pdfZoomOut = async () => {
+  if (pdfEditMode) { alert("Nejdřív dokonči úpravy (Hotovo)."); return; }
   pdfScale = Math.max(pdfScale - 0.25, 0.5);
   await renderAllPages();
 };
@@ -4161,6 +4261,7 @@ window.closePdfViewer = () => {
 })();
 
 window.pdfToggleFullscreen = async () => {
+  if (pdfEditMode) { alert("Nejdřív dokonči úpravy (Hotovo)."); return; }
   const overlay = document.getElementById("pdf-overlay");
   const toolbar = document.querySelector(".pdf-toolbar");
   const wrap = document.getElementById("pdf-canvas-wrap");
@@ -4970,6 +5071,9 @@ async function processFilesWithEvid(fileResults) {
         </button>
         <button class="pdf-btn" onclick="pdfFitWidth()" title="Přizpůsobit stránku">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        </button>
+        <button class="pdf-btn" onclick="pdfToggleEditMode()" id="pdf-edit-btn" title="Upravit / anotovat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         </button>
         <button class="pdf-btn" onclick="pdfToggleFullscreen()" id="pdf-fullscreen-btn" title="Celá obrazovka">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
