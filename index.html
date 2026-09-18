@@ -4362,10 +4362,10 @@ window.closePdfViewer = () => {
 };
 
 window.openDownloadChoice = () => {
-  document.getElementById("download-choice-modal").classList.remove("hidden");
+  document.getElementById("download-choice-modal").classList.add("active");
 };
 window.closeDownloadModal = () => {
-  document.getElementById("download-choice-modal").classList.add("hidden");
+  document.getElementById("download-choice-modal").classList.remove("active");
 };
 
 window.confirmDownload = async (withAnnotations) => {
@@ -5338,7 +5338,7 @@ async function processFilesWithEvid(fileResults) {
       <canvas id="pdf-canvas"></canvas>
     </div>
   </div>
-    <div class="modal-overlay hidden" id="download-choice-modal">
+    <div class="modal-overlay" id="download-choice-modal">
       <div class="modal" style="max-width:320px">
         <h3 style="margin-bottom:16px">Stáhnout PDF</h3>
         <p style="color:#8e8e93;font-size:14px;margin-bottom:20px">Toto PDF obsahuje tvé anotace. Kterou verzi chceš stáhnout?</p>
