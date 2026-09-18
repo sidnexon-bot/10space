@@ -5040,6 +5040,8 @@ window.confirmRegeneratePin = async () => {
     return;
   }
 
+  const tokenToUpdate = shareManageToken; // zapamatuj si token dřív, než ho closeShareManageModal vynuluje
+
   closeRegeneratePinModal();
   closeShareManageModal();
   showSpinner();
@@ -5049,11 +5051,11 @@ window.confirmRegeneratePin = async () => {
     const res = await fetch(FUNCTIONS.regenerateSharePin, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ shareToken: shareManageToken, newPin })
+      body: JSON.stringify({ shareToken: tokenToUpdate, newPin })
     });
     const data = await res.json();
     if (data.success) {
-      const url = `https://space.10men.cz/share.html?token=${shareManageToken}`;
+      const url = `https://space.10men.cz/share.html?token=${tokenToUpdate}`;
       window._lastRegeneratedUrl = url;
       document.getElementById("regenerate-result-url").textContent = url;
       document.getElementById("regenerate-pin-step1").classList.add("hidden");
