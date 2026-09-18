@@ -5464,6 +5464,7 @@ async function processFilesWithEvid(fileResults) {
       <option value="90">90 dní</option>
     </select>
     <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:8px">
+      <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink()" style="width:100%">Zkopírovat odkaz</button>
       <button class="modal-btn modal-btn-secondary" onclick="openRegeneratePinPrompt()" style="width:100%">Vygenerovat nový PIN a odkaz</button>
       <button class="modal-btn modal-btn-primary" onclick="extendShareTokenFromModal()" style="width:100%">Prodloužit platnost</button>
       <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken()" style="width:100%;color:#EE220C">Deaktivovat</button>
