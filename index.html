@@ -3041,6 +3041,7 @@ window.contextAction = async (action) => {
 
   } else if (action === "shareWithPin") {
   shareContextId = contextItemId;
+  shareContextIsProjekt = false;
   document.getElementById("share-modal-step1").classList.remove("hidden");
   document.getElementById("share-modal-step2").classList.add("hidden");
   document.getElementById("share-pin-input").value = "";
@@ -3392,6 +3393,7 @@ async function renderProjekty() {
         <div class="projekt-card-footer">
           <button class="projekt-card-btn primary" onclick="event.stopPropagation();otevritProjekt('${p.id}')">Otevřít projekt</button>
           ${p.driveFolderId ? `<button class="projekt-card-btn" onclick="event.stopPropagation();switchTab('folders');setTimeout(()=>navigateToDriveFolder('${p.driveFolderId}', '${(p.nazev || "").replace(/'/g, "\\'")}'),300)">Drive složka</button>` : ""}
+          <button class="projekt-card-btn" onclick="event.stopPropagation();shareProjekt('${p.id}')">Sdílet projekt</button>
           ${currentUser?.role === "ADMIN" ? `<button class="projekt-card-btn" style="color:#EE220C;border-color:#EE220C" onclick="event.stopPropagation();smazatProjekt('${p.id}')">Smazat</button>` : ""}        
         </div>
       </div>
@@ -4863,6 +4865,7 @@ function getVokativ(jmeno) {
 
 // SHARE WITH PIN
 let shareContextId = null;
+let shareContextIsProjekt = false;
 
 window.confirmShare = async () => {
   const pin = document.getElementById("share-pin-input").value;
@@ -4883,7 +4886,11 @@ window.confirmShare = async () => {
     const res = await fetch(FUNCTIONS.createShareToken, {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ driveFileId: shareContextId, pin, expiryDays: parseInt(expiryDays) })
+      body: JSON.stringify(
+        shareContextIsProjekt
+          ? { projektId: shareContextId, pin, expiryDays: parseInt(expiryDays) }
+          : { driveFileId: shareContextId, pin, expiryDays: parseInt(expiryDays) }
+      )
     });
     const data = await res.json();
     if (data.success) {
@@ -4912,9 +4919,19 @@ window.closeShareModal = () => {
   document.getElementById("share-modal").classList.remove("active");
   document.getElementById("share-pin-input").value = "";
 };
+
+window.shareProjekt = (projektId) => {
+  shareContextId = projektId;
+  shareContextIsProjekt = true;
+  document.getElementById("share-modal-step1").classList.remove("hidden");
+  document.getElementById("share-modal-step2").classList.add("hidden");
+  document.getElementById("share-pin-input").value = "";
+  document.getElementById("share-modal").classList.add("active");
+};
   
 window.openShareModalMobile = (id) => {
   shareContextId = id;
+  shareContextIsProjekt = false;
   document.getElementById("share-modal-step1").classList.remove("hidden");
   document.getElementById("share-modal-step2").classList.add("hidden");
   document.getElementById("share-pin-input").value = "";
