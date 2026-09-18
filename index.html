@@ -536,6 +536,10 @@
     .bottom button small { font-size: 10px; }
     .multi-toolbar { padding: 0 12px; font-size: 13px; }
     .pdf-btn.editing { background: #EE220C; }
+    .pdf-edit-subtoolbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #2c2c2e; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .pdf-tool-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 12px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+    .pdf-tool-btn:hover { background: rgba(255,255,255,0.15); }
+    .pdf-tool-btn.active { background: #EE220C; }
 
     .bottom-sheet.active { transform: translateY(0); }
     .bottom-sheet-handle { width: 36px; height: 4px; background: #e5e5ea; border-radius: 2px; margin: 0 auto 16px; }
@@ -569,6 +573,30 @@
       height: 100vh;
       padding: 0;
     }
+
+    <div class="pdf-edit-subtoolbar hidden" id="pdf-edit-subtoolbar">
+      <button class="pdf-tool-btn active" data-tool="pen" onclick="setPdfTool('pen')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Pero
+      </button>
+      <button class="pdf-tool-btn" data-tool="highlighter" onclick="setPdfTool('highlighter')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+        Zvýrazňovač
+      </button>
+      <button class="pdf-tool-btn" data-tool="eraser" onclick="setPdfTool('eraser')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+        Guma
+      </button>
+      <button class="pdf-tool-btn" data-tool="text" onclick="setPdfTool('text')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        Text
+      </button>
+      <button class="pdf-tool-btn" onclick="openMusicSymbolSheet()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        Značky
+      </button>
+    </div>
+    
     .pdf-canvas-wrap { 
       flex: 1; 
       overflow-y: auto;
@@ -3957,6 +3985,7 @@ let pdfCurrentFileId = null;
 let pdfEditMode = false;
 window.pdfPageRefs = [];
 window.pdfAnnotationsData = null;
+let pdfCurrentTool = "pen";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
@@ -4100,6 +4129,35 @@ async function loadAndRenderAnnotations() {
     fabricCanvas.wrapperEl.style.pointerEvents = "none";
     pageRef.fabricCanvas = fabricCanvas;
 
+    fabricCanvas.on("mouse:down", (opt) => {
+      if (!pdfEditMode) return;
+      if (pdfCurrentTool === "eraser") {
+        if (opt.target) {
+          fabricCanvas.remove(opt.target);
+          fabricCanvas.requestRenderAll();
+        }
+      } else if (pdfCurrentTool === "text") {
+        if (!opt.target) {
+          const pointer = fabricCanvas.getPointer(opt.e);
+          const tb = new fabric.Textbox("Poznámka", {
+            left: pointer.x, top: pointer.y,
+            fontSize: 16, fill: "#EE220C", width: 160
+          });
+          fabricCanvas.add(tb);
+          fabricCanvas.setActiveObject(tb);
+          tb.enterEditing();
+          tb.selectAll();
+        }
+      }
+    });
+
+    fabricCanvas.on("path:created", (opt) => {
+      if (pdfCurrentTool === "highlighter") {
+        opt.path.set({ globalCompositeOperation: "multiply" });
+        fabricCanvas.requestRenderAll();
+      }
+    });
+
     const pageData = window.pdfAnnotationsData[pageRef.pageNum];
     if (pageData?.json) {
       const scaleFactor = pageData.width ? (pageRef.viewportW / pageData.width) : 1;
@@ -4120,26 +4178,103 @@ window.pdfToggleEditMode = async () => {
     pdfEditMode = true;
     document.getElementById("pdf-edit-btn").classList.add("editing");
     document.getElementById("pdf-edit-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    document.getElementById("pdf-edit-subtoolbar").classList.remove("hidden");
     for (const pageRef of window.pdfPageRefs) {
       const fc = pageRef.fabricCanvas;
       if (!fc) continue;
-      fc.isDrawingMode = true;
-      fc.freeDrawingBrush.width = 3;
-      fc.freeDrawingBrush.color = "#EE220C";
       fc.wrapperEl.style.pointerEvents = "auto";
     }
+    setPdfTool("pen");
   } else {
     pdfEditMode = false;
     document.getElementById("pdf-edit-btn").classList.remove("editing");
     document.getElementById("pdf-edit-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+    document.getElementById("pdf-edit-subtoolbar").classList.add("hidden");
     for (const pageRef of window.pdfPageRefs) {
       const fc = pageRef.fabricCanvas;
       if (!fc) continue;
       fc.isDrawingMode = false;
+      fc.discardActiveObject();
       fc.wrapperEl.style.pointerEvents = "none";
     }
     await savePdfAnnotations();
   }
+};
+
+window.setPdfTool = (tool) => {
+  pdfCurrentTool = tool;
+  document.querySelectorAll(".pdf-tool-btn").forEach(b => b.classList.toggle("active", b.dataset.tool === tool));
+  for (const pageRef of window.pdfPageRefs || []) {
+    const fc = pageRef.fabricCanvas;
+    if (!fc) continue;
+    if (tool === "pen") {
+      if (!fc.freeDrawingBrush) fc.freeDrawingBrush = new fabric.PencilBrush(fc);
+      fc.freeDrawingBrush.width = 3;
+      fc.freeDrawingBrush.color = "#EE220C";
+      fc.isDrawingMode = true;
+    } else if (tool === "highlighter") {
+      if (!fc.freeDrawingBrush) fc.freeDrawingBrush = new fabric.PencilBrush(fc);
+      fc.freeDrawingBrush.width = 18;
+      fc.freeDrawingBrush.color = "rgba(255,224,0,0.5)";
+      fc.isDrawingMode = true;
+    } else {
+      fc.isDrawingMode = false;
+    }
+  }
+};
+
+window.openMusicSymbolSheet = () => {
+  const items = [
+    { label: "ppp", type: "dynamic" },
+    { label: "pp", type: "dynamic" },
+    { label: "p", type: "dynamic" },
+    { label: "mp", type: "dynamic" },
+    { label: "mf", type: "dynamic" },
+    { label: "f", type: "dynamic" },
+    { label: "ff", type: "dynamic" },
+    { label: "fff", type: "dynamic" },
+    { label: "Ligatura", type: "ligature" },
+    { label: "Crescendo", type: "crescendo" },
+    { label: "Decrescendo", type: "decrescendo" },
+    { label: "Koruna (fermata)", type: "fermata" }
+  ];
+  openBottomSheet("Hudební značky", items.map(i => ({
+    label: i.label,
+    action: `addMusicSymbol('${i.type}', '${i.label.replace(/'/g, "\\'")}');closeBottomSheet()`,
+    icon: ""
+  })));
+};
+
+window.addMusicSymbol = (type, label) => {
+  const pageRef = (window.pdfPageRefs || []).find(p => p.pageNum === pdfCurrentPage);
+  if (!pageRef || !pageRef.fabricCanvas) return;
+  const fc = pageRef.fabricCanvas;
+  const cx = fc.getWidth() / 2;
+  const cy = fc.getHeight() / 2;
+  let obj;
+
+  if (type === "dynamic") {
+    obj = new fabric.Textbox(label, {
+      left: cx - 20, top: cy, fontSize: 28, fontWeight: "bold", fontStyle: "italic",
+      fill: "#EE220C", width: 80
+    });
+  } else if (type === "ligature") {
+    obj = new fabric.Path("M 0 20 Q 40 -20 80 20", { left: cx - 40, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
+  } else if (type === "crescendo") {
+    obj = new fabric.Path("M 0 10 L 60 0 M 0 10 L 60 20", { left: cx - 30, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
+  } else if (type === "decrescendo") {
+    obj = new fabric.Path("M 60 10 L 0 0 M 60 10 L 0 20", { left: cx - 30, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
+  } else if (type === "fermata") {
+    const arc = new fabric.Path("M 0 20 A 20 20 0 0 1 40 20", { fill: "", stroke: "#EE220C", strokeWidth: 2 });
+    const dot = new fabric.Circle({ left: 17, top: -4, radius: 3, fill: "#EE220C" });
+    obj = new fabric.Group([arc, dot], { left: cx - 20, top: cy });
+  }
+
+  if (!obj) return;
+  fc.add(obj);
+  fc.setActiveObject(obj);
+  fc.requestRenderAll();
+  setPdfTool("select");
 };
 
 async function savePdfAnnotations() {
