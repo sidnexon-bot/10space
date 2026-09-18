@@ -225,11 +225,20 @@
     <div class="pdf-canvas-wrap" id="pdf-canvas-wrap"></div>
   </div>
 
+  <!-- NASDÍLENÉ PROJEKTY -->
+  <div id="page-projekt" class="hidden">
+    <div class="explorer-header">
+      <div class="explorer-title" id="projekt-share-title"></div>
+    </div>
+    <div id="projekt-share-body" style="padding:16px"></div>
+  </div>
+
   <script>
     const FUNCTIONS = {
       verifyShareToken: "https://verifysharetoken-etp6s2ynnq-uc.a.run.app",
       getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
-      listSharedFolder: "https://listsharedfolder-etp6s2ynnq-uc.a.run.app"
+      listSharedFolder: "https://listsharedfolder-etp6s2ynnq-uc.a.run.app",
+      getSharedProjekt: "https://getsharedprojekt-etp6s2ynnq-uc.a.run.app"
     };
 
     const shareToken = new URLSearchParams(window.location.search).get("token");
@@ -240,7 +249,7 @@
     let cameFromExplorer = false; // jestli se detail souboru otevřel z explorer
 
     function showPage(id) {
-      ["page-pin", "page-loading", "page-explorer", "page-file"].forEach(p => {
+      ["page-pin", "page-loading", "page-explorer", "page-file", "page-projekt"].forEach(p => {
         document.getElementById(p).classList.toggle("hidden", p !== id);
       });
     }
@@ -261,19 +270,22 @@
         const data = await res.json();
 
         if (data.success) {
-          rootData = data;
-
-          if (data.mimeType === "application/vnd.google-apps.folder") {
-            explorerPath = [{ id: data.driveFileId, name: data.nazev }];
-            showPage("page-explorer");
-            loadSharedFolder(data.driveFileId, data.nazev);
+            rootData = data;
+          
+            if (data.type === "projekt") {
+              showPage("page-projekt");
+              loadSharedProjekt();
+            } else if (data.mimeType === "application/vnd.google-apps.folder") {
+              explorerPath = [{ id: data.driveFileId, name: data.nazev }];
+              showPage("page-explorer");
+              loadSharedFolder(data.driveFileId, data.nazev);
+            } else {
+              fileData = data;
+              cameFromExplorer = false;
+              document.getElementById("file-back-btn").classList.add("hidden");
+              showFileDetail(data.nazev, data.mimeType);
+            }
           } else {
-            fileData = data;
-            cameFromExplorer = false;
-            document.getElementById("file-back-btn").classList.add("hidden");
-            showFileDetail(data.nazev, data.mimeType);
-          }
-        } else {
           showPage("page-pin");
           document.getElementById("pin-error").textContent = data.error || "Chyba";
           document.getElementById("pin-error").classList.remove("hidden");
@@ -449,6 +461,87 @@
     window.closePdfViewer = () => {
       document.getElementById("pdf-overlay").classList.add("hidden");
       pdfDoc = null;
+    };
+
+    // ===== NASDÍLENÉ PROJEKTY =====
+    async function loadSharedProjekt() {
+      document.getElementById("projekt-share-title").textContent = rootData.nazev || "Projekt";
+      document.getElementById("projekt-share-body").innerHTML = `<div class="loading-spinner"></div>`;
+    
+      try {
+        const res = await fetch(FUNCTIONS.getSharedProjekt, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shareToken })
+        });
+        const data = await res.json();
+    
+        if (!data.success) {
+          document.getElementById("projekt-share-body").innerHTML = `<p>Chyba: ${data.error}</p>`;
+          return;
+        }
+    
+        const datum = data.datum ? new Date(data.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
+    
+        let infoHtml = `
+          <div class="share-section">
+            <div class="share-section-title">Informace o akci</div>
+            <div class="share-info-row"><span>Datum</span><span>${datum}</span></div>
+            ${data.misto ? `<div class="share-info-row"><span>Místo</span><span>${data.misto}</span></div>` : ""}
+            ${data.sraz ? `<div class="share-info-row"><span>Sraz</span><span>${data.sraz}</span></div>` : ""}
+            ${data.doprava ? `<div class="share-info-row"><span>Doprava</span><span>${data.doprava}</span></div>` : ""}
+            ${data.garant ? `<div class="share-info-row"><span>Garant</span><span>${data.garant}</span></div>` : ""}
+          </div>`;
+    
+        let wikiHtml = data.wikiText ? `
+          <div class="share-section">
+            <div class="share-section-title">O akci</div>
+            <p>${data.wikiText}</p>
+          </div>` : "";
+    
+        let timelineHtml = "";
+        if (data.timeline?.length) {
+          timelineHtml = `
+            <div class="share-section">
+              <div class="share-section-title">Harmonogram</div>
+              ${data.timeline.map(t => `<div class="share-info-row"><span>${t.cas || "—"}</span><span>${t.popis || ""}</span></div>`).join("")}
+            </div>`;
+        }
+    
+        let riderHtml = "";
+        if (data.harmonogramKoncertu?.length) {
+          riderHtml = `
+            <div class="share-section">
+              <div class="share-section-title">Program koncertu</div>
+              <table class="share-table">
+                <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th></tr></thead>
+                <tbody>
+                  ${data.harmonogramKoncertu.map(r => {
+                    const detail = r.skladby ? r.skladby.map(s => s.name).join(", ") : (r.moderatorJmeno || "");
+                    return `<tr><td>${r.nazev || "—"}</td><td>${detail}</td><td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td></tr>`;
+                  }).join("")}
+                </tbody>
+              </table>
+            </div>`;
+        }
+    
+        let podkladyHtml = data.hasPodklady ? `
+          <div class="share-section">
+            <button class="primary-btn" onclick="openProjektPodklady()">Otevřít podklady</button>
+          </div>` : "";
+    
+        document.getElementById("projekt-share-body").innerHTML = infoHtml + wikiHtml + timelineHtml + riderHtml + podkladyHtml;
+      } catch(err) {
+        document.getElementById("projekt-share-body").innerHTML = `<p>Chyba připojení: ${err.message}</p>`;
+      }
+    }
+    
+    window.openProjektPodklady = () => {
+      explorerPath = [{ id: rootData.driveFileId || null, name: "Podklady" }];
+      // Použijeme stejný explorer, ale musíme mu dodat driveFileId Podkladů — přidáme ho do rootData při načtení
+      loadSharedFolder(explorerPath[0].id, "Podklady");
+      showPage("page-explorer");
+      document.getElementById("file-back-btn")?.classList.add("hidden");
     };
   </script>
 </body>
