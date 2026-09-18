@@ -288,6 +288,7 @@
 
     let rootData = null; // co bylo nasdíleno (soubor nebo složka)
     let explorerPath = []; // [{id, name}] — historie navigace ve složce
+    let explorerCameFromProjekt = false;
     let fileData = null; // aktuálně zobrazovaný soubor v detailu
     let cameFromExplorer = false; // jestli se detail souboru otevřel z explorer
 
@@ -362,7 +363,7 @@
     // ===== EXPLORER =====
     async function loadSharedFolder(folderId, folderName) {
       document.getElementById("explorer-title").textContent = folderName;
-      document.getElementById("explorer-back-btn").classList.toggle("hidden", explorerPath.length <= 1);
+      document.getElementById("explorer-back-btn").classList.toggle("hidden", explorerPath.length <= 1 && !explorerCameFromProjekt);
       document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty"><div class="spinner"></div></div>`;
 
       try {
@@ -406,7 +407,13 @@
     };
 
     window.explorerGoBack = () => {
-      if (explorerPath.length <= 1) return;
+      if (explorerPath.length <= 1) {
+        if (explorerCameFromProjekt) {
+          explorerCameFromProjekt = false;
+          showPage("page-projekt");
+        }
+        return;
+      }
       explorerPath.pop();
       const target = explorerPath[explorerPath.length - 1];
       loadSharedFolder(target.id, target.name);
@@ -580,8 +587,8 @@
     }
     
     window.openProjektPodklady = () => {
+      explorerCameFromProjekt = true;
       explorerPath = [{ id: rootData.driveFileId || null, name: "Podklady" }];
-      // Použijeme stejný explorer, ale musíme mu dodat driveFileId Podkladů — přidáme ho do rootData při načtení
       loadSharedFolder(explorerPath[0].id, "Podklady");
       showPage("page-explorer");
       document.getElementById("file-back-btn")?.classList.add("hidden");
