@@ -5021,10 +5021,27 @@ window.copyShareTokenLink = async () => {
   alert("Odkaz zkopírován");
 };
 
-window.openRegeneratePinPrompt = async () => {
+window.openRegeneratePinPrompt = () => {
   if (!shareManageToken) return;
-  const newPin = prompt("Zadej nový PIN (4-6 číslic):");
-  if (!newPin || newPin.length < 4) return;
+  document.getElementById("regenerate-pin-input").value = "";
+  document.getElementById("regenerate-pin-step1").classList.remove("hidden");
+  document.getElementById("regenerate-pin-step2").classList.add("hidden");
+  document.getElementById("regenerate-pin-modal").classList.add("active");
+};
+
+window.closeRegeneratePinModal = () => {
+  document.getElementById("regenerate-pin-modal").classList.remove("active");
+};
+
+window.confirmRegeneratePin = async () => {
+  const newPin = document.getElementById("regenerate-pin-input").value;
+  if (!newPin || newPin.length < 4) {
+    alert("Zadej PIN alespoň 4 číslice");
+    return;
+  }
+
+  closeRegeneratePinModal();
+  showSpinner();
 
   try {
     const token = await auth.currentUser.getIdToken();
@@ -5036,14 +5053,25 @@ window.openRegeneratePinPrompt = async () => {
     const data = await res.json();
     if (data.success) {
       const url = `https://space.10men.cz/share.html?token=${shareManageToken}`;
-      await navigator.clipboard.writeText(url);
-      alert(`Nový PIN nastaven a odkaz zkopírován.\n\nPIN: ${newPin}\nOdkaz: ${url}`);
+      window._lastRegeneratedUrl = url;
+      document.getElementById("regenerate-result-url").textContent = url;
+      document.getElementById("regenerate-pin-step1").classList.add("hidden");
+      document.getElementById("regenerate-pin-step2").classList.remove("hidden");
+      document.getElementById("regenerate-pin-modal").classList.add("active");
     } else {
       alert("Chyba: " + data.error);
     }
   } catch(err) {
     alert("Chyba: " + err.message);
+  } finally {
+    hideSpinner();
   }
+};
+
+window.copyRegeneratedLink = async () => {
+  await navigator.clipboard.writeText(window._lastRegeneratedUrl);
+  alert("Odkaz zkopírován");
+  closeRegeneratePinModal();
 };
 
 window.openAclModal = async (fileId) => {
@@ -5472,6 +5500,29 @@ async function processFilesWithEvid(fileResults) {
     </div>
   </div>
 </div>
+
+<!-- REGENERATE PIN MODAL -->
+<div class="modal-overlay" id="regenerate-pin-modal">
+  <div class="modal" style="width:360px">
+    <h2>Nový PIN a odkaz</h2>
+    <div id="regenerate-pin-step1">
+      <div class="modal-section-title">Nový PIN (4-6 číslic)</div>
+      <input type="text" id="regenerate-pin-input" maxlength="6" placeholder="1234" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:16px;text-align:center;letter-spacing:4px;margin-top:8px" inputmode="numeric">
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeRegeneratePinModal()">Zrušit</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmRegeneratePin()">Uložit nový PIN</button>
+      </div>
+    </div>
+    <div id="regenerate-pin-step2" class="hidden">
+      <div class="modal-section-title">Nový odkaz vytvořen</div>
+      <div style="background:#f9f9fb;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;margin-top:8px" id="regenerate-result-url"></div>
+      <div class="modal-footer" style="flex-direction:column;gap:8px">
+        <button class="modal-btn modal-btn-primary" onclick="copyRegeneratedLink()" style="width:100%">Kopírovat odkaz</button>
+        <button class="modal-btn modal-btn-secondary" onclick="closeRegeneratePinModal()" style="width:100%">Zavřít</button>
+      </div>
+    </div>
+  </div>
+</div>  
 
 <!-- ACL MODAL -->
 <div class="modal-overlay" id="acl-modal">
