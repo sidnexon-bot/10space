@@ -579,15 +579,20 @@
       padding: 0;
     }
     
+    .pdf-viewport {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
     .pdf-canvas-wrap { 
-      flex: 1; 
+      height: 100%;
+      width: 100%;
       overflow-y: auto;
       overflow-x: auto;
       padding: 16px;
       touch-action: none;
       -webkit-overflow-scrolling: touch;
       display: block;
-      justify-content: center;
     }
     #pdf-canvas-wrap.pdf-pinching {
       overflow: hidden;
@@ -4036,6 +4041,8 @@ function pdfInitPinchZoom() {
   let singleTouchStartX = 0;
   let scrollStartTop = 0;
   let scrollStartLeft = 0;
+  let pinchOriginX = 0;
+  let pinchOriginY = 0;
 
   wrap.addEventListener("touchstart", (e) => {
     if (e.touches.length === 2) {
@@ -4044,6 +4051,15 @@ function pdfInitPinchZoom() {
       const [t1, t2] = e.touches;
       pdfPinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       pdfPinchStartScale = pdfScale;
+
+      // Střed gesta relativně k viditelnému rámečku
+      const rect = wrap.getBoundingClientRect();
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      pinchOriginX = midX - rect.left;
+      pinchOriginY = midY - rect.top;
+
+      wrap.style.transformOrigin = `${pinchOriginX}px ${pinchOriginY}px`;
       wrap.classList.add("pdf-pinching");
     } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
       singleTouchStartY = e.touches[0].clientY;
@@ -4057,9 +4073,8 @@ function pdfInitPinchZoom() {
     if (pdfIsPinching && e.touches.length === 2) {
       const [t1, t2] = e.touches;
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      pdfPinchLiveScale = dist / pdfPinchStartDist;
+      pdfPinchLiveScale = Math.min(Math.max(dist / pdfPinchStartDist, 0.5), 2.0);
       wrap.style.transform = `scale(${pdfPinchLiveScale})`;
-      wrap.style.transformOrigin = "center center";
     } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
       const dy = singleTouchStartY - e.touches[0].clientY;
       const dx = singleTouchStartX - e.touches[0].clientX;
@@ -4083,6 +4098,7 @@ function pdfInitPinchZoom() {
     }
   }, { passive: true });
 }
+  
 async function renderAllPages() {
   if (!pdfDoc) return;
 
@@ -5504,8 +5520,10 @@ async function processFilesWithEvid(fileResults) {
     </button>
   </div>
   <div class="pdf-edit-options hidden" id="pdf-edit-options"></div>
-    <div class="pdf-canvas-wrap" id="pdf-canvas-wrap">
-      <canvas id="pdf-canvas"></canvas>
+    <div class="pdf-viewport" id="pdf-viewport">
+      <div class="pdf-canvas-wrap" id="pdf-canvas-wrap">
+        <canvas id="pdf-canvas"></canvas>
+      </div>
     </div>
   </div>
     <div class="modal-overlay" id="download-choice-modal">
