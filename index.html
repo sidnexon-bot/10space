@@ -4179,9 +4179,17 @@ async function loadAndRenderAnnotations() {
     if (pageData?.json) {
       const scaleFactor = pageData.width ? (pageRef.viewportW / pageData.width) : 1;
       fabricCanvas.loadFromJSON(pageData.json, () => {
-        fabricCanvas.setZoom(scaleFactor);
-        fabricCanvas.setWidth(pageRef.viewportW);
-        fabricCanvas.setHeight(pageRef.viewportH);
+        if (scaleFactor !== 1) {
+          fabricCanvas.getObjects().forEach(obj => {
+            obj.set({
+              left: obj.left * scaleFactor,
+              top: obj.top * scaleFactor,
+              scaleX: obj.scaleX * scaleFactor,
+              scaleY: obj.scaleY * scaleFactor
+            });
+            obj.setCoords();
+          });
+        }
         fabricCanvas.renderAll();
       });
     }
