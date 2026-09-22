@@ -4019,6 +4019,22 @@ async function pdfRenderPage(pageNum) {
 
 async function renderAllPages() {
   if (!pdfDoc) return;
+
+  // Zachovej aktuální (i neuloženou) kresbu před zbouráním canvasů
+  const preservedAnnotations = {};
+  if (window.pdfPageRefs?.length) {
+    for (const pageRef of window.pdfPageRefs) {
+      if (pageRef.fabricCanvas) {
+        preservedAnnotations[pageRef.pageNum] = {
+          json: JSON.stringify(pageRef.fabricCanvas.toJSON()),
+          width: pageRef.viewportW,
+          height: pageRef.viewportH
+        };
+      }
+    }
+  }
+  window.pdfPreservedAnnotations = preservedAnnotations;
+
   const wrap = document.getElementById("pdf-canvas-wrap");
   wrap.innerHTML = "";
   wrap.style.flexDirection = "column";
@@ -4104,12 +4120,19 @@ async function renderAllPages() {
 
 async function loadAndRenderAnnotations() {
   if (!pdfCurrentFileId || !window.pdfPageRefs?.length) return;
-  const uid = auth.currentUser.uid;
-  try {
-    const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages`));
-    window.pdfAnnotationsData = snap.val() || {};
-  } catch(e) {
-    window.pdfAnnotationsData = {};
+
+  // Pokud máme zachovanou (neuloženou) kresbu z předchozího zoomu, použij ji místo RTDB
+  if (window.pdfPreservedAnnotations && Object.keys(window.pdfPreservedAnnotations).length > 0) {
+    window.pdfAnnotationsData = window.pdfPreservedAnnotations;
+    window.pdfPreservedAnnotations = null;
+  } else {
+    const uid = auth.currentUser.uid;
+    try {
+      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages`));
+      window.pdfAnnotationsData = snap.val() || {};
+    } catch(e) {
+      window.pdfAnnotationsData = {};
+    }
   }
 
   for (const pageRef of window.pdfPageRefs) {
@@ -4339,16 +4362,25 @@ window.pdfNextPage = async () => {
 };
 
 window.pdfZoomIn = async () => {
-  if (pdfEditMode) { alert("Nejdřív dokonči úpravy (Hotovo)."); return; }
   pdfScale = Math.min(pdfScale + 0.25, 3.0);
   await renderAllPages();
+  if (pdfEditMode) reenableEditMode();
 };
 
 window.pdfZoomOut = async () => {
-  if (pdfEditMode) { alert("Nejdřív dokonči úpravy (Hotovo)."); return; }
   pdfScale = Math.max(pdfScale - 0.25, 0.5);
   await renderAllPages();
+  if (pdfEditMode) reenableEditMode();
 };
+
+function reenableEditMode() {
+  for (const pageRef of window.pdfPageRefs || []) {
+    const fc = pageRef.fabricCanvas;
+    if (!fc) continue;
+    fc.wrapperEl.style.pointerEvents = "auto";
+  }
+  setPdfTool(pdfCurrentTool);
+}
 
 window.pdfFitWidth = async () => {
   if (!pdfDoc) return;
