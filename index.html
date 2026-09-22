@@ -4043,8 +4043,10 @@ function pdfInitPinchZoom() {
   let singleTouchStartX = 0;
   let scrollStartTop = 0;
   let scrollStartLeft = 0;
-  let pinchOriginX = 0;
-  let pinchOriginY = 0;
+  let pinchViewportX = 0;
+  let pinchViewportY = 0;
+  let pinchContentX = 0;
+  let pinchContentY = 0;
 
   wrap.addEventListener("touchstart", (e) => {
     if (e.touches.length === 2) {
@@ -4054,14 +4056,18 @@ function pdfInitPinchZoom() {
       pdfPinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       pdfPinchStartScale = pdfScale;
 
-      // Střed gesta relativně k viditelnému rámečku
       const rect = wrap.getBoundingClientRect();
       const midX = (t1.clientX + t2.clientX) / 2;
       const midY = (t1.clientY + t2.clientY) / 2;
-      pinchOriginX = midX - rect.left;
-      pinchOriginY = midY - rect.top;
 
-      wrap.style.transformOrigin = `${pinchOriginX}px ${pinchOriginY}px`;
+      // Pozice v RÁMEČKU (pro transform-origin — CSS to počítá takhle, ne včetně scrollu)
+      pinchViewportX = midX - rect.left;
+      pinchViewportY = midY - rect.top;
+      // Pozice v CELÉM DOKUMENTU (pro přesný návrat po renderu — tady scroll patří do výpočtu)
+      pinchContentX = wrap.scrollLeft + pinchViewportX;
+      pinchContentY = wrap.scrollTop + pinchViewportY;
+
+      wrap.style.transformOrigin = `${pinchViewportX}px ${pinchViewportY}px`;
       wrap.classList.add("pdf-pinching");
     } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
       singleTouchStartY = e.touches[0].clientY;
@@ -4075,7 +4081,7 @@ function pdfInitPinchZoom() {
     if (pdfIsPinching && e.touches.length === 2) {
       const [t1, t2] = e.touches;
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      pdfPinchLiveScale = Math.min(Math.max(dist / pdfPinchStartDist, 0.5), 2.0);
+      pdfPinchLiveScale = Math.min(Math.max(dist / pdfPinchStartDist, 0.4), 2.5);
       wrap.style.transform = `scale(${pdfPinchLiveScale})`;
     } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
       const dy = singleTouchStartY - e.touches[0].clientY;
@@ -4093,8 +4099,16 @@ function pdfInitPinchZoom() {
     wrap.style.transform = "";
 
     const newScale = Math.min(Math.max(pdfPinchStartScale * pdfPinchLiveScale, 0.5), 3.0);
+
     if (Math.abs(newScale - pdfScale) > 0.02) {
+      const oldContentW = wrap.scrollWidth;
+      const oldContentH = wrap.scrollHeight;
+      const fracX = oldContentW > 0 ? pinchContentX / oldContentW : 0;
+      const fracY = oldContentH > 0 ? pinchContentY / oldContentH : 0;
+
       pdfScale = newScale;
+      window.pdfPinchTargetScroll = { fracX, fracY, viewportX: pinchViewportX, viewportY: pinchViewportY };
+
       await renderAllPages();
       if (pdfEditMode) reenableEditMode();
     }
@@ -4103,6 +4117,15 @@ function pdfInitPinchZoom() {
   
 async function renderAllPages() {
   if (!pdfDoc) return;
+
+  const prevWrap = document.getElementById("pdf-canvas-wrap");
+  let scrollRatio = 0;
+  if (prevWrap && prevWrap.scrollHeight > prevWrap.clientHeight) {
+    scrollRatio = prevWrap.scrollTop / (prevWrap.scrollHeight - prevWrap.clientHeight);
+  }
+  const pinchTarget = window.pdfPinchTargetScroll;
+  window.pdfPinchTargetScroll = null;
+  
   if (pdfIsRendering) {
     pdfPendingScale = pdfScale;
     return;
@@ -4186,9 +4209,20 @@ async function renderAllPages() {
     await page.render({ canvasContext: ctx, viewport }).promise;
   }
 
-  wrap.scrollTop = 0;
-  pdfCurrentPage = 1;
-  document.getElementById("pdf-current-page").textContent = 1;
+  if (pinchTarget) {
+    const newContentW = wrap.scrollWidth;
+    const newContentH = wrap.scrollHeight;
+    const targetContentX = pinchTarget.fracX * newContentW;
+    const targetContentY = pinchTarget.fracY * newContentH;
+    wrap.scrollLeft = Math.max(0, targetContentX - pinchTarget.viewportX);
+    wrap.scrollTop = Math.max(0, targetContentY - pinchTarget.viewportY);
+  } else if (scrollRatio > 0) {
+    wrap.scrollTop = scrollRatio * (wrap.scrollHeight - wrap.clientHeight);
+  } else {
+    wrap.scrollTop = 0;
+    pdfCurrentPage = 1;
+    document.getElementById("pdf-current-page").textContent = 1;
+  }
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
   loadingOverlay.remove();
 
