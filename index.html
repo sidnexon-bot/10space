@@ -584,7 +584,7 @@
       overflow-y: auto;
       overflow-x: auto;
       padding: 16px;
-      touch-action: pan-x pan-y pinch-zoom;
+      touch-action: none;
       -webkit-overflow-scrolling: touch;
       display: block;
       justify-content: center;
@@ -4032,29 +4032,45 @@ function pdfInitPinchZoom() {
   if (!wrap || wrap.dataset.pinchInit) return;
   wrap.dataset.pinchInit = "1";
 
+  let singleTouchStartY = 0;
+  let singleTouchStartX = 0;
+  let scrollStartTop = 0;
+  let scrollStartLeft = 0;
+
   wrap.addEventListener("touchstart", (e) => {
-    if (e.touches.length !== 2) return;
-    pdfIsPinching = true;
-    pdfPinchLiveScale = 1;
-    const [t1, t2] = e.touches;
-    pdfPinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-    pdfPinchStartScale = pdfScale;
-    wrap.classList.add("pdf-pinching");
+    if (e.touches.length === 2) {
+      pdfIsPinching = true;
+      pdfPinchLiveScale = 1;
+      const [t1, t2] = e.touches;
+      pdfPinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      pdfPinchStartScale = pdfScale;
+      wrap.classList.add("pdf-pinching");
+    } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
+      singleTouchStartY = e.touches[0].clientY;
+      singleTouchStartX = e.touches[0].clientX;
+      scrollStartTop = wrap.scrollTop;
+      scrollStartLeft = wrap.scrollLeft;
+    }
   }, { passive: true });
 
   wrap.addEventListener("touchmove", (e) => {
-    if (!pdfIsPinching || e.touches.length !== 2) return;
-    const [t1, t2] = e.touches;
-    const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-    pdfPinchLiveScale = dist / pdfPinchStartDist;
-    // Jen vizuální transform, žádný přepočet obsahu
-    wrap.style.transform = `scale(${pdfPinchLiveScale})`;
-    wrap.style.transformOrigin = "center center";
+    if (pdfIsPinching && e.touches.length === 2) {
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      pdfPinchLiveScale = dist / pdfPinchStartDist;
+      wrap.style.transform = `scale(${pdfPinchLiveScale})`;
+      wrap.style.transformOrigin = "center center";
+    } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
+      const dy = singleTouchStartY - e.touches[0].clientY;
+      const dx = singleTouchStartX - e.touches[0].clientX;
+      wrap.scrollTop = scrollStartTop + dy;
+      wrap.scrollLeft = scrollStartLeft + dx;
+    }
   }, { passive: true });
 
   wrap.addEventListener("touchend", async (e) => {
     if (!pdfIsPinching) return;
-    if (e.touches.length > 0) return; // čekej, dokud nezmizí oba prsty
+    if (e.touches.length > 0) return;
     pdfIsPinching = false;
     wrap.classList.remove("pdf-pinching");
     wrap.style.transform = "";
@@ -4067,7 +4083,6 @@ function pdfInitPinchZoom() {
     }
   }, { passive: true });
 }
-
 async function renderAllPages() {
   if (!pdfDoc) return;
 
