@@ -1995,9 +1995,11 @@ function getEvidCode(fileId) {
     const match = s.pdf.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     return match && match[1] === fileId;
   });
-  return song?.code || "";
-}
+  if (song?.code) return song.code;
 
+  return window.driveFiles?.[fileId]?.evidCislo || "";
+}
+  
 // DASHBOARD
 async function renderDashboard() {
   const area = document.getElementById("content-area");
@@ -5334,6 +5336,8 @@ async function processFiles(files) {
   openEvidModal(Array.from(files));
 }
 
+const KATEGORIE_NOTY = ["1", "2", "3", "4", "X"];
+
 async function processFilesWithEvid(fileResults) {
   initUploadProgress(fileResults.map(r => r.file));
 
@@ -5357,18 +5361,32 @@ async function processFilesWithEvid(fileResults) {
       const data = await response.json();
       if (!data.driveFileId) throw new Error(data.error || "Upload selhal");
 
-      const fileId = crypto.randomUUID();
-      const docRef = ref(db, `/dokumenty/${fileId}`);
-      const docData = {
-        nazev: file.name, kategorie: evidKategorie, stav: null,
-        slozkaId: window.currentFolder, storage: "gdrive",
-        mimeType: file.type, zdroj: "10space",
-        nahralKdo: currentUser.email, datumNahrani: Date.now(),
-        evidCislo: evidCislo,
-        verejneVerze: { 1: { driveFileId: data.driveFileId, datum: new Date().toISOString().split("T")[0], poznamka: "První nahrání", nahralKdo: currentUser.email } }
-      };
-      await set(docRef, docData);
-      window.allDocs[fileId] = docData;
+      // Zapiš evidenční číslo přímo k souboru v driveCache
+      if (evidCislo) {
+        await set(ref(db, `/driveCache/files/${data.driveFileId}/evidCislo`), evidCislo);
+        if (window.driveFiles?.[data.driveFileId]) {
+          window.driveFiles[data.driveFileId].evidCislo = evidCislo;
+        }
+      }
+
+      // Pokud jde o noty, rovnou založ záznam v repertoáru
+      if (evidCislo && KATEGORIE_NOTY.includes(evidKategorie)) {
+        const songId = "r" + crypto.randomUUID().split("-")[0];
+        const songData = {
+          id: songId,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          author: "---",
+          arranged_by: "---",
+          text_by: "---",
+          status: "Aktivní",
+          code: evidCislo,
+          driveFileId: data.driveFileId,
+          pdf: `https://drive.google.com/file/d/${data.driveFileId}/view?usp=sharing`
+        };
+        await set(ref(db, `/repertoar/${songId}`), songData);
+        window.repertoar[songId] = songData;
+      }
+
       setUploadItemDone(i, interval);
     } catch(err) {
       setUploadItemError(i, interval);
