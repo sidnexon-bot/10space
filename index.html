@@ -4031,6 +4031,8 @@ let pdfPinchStartDist = 0;
 let pdfPinchStartScale = 1;
 let pdfPinchLiveScale = 1;
 let pdfIsPinching = false;
+let pdfIsRendering = false;
+let pdfPendingScale = null;
 
 function pdfInitPinchZoom() {
   const wrap = document.getElementById("pdf-canvas-wrap");
@@ -4101,8 +4103,13 @@ function pdfInitPinchZoom() {
   
 async function renderAllPages() {
   if (!pdfDoc) return;
+  if (pdfIsRendering) {
+    pdfPendingScale = pdfScale;
+    return;
+  }
+  pdfIsRendering = true;
 
-  // Zachovej aktuální (i neuloženou) kresbu před zbouráním canvasů
+ // Zachovej aktuální (i neuloženou) kresbu před zbouráním canvasů
   const preservedAnnotations = {};
   if (window.pdfPageRefs?.length) {
     for (const pageRef of window.pdfPageRefs) {
@@ -4112,6 +4119,7 @@ async function renderAllPages() {
           width: pageRef.viewportW,
           height: pageRef.viewportH
         };
+        pageRef.fabricCanvas.dispose(); // uvolni starý canvas z paměti
       }
     }
   }
@@ -4198,6 +4206,12 @@ async function renderAllPages() {
   };
 
   await loadAndRenderAnnotations();
+  pdfIsRendering = false;
+  if (pdfPendingScale !== null && pdfPendingScale !== pdfScale) {
+    pdfScale = pdfPendingScale;
+    pdfPendingScale = null;
+    await renderAllPages();
+  }
 }
 
 async function loadAndRenderAnnotations() {
