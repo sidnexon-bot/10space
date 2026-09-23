@@ -4146,7 +4146,17 @@ function pdfInitGestures() {
       stageStartY = pdfStageY;
     }
     if (e.touches.length === 0 && !tapMoved && Date.now() - tapStartTime < 250 && drawTouchId === null) {
-      pdfToggleToolbar();
+      const rect = viewport.getBoundingClientRect();
+      const relX = (tapStartX - rect.left) / rect.width;
+      const atFitZoom = Math.abs(pdfStageScale - 1) < 0.02;
+    
+      if (atFitZoom && relX < 0.2) {
+        pdfPrevPage();
+      } else if (atFitZoom && relX > 0.8) {
+        pdfNextPage();
+      } else {
+        pdfToggleToolbar();
+      }
     }
   }, { passive: true });
 }
