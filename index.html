@@ -3996,8 +3996,8 @@ window.openPdfViewer = async (driveFileId, title) => {
   pdfCurrentFileId = driveFileId;
   document.getElementById("pdf-title").textContent = title || "Dokument";
   document.getElementById("pdf-overlay").classList.remove("hidden");
-  document.getElementById("pdf-canvas-wrap").innerHTML = `
-    <div style="color:#fff;display:flex;align-items:center;gap:12px;margin:auto">
+  document.getElementById("pdf-stage").innerHTML = `
+    <div style="color:#fff;display:flex;align-items:center;gap:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap">
       <div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>
       Načítám PDF...
     </div>`;
@@ -4010,13 +4010,11 @@ window.openPdfViewer = async (driveFileId, title) => {
     });
     pdfDoc = await loadingTask.promise;
     pdfCurrentPage = 1;
-    pdfScale = 1.0;
     document.getElementById("pdf-total-pages").textContent = pdfDoc.numPages;
-    document.getElementById("pdf-canvas-wrap").innerHTML = "";
-    await pdfFitWidth();
-    pdfInitPinchZoom();
+    await renderCurrentPage();
+    pdfInitGestures();
   } catch(err) {
-    document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#ff6b6b;margin:auto">Chyba: ${err.message}</div>`;
+    document.getElementById("pdf-stage").innerHTML = `<div style="color:#ff6b6b;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">Chyba: ${err.message}</div>`;
   }
 };
 
@@ -4025,6 +4023,91 @@ async function pdfRenderPage(pageNum) {
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
   const pageEl = document.getElementById(`pdf-page-${pageNum}`);
   if (pageEl) pageEl.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function pdfInitGestures() {
+  const viewport = document.getElementById("pdf-viewport");
+  if (!viewport || viewport.dataset.gestureInit) return;
+  viewport.dataset.gestureInit = "1";
+
+  let mode = null; // "pan" | "pinch"
+  let panStartX = 0, panStartY = 0;
+  let stageStartX = 0, stageStartY = 0;
+
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let pinchStartMidX = 0, pinchStartMidY = 0;
+  let pinchStartStageX = 0, pinchStartStageY = 0;
+
+  viewport.addEventListener("touchstart", (e) => {
+    if (pdfEditMode) return; // v edit módu kreslí Fabric, gesta vypnutá
+    if (e.touches.length === 1) {
+      mode = "pan";
+      panStartX = e.touches[0].clientX;
+      panStartY = e.touches[0].clientY;
+      stageStartX = pdfStageX;
+      stageStartY = pdfStageY;
+    } else if (e.touches.length === 2) {
+      mode = "pinch";
+      const [t1, t2] = e.touches;
+      pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      pinchStartScale = pdfStageScale;
+      pinchStartMidX = (t1.clientX + t2.clientX) / 2;
+      pinchStartMidY = (t1.clientY + t2.clientY) / 2;
+      pinchStartStageX = pdfStageX;
+      pinchStartStageY = pdfStageY;
+    }
+  }, { passive: true });
+
+  viewport.addEventListener("touchmove", (e) => {
+    if (pdfEditMode || !mode) return;
+
+    if (mode === "pan" && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - panStartX;
+      const dy = e.touches[0].clientY - panStartY;
+      pdfStageX = stageStartX + dx;
+      pdfStageY = stageStartY + dy;
+      pdfApplyTransform(); // živě, bez clampu (clamp až na konci gesta)
+    } else if (mode === "pinch" && e.touches.length === 2) {
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const rawScale = pinchStartScale * (dist / pinchStartDist);
+      pdfStageScale = Math.min(Math.max(rawScale, 0.5), 4.0);
+
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+
+      // Zoom "sleduje" prsty: bod pod prsty zůstává pod prsty
+      const rect = viewport.getBoundingClientRect();
+      const originX = pinchStartMidX - rect.left;
+      const originY = pinchStartMidY - rect.top;
+      const scaleRatio = pdfStageScale / pinchStartScale;
+
+      pdfStageX = originX - (originX - pinchStartStageX) * scaleRatio + (midX - pinchStartMidX);
+      pdfStageY = originY - (originY - pinchStartStageY) * scaleRatio + (midY - pinchStartMidY);
+
+      pdfApplyTransform();
+      document.getElementById("pdf-zoom-info").textContent = Math.round(pdfStageScale * 100) + "%";
+    }
+  }, { passive: true });
+
+  viewport.addEventListener("touchend", (e) => {
+    if (pdfEditMode) return;
+    if (e.touches.length === 0) {
+      if (mode) {
+        pdfClampStage();
+        pdfApplyTransform();
+      }
+      mode = null;
+    } else if (e.touches.length === 1 && mode === "pinch") {
+      // Z pinche zbyl jeden prst → přepni na pan bez skoku
+      mode = "pan";
+      panStartX = e.touches[0].clientX;
+      panStartY = e.touches[0].clientY;
+      stageStartX = pdfStageX;
+      stageStartY = pdfStageY;
+    }
+  }, { passive: true });
 }
 
 // PINCH TO ZOOM
@@ -4428,6 +4511,8 @@ window.closePdfViewer = () => {
   document.getElementById("pdf-overlay").classList.add("hidden");
   pdfDoc = null;
   pdfCurrentFileId = null;
+  pdfEditMode = false;
+  window.pdfCurrentPageRef = null;
 };
 
 window.openDownloadChoice = () => {
