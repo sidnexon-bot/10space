@@ -541,6 +541,12 @@
     .pdf-tool-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 12px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
     .pdf-tool-btn:hover { background: rgba(255,255,255,0.15); }
     .pdf-tool-btn.active { background: #EE220C; }
+    .pdf-toolbar {
+      transition: transform 0.25s ease;
+    }
+    .pdf-toolbar.pdf-toolbar-hidden {
+      transform: translateY(-100%);
+    }
     .pdf-edit-options { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #232325; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .pdf-option-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .pdf-color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0; padding: 0; }
@@ -574,10 +580,6 @@
     .pdf-title { font-size: 13px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pdf-page-info { font-size: 13px; color: #fff; white-space: nowrap; }
     .pdf-zoom-info { font-size: 13px; color: #fff; min-width: 40px; text-align: center; }
-    .pdf-overlay.pdf-fullscreen .pdf-canvas-wrap {
-      height: 100vh;
-      padding: 0;
-    }
     
     .pdf-viewport {
       flex: 1;
@@ -2807,10 +2809,7 @@ async function renderPreview(fileId, item, content) {
     canvas.style.cursor = "pointer";
     canvas.style.display = "block";
     canvas.title = "Kliknutím otevřeš plný viewer";
-    canvas.onclick = () => {
-      closeMobileDetailModal();
-      openPdfViewer(fileId, item.name);
-    };
+    
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
     await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
@@ -4030,8 +4029,9 @@ function pdfInitGestures() {
   if (!viewport || viewport.dataset.gestureInit) return;
   viewport.dataset.gestureInit = "1";
 
-  let mode = null; // "pan" | "pinch"
-  let drawTouchId = null; // ID prstu, který právě kreslí (jen v edit módu)
+  let mode = null;
+  let drawTouchId = null;
+  let tapStartX = 0, tapStartY = 0, tapStartTime = 0, tapMoved = false;
 
   let panStartX = 0, panStartY = 0;
   let stageStartX = 0, stageStartY = 0;
@@ -4047,6 +4047,12 @@ function pdfInitGestures() {
   }
 
   viewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+      tapStartX = e.touches[0].clientX;
+      tapStartY = e.touches[0].clientY;
+      tapStartTime = Date.now();
+      tapMoved = false;
+    }
     if (pdfEditMode) {
       if (e.touches.length === 1 && drawTouchId === null) {
         // Jeden prst, nic se nekreslí -> nech Fabric kreslit
@@ -4080,6 +4086,11 @@ function pdfInitGestures() {
   }, { passive: true });
 
   viewport.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 1) {
+      const dx = Math.abs(e.touches[0].clientX - tapStartX);
+      const dy = Math.abs(e.touches[0].clientY - tapStartY);
+      if (dx > 8 || dy > 8) tapMoved = true;
+    }
     if (pdfEditMode && drawTouchId !== null && e.touches.length < 2) return; // kreslí se, nic neděláme
     if (!mode) return;
 
@@ -4130,6 +4141,9 @@ function pdfInitGestures() {
       panStartY = e.touches[0].clientY;
       stageStartX = pdfStageX;
       stageStartY = pdfStageY;
+    }
+    if (e.touches.length === 0 && !tapMoved && Date.now() - tapStartTime < 250 && drawTouchId === null) {
+      pdfToggleToolbar();
     }
   }, { passive: true });
 }
@@ -4675,30 +4689,10 @@ async function downloadAnnotatedPdf() {
   }, { passive: true });
 })();
 
-window.pdfToggleFullscreen = async () => {
-  if (pdfEditMode) { alert("Nejdřív dokonči úpravy (Hotovo)."); return; }
-  const overlay = document.getElementById("pdf-overlay");
+window.pdfToggleToolbar = () => {
+  if (pdfEditMode) return; // v edit módu nech toolbar viditelný
   const toolbar = document.querySelector(".pdf-toolbar");
-  const isFullscreen = overlay.classList.contains("pdf-fullscreen");
-
-  if (isFullscreen) {
-    overlay.classList.remove("pdf-fullscreen");
-    toolbar.style.display = "";
-  } else {
-    overlay.classList.add("pdf-fullscreen");
-    toolbar.style.display = "none";
-  }
-
-  // Nech prohlížeč přepočítat layout, pak znovu vykresli stránku na nový rozměr rámečku
-  await new Promise(resolve => requestAnimationFrame(resolve));
-  await renderCurrentPage();
-
-  const btn = document.getElementById("pdf-fullscreen-btn");
-  if (overlay.classList.contains("pdf-fullscreen")) {
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="21" y2="3"/><line x1="3" y1="21" x2="14" y2="10"/></svg>`;
-  } else {
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
-  }
+  toolbar.classList.toggle("pdf-toolbar-hidden");
 };
   
 window.closeDetailSidebar = () => {
@@ -5548,9 +5542,6 @@ async function processFilesWithEvid(fileResults) {
         </button>
         <button class="pdf-btn" onclick="pdfToggleEditMode()" id="pdf-edit-btn" title="Upravit / anotovat">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
-        <button class="pdf-btn" onclick="pdfToggleFullscreen()" id="pdf-fullscreen-btn" title="Celá obrazovka">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
         </button>
       </div>
     </div>
