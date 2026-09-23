@@ -583,22 +583,21 @@
       flex: 1;
       overflow: hidden;
       position: relative;
-    }
-    .pdf-canvas-wrap { 
-      height: 100%;
-      width: 100%;
-      overflow-y: auto;
-      overflow-x: auto;
-      padding: 16px;
       touch-action: none;
-      -webkit-overflow-scrolling: touch;
+    }
+    .pdf-stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+    .pdf-stage-page {
+      position: relative;
       display: block;
     }
-    #pdf-canvas-wrap.pdf-pinching {
-      overflow: hidden;
-    }
-    
-    #pdf-canvas { box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+    .pdf-stage-page canvas { display: block; }
+    .pdf-stage-page #pdf-canvas-render { box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
     
     @media (max-width: 768px) {
       .pdf-toolbar-right .pdf-zoom-info { display: none; }
@@ -5587,10 +5586,8 @@ async function processFilesWithEvid(fileResults) {
   </div>
   <div class="pdf-edit-options hidden" id="pdf-edit-options"></div>
     <div class="pdf-viewport" id="pdf-viewport">
-      <div class="pdf-canvas-wrap" id="pdf-canvas-wrap">
-        <canvas id="pdf-canvas"></canvas>
-      </div>
-    </div>
+  <div class="pdf-stage" id="pdf-stage"></div>
+</div>
   </div>
     <div class="modal-overlay" id="download-choice-modal">
       <div class="modal" style="max-width:320px">
