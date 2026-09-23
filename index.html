@@ -4028,302 +4028,202 @@ async function pdfRenderPage(pageNum) {
 }
 
 // PINCH TO ZOOM
-let pdfPinchStartDist = 0;
-let pdfPinchStartScale = 1;
-let pdfPinchLiveScale = 1;
-let pdfIsPinching = false;
-let pdfIsRendering = false;
-let pdfPendingScale = null;
-
-function pdfInitPinchZoom() {
-  const wrap = document.getElementById("pdf-canvas-wrap");
-  if (!wrap || wrap.dataset.pinchInit) return;
-  wrap.dataset.pinchInit = "1";
-
-  let singleTouchStartY = 0;
-  let singleTouchStartX = 0;
-  let scrollStartTop = 0;
-  let scrollStartLeft = 0;
-  let pinchViewportX = 0;
-  let pinchViewportY = 0;
-  let pinchContentX = 0;
-  let pinchContentY = 0;
-
-  wrap.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 2) {
-      pdfIsPinching = true;
-      pdfPinchLiveScale = 1;
-      const [t1, t2] = e.touches;
-      pdfPinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      pdfPinchStartScale = pdfScale;
-
-      const rect = wrap.getBoundingClientRect();
-      const midX = (t1.clientX + t2.clientX) / 2;
-      const midY = (t1.clientY + t2.clientY) / 2;
-
-      // Pozice v RÁMEČKU (pro transform-origin — CSS to počítá takhle, ne včetně scrollu)
-      pinchViewportX = midX - rect.left;
-      pinchViewportY = midY - rect.top;
-      // Pozice v CELÉM DOKUMENTU (pro přesný návrat po renderu — tady scroll patří do výpočtu)
-      pinchContentX = wrap.scrollLeft + pinchViewportX;
-      pinchContentY = wrap.scrollTop + pinchViewportY;
-
-      wrap.style.transformOrigin = `${pinchViewportX}px ${pinchViewportY}px`;
-      wrap.classList.add("pdf-pinching");
-    } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
-      singleTouchStartY = e.touches[0].clientY;
-      singleTouchStartX = e.touches[0].clientX;
-      scrollStartTop = wrap.scrollTop;
-      scrollStartLeft = wrap.scrollLeft;
-    }
-  }, { passive: true });
-
-  wrap.addEventListener("touchmove", (e) => {
-    if (pdfIsPinching && e.touches.length === 2) {
-      const [t1, t2] = e.touches;
-      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      pdfPinchLiveScale = Math.min(Math.max(dist / pdfPinchStartDist, 0.4), 2.5);
-      wrap.style.transform = `scale(${pdfPinchLiveScale})`;
-    } else if (e.touches.length === 1 && !pdfIsPinching && !pdfEditMode) {
-      const dy = singleTouchStartY - e.touches[0].clientY;
-      const dx = singleTouchStartX - e.touches[0].clientX;
-      wrap.scrollTop = scrollStartTop + dy;
-      wrap.scrollLeft = scrollStartLeft + dx;
-    }
-  }, { passive: true });
-
-  wrap.addEventListener("touchend", async (e) => {
-    if (!pdfIsPinching) return;
-    if (e.touches.length > 0) return;
-    pdfIsPinching = false;
-    wrap.classList.remove("pdf-pinching");
-    wrap.style.transform = "";
-
-    const newScale = Math.min(Math.max(pdfPinchStartScale * pdfPinchLiveScale, 0.5), 3.0);
-
-    if (Math.abs(newScale - pdfScale) > 0.02) {
-      const oldContentW = wrap.scrollWidth;
-      const oldContentH = wrap.scrollHeight;
-      const fracX = oldContentW > 0 ? pinchContentX / oldContentW : 0;
-      const fracY = oldContentH > 0 ? pinchContentY / oldContentH : 0;
-
-      pdfScale = newScale;
-      window.pdfPinchTargetScroll = { fracX, fracY, viewportX: pinchViewportX, viewportY: pinchViewportY };
-
-      await renderAllPages();
-      if (pdfEditMode) reenableEditMode();
-    }
-  }, { passive: true });
-}
   
-async function renderAllPages() {
+const PDF_RENDER_SCALE = 2.5; // vysoké rozlišení, transform pak jen škáluje
+
+let pdfStageX = 0;
+let pdfStageY = 0;
+let pdfStageScale = 1; // 1 = "fit" velikost dané stránky
+
+function pdfApplyTransform() {
+  const stage = document.getElementById("pdf-stage");
+  if (!stage) return;
+  stage.style.transform = `translate(${pdfStageX}px, ${pdfStageY}px) scale(${pdfStageScale})`;
+}
+
+function pdfClampStage() {
+  const viewport = document.getElementById("pdf-viewport");
+  const stage = document.getElementById("pdf-stage");
+  if (!viewport || !stage || !window.pdfCurrentPageRef) return;
+
+  const vw = viewport.clientWidth;
+  const vh = viewport.clientHeight;
+  const contentW = window.pdfCurrentPageRef.fitWidth * pdfStageScale;
+  const contentH = window.pdfCurrentPageRef.fitHeight * pdfStageScale;
+
+  // Pokud je obsah menší než rámeček, vycentruj; jinak nedovol ujet mimo
+  if (contentW <= vw) {
+    pdfStageX = (vw - contentW) / 2;
+  } else {
+    const minX = vw - contentW;
+    pdfStageX = Math.min(0, Math.max(minX, pdfStageX));
+  }
+  if (contentH <= vh) {
+    pdfStageY = (vh - contentH) / 2;
+  } else {
+    const minY = vh - contentH;
+    pdfStageY = Math.min(0, Math.max(minY, pdfStageY));
+  }
+}
+
+async function renderCurrentPage() {
   if (!pdfDoc) return;
 
-  const prevWrap = document.getElementById("pdf-canvas-wrap");
-  let scrollRatio = 0;
-  if (prevWrap && prevWrap.scrollHeight > prevWrap.clientHeight) {
-    scrollRatio = prevWrap.scrollTop / (prevWrap.scrollHeight - prevWrap.clientHeight);
-  }
-  const pinchTarget = window.pdfPinchTargetScroll;
-  window.pdfPinchTargetScroll = null;
-  
-  if (pdfIsRendering) {
-    pdfPendingScale = pdfScale;
-    return;
-  }
-  pdfIsRendering = true;
-
- // Zachovej aktuální (i neuloženou) kresbu před zbouráním canvasů
-  const preservedAnnotations = {};
-  if (window.pdfPageRefs?.length) {
-    for (const pageRef of window.pdfPageRefs) {
-      if (pageRef.fabricCanvas) {
-        preservedAnnotations[pageRef.pageNum] = {
-          json: JSON.stringify(pageRef.fabricCanvas.toJSON()),
-          width: pageRef.viewportW,
-          height: pageRef.viewportH
-        };
-        pageRef.fabricCanvas.dispose(); // uvolni starý canvas z paměti
-      }
-    }
-  }
-  window.pdfPreservedAnnotations = preservedAnnotations;
-
-  const wrap = document.getElementById("pdf-canvas-wrap");
-  wrap.innerHTML = "";
-  wrap.style.flexDirection = "column";
-  wrap.style.alignItems = "center";
-  wrap.style.justifyContent = "flex-start";
-  wrap.style.display = "block";
-
-  window.pdfPageRefs = [];
-  const canvases = [];
-
-  for (let i = 1; i <= pdfDoc.numPages; i++) {
-    const page = await pdfDoc.getPage(i);
-    const viewport = page.getViewport({ scale: pdfScale });
-
-    const pageWrap = document.createElement("div");
-    pageWrap.id = `pdf-page-${i}`;
-    pageWrap.style.cssText = "margin-bottom:12px;flex-shrink:0;display:flex;justify-content:center;align-items:flex-start;width:100%;";
-
-    const pageInner = document.createElement("div");
-    pageInner.style.cssText = "position:relative;display:inline-block;";
-
-    const canvas = document.createElement("canvas");
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = viewport.width * dpr;
-    canvas.height = viewport.height * dpr;
-    canvas.style.width = viewport.width + "px";
-    canvas.style.height = viewport.height + "px";
-    canvas.style.boxShadow = "0 4px 24px rgba(0,0,0,0.4)";
-    canvas.style.display = "block";
-    canvas.onclick = () => {
-      if (document.getElementById("pdf-overlay").classList.contains("pdf-fullscreen") && !pdfEditMode) {
-        pdfToggleFullscreen();
-      }
+  // Ulož (i neuloženou) kresbu aktuální stránky, než ji zahodíme
+  if (window.pdfCurrentPageRef?.fabricCanvas) {
+    const pr = window.pdfCurrentPageRef;
+    window.pdfPreservedAnnotations = window.pdfPreservedAnnotations || {};
+    window.pdfPreservedAnnotations[pr.pageNum] = {
+      json: JSON.stringify(pr.fabricCanvas.toJSON()),
+      width: pr.fitWidth,
+      height: pr.fitHeight
     };
-
-    const annotCanvas = document.createElement("canvas");
-    annotCanvas.id = `pdf-annot-${i}`;
-    annotCanvas.width = viewport.width;
-    annotCanvas.height = viewport.height;
-
-    pageInner.appendChild(canvas);
-    pageInner.appendChild(annotCanvas);
-    pageWrap.appendChild(pageInner);
-    wrap.appendChild(pageWrap);
-
-    canvases.push({ canvas, page, viewport, dpr });
-    window.pdfPageRefs.push({ pageNum: i, pdfCanvas: canvas, annotCanvasEl: annotCanvas, viewportW: viewport.width, viewportH: viewport.height });
+    pr.fabricCanvas.dispose();
   }
+
+  const stage = document.getElementById("pdf-stage");
+  const viewport = document.getElementById("pdf-viewport");
+  stage.innerHTML = "";
 
   const loadingOverlay = document.createElement("div");
   loadingOverlay.style.cssText = "position:absolute;inset:0;background:#1c1c1e;display:flex;align-items:center;justify-content:center;z-index:10;";
-  loadingOverlay.innerHTML = `<div style="color:#fff;display:flex;align-items:center;gap:12px"><div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>Načítám stránky...</div>`;
-  wrap.style.position = "relative";
-  wrap.appendChild(loadingOverlay);
+  loadingOverlay.innerHTML = `<div style="color:#fff;display:flex;align-items:center;gap:12px"><div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>Načítám stránku...</div>`;
+  viewport.appendChild(loadingOverlay);
 
-  for (const { canvas, page, viewport, dpr } of canvases) {
-    const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
-    await page.render({ canvasContext: ctx, viewport }).promise;
-  }
+  const page = await pdfDoc.getPage(pdfCurrentPage);
+  const baseViewport = page.getViewport({ scale: 1 });
 
-  if (pinchTarget) {
-    const newContentW = wrap.scrollWidth;
-    const newContentH = wrap.scrollHeight;
-    const targetContentX = pinchTarget.fracX * newContentW;
-    const targetContentY = pinchTarget.fracY * newContentH;
-    wrap.scrollLeft = Math.max(0, targetContentX - pinchTarget.viewportX);
-    wrap.scrollTop = Math.max(0, targetContentY - pinchTarget.viewportY);
-  } else if (scrollRatio > 0) {
-    wrap.scrollTop = scrollRatio * (wrap.scrollHeight - wrap.clientHeight);
-  } else {
-    wrap.scrollTop = 0;
-    pdfCurrentPage = 1;
-    document.getElementById("pdf-current-page").textContent = 1;
-  }
-  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
-  loadingOverlay.remove();
+  // "Fit" velikost = přizpůsobená rámečku
+  const availW = viewport.clientWidth - 32;
+  const availH = viewport.clientHeight - 32;
+  const fitScale = Math.min(availW / baseViewport.width, availH / baseViewport.height);
+  const fitWidth = baseViewport.width * fitScale;
+  const fitHeight = baseViewport.height * fitScale;
 
-  wrap.onscroll = () => {
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const el = document.getElementById(`pdf-page-${i}`);
-      if (!el) continue;
-      const rect = el.getBoundingClientRect();
-      if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
-        document.getElementById("pdf-current-page").textContent = i;
-        pdfCurrentPage = i;
-        break;
-      }
-    }
+  // Vykresli ve VYSOKÉM rozlišení jednou; CSS pak jen zmenší na fitWidth/fitHeight
+  const renderViewport = page.getViewport({ scale: fitScale * PDF_RENDER_SCALE });
+
+  const pageEl = document.createElement("div");
+  pageEl.className = "pdf-stage-page";
+  pageEl.style.width = fitWidth + "px";
+  pageEl.style.height = fitHeight + "px";
+
+  const canvas = document.createElement("canvas");
+  canvas.id = "pdf-canvas-render";
+  canvas.width = renderViewport.width;
+  canvas.height = renderViewport.height;
+  canvas.style.width = fitWidth + "px";
+  canvas.style.height = fitHeight + "px";
+
+  const annotCanvas = document.createElement("canvas");
+  annotCanvas.id = "pdf-annot-current";
+  annotCanvas.width = fitWidth;
+  annotCanvas.height = fitHeight;
+  annotCanvas.style.cssText = "position:absolute;top:0;left:0;";
+
+  pageEl.appendChild(canvas);
+  pageEl.appendChild(annotCanvas);
+  stage.appendChild(pageEl);
+
+  const ctx = canvas.getContext("2d");
+  await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
+
+  window.pdfCurrentPageRef = {
+    pageNum: pdfCurrentPage,
+    fitWidth,
+    fitHeight,
+    annotCanvasEl: annotCanvas
   };
 
-  await loadAndRenderAnnotations();
-  pdfIsRendering = false;
-  if (pdfPendingScale !== null && pdfPendingScale !== pdfScale) {
-    pdfScale = pdfPendingScale;
-    pdfPendingScale = null;
-    await renderAllPages();
-  }
+  // Reset transform na "fit" a vycentruj
+  pdfStageScale = 1;
+  pdfStageX = 0;
+  pdfStageY = 0;
+  pdfClampStage();
+  pdfApplyTransform();
+
+  document.getElementById("pdf-current-page").textContent = pdfCurrentPage;
+  document.getElementById("pdf-total-pages").textContent = pdfDoc.numPages;
+  document.getElementById("pdf-zoom-info").textContent = "100%";
+
+  loadingOverlay.remove();
+
+  await loadAndRenderCurrentAnnotations();
+  if (pdfEditMode) reenableEditMode();
 }
+  
+async function loadAndRenderCurrentAnnotations() {
+  if (!pdfCurrentFileId || !window.pdfCurrentPageRef) return;
 
-async function loadAndRenderAnnotations() {
-  if (!pdfCurrentFileId || !window.pdfPageRefs?.length) return;
+  const pr = window.pdfCurrentPageRef;
+  const fabricCanvas = new fabric.Canvas(pr.annotCanvasEl, {
+    isDrawingMode: false,
+    selection: false
+  });
+  fabricCanvas.wrapperEl.style.position = "absolute";
+  fabricCanvas.wrapperEl.style.top = "0";
+  fabricCanvas.wrapperEl.style.left = "0";
+  fabricCanvas.wrapperEl.style.pointerEvents = "none";
+  pr.fabricCanvas = fabricCanvas;
 
-  // Pokud máme zachovanou (neuloženou) kresbu z předchozího zoomu, použij ji místo RTDB
-  if (window.pdfPreservedAnnotations && Object.keys(window.pdfPreservedAnnotations).length > 0) {
-    window.pdfAnnotationsData = window.pdfPreservedAnnotations;
-    window.pdfPreservedAnnotations = null;
+  fabricCanvas.on("mouse:down", (opt) => {
+    if (!pdfEditMode) return;
+    if (pdfCurrentTool === "eraser") {
+      if (opt.target) {
+        fabricCanvas.remove(opt.target);
+        fabricCanvas.requestRenderAll();
+      }
+    } else if (pdfCurrentTool === "text") {
+      if (!opt.target) {
+        const pointer = fabricCanvas.getPointer(opt.e);
+        const tb = new fabric.Textbox("Poznámka", {
+          left: pointer.x, top: pointer.y,
+          fontSize: 16, fill: pdfTextColor, width: 160
+        });
+        fabricCanvas.add(tb);
+        fabricCanvas.setActiveObject(tb);
+        tb.enterEditing();
+        tb.selectAll();
+      }
+    }
+  });
+
+  fabricCanvas.on("path:created", (opt) => {
+    if (pdfCurrentTool === "highlighter") {
+      opt.path.set({ globalCompositeOperation: "multiply" });
+      fabricCanvas.requestRenderAll();
+    }
+  });
+
+  // Zachovaná (neuložená) kresba má přednost před RTDB
+  let pageData = null;
+  if (window.pdfPreservedAnnotations?.[pr.pageNum]) {
+    pageData = window.pdfPreservedAnnotations[pr.pageNum];
+    delete window.pdfPreservedAnnotations[pr.pageNum];
   } else {
     const uid = auth.currentUser.uid;
     try {
-      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages`));
-      window.pdfAnnotationsData = snap.val() || {};
-    } catch(e) {
-      window.pdfAnnotationsData = {};
-    }
+      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pr.pageNum}`));
+      pageData = snap.val();
+    } catch(e) {}
   }
 
-  for (const pageRef of window.pdfPageRefs) {
-    const fabricCanvas = new fabric.Canvas(pageRef.annotCanvasEl, {
-      isDrawingMode: false,
-      selection: false
-    });
-    fabricCanvas.wrapperEl.style.position = "absolute";
-    fabricCanvas.wrapperEl.style.top = "0";
-    fabricCanvas.wrapperEl.style.left = "0";
-    fabricCanvas.wrapperEl.style.pointerEvents = "none";
-    pageRef.fabricCanvas = fabricCanvas;
-
-    fabricCanvas.on("mouse:down", (opt) => {
-      if (!pdfEditMode) return;
-      if (pdfCurrentTool === "eraser") {
-        if (opt.target) {
-          fabricCanvas.remove(opt.target);
-          fabricCanvas.requestRenderAll();
-        }
-      } else if (pdfCurrentTool === "text") {
-        if (!opt.target) {
-          const pointer = fabricCanvas.getPointer(opt.e);
-          const tb = new fabric.Textbox("Poznámka", {
-            left: pointer.x, top: pointer.y,
-            fontSize: 16, fill: pdfTextColor, width: 160
+  if (pageData?.json) {
+    const scaleFactor = pageData.width ? (pr.fitWidth / pageData.width) : 1;
+    fabricCanvas.loadFromJSON(pageData.json, () => {
+      if (scaleFactor !== 1) {
+        fabricCanvas.getObjects().forEach(obj => {
+          obj.set({
+            left: obj.left * scaleFactor,
+            top: obj.top * scaleFactor,
+            scaleX: obj.scaleX * scaleFactor,
+            scaleY: obj.scaleY * scaleFactor
           });
-          fabricCanvas.add(tb);
-          fabricCanvas.setActiveObject(tb);
-          tb.enterEditing();
-          tb.selectAll();
-        }
+          obj.setCoords();
+        });
       }
+      fabricCanvas.renderAll();
     });
-
-    fabricCanvas.on("path:created", (opt) => {
-      if (pdfCurrentTool === "highlighter") {
-        opt.path.set({ globalCompositeOperation: "multiply" });
-        fabricCanvas.requestRenderAll();
-      }
-    });
-
-    const pageData = window.pdfAnnotationsData[pageRef.pageNum];
-    if (pageData?.json) {
-      const scaleFactor = pageData.width ? (pageRef.viewportW / pageData.width) : 1;
-      fabricCanvas.loadFromJSON(pageData.json, () => {
-        if (scaleFactor !== 1) {
-          fabricCanvas.getObjects().forEach(obj => {
-            obj.set({
-              left: obj.left * scaleFactor,
-              top: obj.top * scaleFactor,
-              scaleX: obj.scaleX * scaleFactor,
-              scaleY: obj.scaleY * scaleFactor
-            });
-            obj.setCoords();
-          });
-        }
-        fabricCanvas.renderAll();
-      });
-    }
   }
 }
 
@@ -4468,70 +4368,60 @@ window.addMusicSymbol = (type, label) => {
   setPdfTool("select");
 };
 
-async function savePdfAnnotations() {
-  if (!pdfCurrentFileId || !window.pdfPageRefs?.length) return;
-  const uid = auth.currentUser.uid;
-  for (const pageRef of window.pdfPageRefs) {
-    const fc = pageRef.fabricCanvas;
-    if (!fc) continue;
-    const json = JSON.stringify(fc.toJSON());
-    await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pageRef.pageNum}`), {
-      json,
-      width: pageRef.viewportW,
-      height: pageRef.viewportH
-    });
-  }
-  await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/updatedAt`), Date.now());
+async function savePdfAnnotations(asPublic) {
+  if (!pdfCurrentFileId || !window.pdfCurrentPageRef?.fabricCanvas) return;
+  const pr = window.pdfCurrentPageRef;
+  const target = asPublic ? "public" : auth.currentUser.uid;
+  const json = JSON.stringify(pr.fabricCanvas.toJSON());
+  await set(ref(db, `/annotations/${pdfCurrentFileId}/${target}/pages/${pr.pageNum}`), {
+    json,
+    width: pr.fitWidth,
+    height: pr.fitHeight
+  });
+  await set(ref(db, `/annotations/${pdfCurrentFileId}/${target}/updatedAt`), Date.now());
 }
   
 window.pdfPrevPage = async () => {
   if (!pdfDoc || pdfCurrentPage <= 1) return;
+  if (pdfEditMode) await savePdfAnnotations();
   pdfCurrentPage--;
-  const el = document.getElementById(`pdf-page-${pdfCurrentPage}`);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  document.getElementById("pdf-current-page").textContent = pdfCurrentPage;
+  await renderCurrentPage();
 };
 
 window.pdfNextPage = async () => {
   if (!pdfDoc || pdfCurrentPage >= pdfDoc.numPages) return;
+  if (pdfEditMode) await savePdfAnnotations();
   pdfCurrentPage++;
-  const el = document.getElementById(`pdf-page-${pdfCurrentPage}`);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  document.getElementById("pdf-current-page").textContent = pdfCurrentPage;
+  await renderCurrentPage();
 };
 
-window.pdfZoomIn = async () => {
-  pdfScale = Math.min(pdfScale + 0.25, 3.0);
-  await renderAllPages();
-  if (pdfEditMode) reenableEditMode();
+window.pdfZoomIn = () => {
+  pdfStageScale = Math.min(pdfStageScale + 0.25, 4.0);
+  pdfClampStage();
+  pdfApplyTransform();
+  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfStageScale * 100) + "%";
 };
 
-window.pdfZoomOut = async () => {
-  pdfScale = Math.max(pdfScale - 0.25, 0.5);
-  await renderAllPages();
-  if (pdfEditMode) reenableEditMode();
+window.pdfZoomOut = () => {
+  pdfStageScale = Math.max(pdfStageScale - 0.25, 0.5);
+  pdfClampStage();
+  pdfApplyTransform();
+  document.getElementById("pdf-zoom-info").textContent = Math.round(pdfStageScale * 100) + "%";
 };
 
 function reenableEditMode() {
-  for (const pageRef of window.pdfPageRefs || []) {
-    const fc = pageRef.fabricCanvas;
-    if (!fc) continue;
-    fc.wrapperEl.style.pointerEvents = "auto";
-  }
+  const pr = window.pdfCurrentPageRef;
+  if (pr?.fabricCanvas) pr.fabricCanvas.wrapperEl.style.pointerEvents = "auto";
   setPdfTool(pdfCurrentTool);
 }
 
-window.pdfFitWidth = async () => {
-  if (!pdfDoc) return;
-  const page = await pdfDoc.getPage(1);
-  const viewport = page.getViewport({ scale: 1.0 });
-  const wrap = document.getElementById("pdf-canvas-wrap");
-  const availableWidth = wrap.clientWidth - 32;
-  const availableHeight = wrap.clientHeight - 32;
-  const scaleW = availableWidth / viewport.width;
-  const scaleH = availableHeight / viewport.height;
-  pdfScale = Math.min(scaleW, scaleH);
-  await renderAllPages();
+window.pdfFitWidth = () => {
+  pdfStageScale = 1;
+  pdfStageX = 0;
+  pdfStageY = 0;
+  pdfClampStage();
+  pdfApplyTransform();
+  document.getElementById("pdf-zoom-info").textContent = "100%";
 };
 
 window.closePdfViewer = () => {
