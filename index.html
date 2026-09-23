@@ -4031,6 +4031,8 @@ function pdfInitGestures() {
   viewport.dataset.gestureInit = "1";
 
   let mode = null; // "pan" | "pinch"
+  let drawTouchId = null; // ID prstu, který právě kreslí (jen v edit módu)
+
   let panStartX = 0, panStartY = 0;
   let stageStartX = 0, stageStartY = 0;
 
@@ -4039,8 +4041,26 @@ function pdfInitGestures() {
   let pinchStartMidX = 0, pinchStartMidY = 0;
   let pinchStartStageX = 0, pinchStartStageY = 0;
 
+  function setDrawingAllowed(allowed) {
+    const fc = window.pdfCurrentPageRef?.fabricCanvas;
+    if (fc) fc.wrapperEl.style.pointerEvents = allowed ? "auto" : "none";
+  }
+
   viewport.addEventListener("touchstart", (e) => {
-    if (pdfEditMode) return; // v edit módu kreslí Fabric, gesta vypnutá
+    if (pdfEditMode) {
+      if (e.touches.length === 1 && drawTouchId === null) {
+        // Jeden prst, nic se nekreslí -> nech Fabric kreslit
+        drawTouchId = e.touches[0].identifier;
+        return;
+      }
+      if (e.touches.length === 2 && drawTouchId === null) {
+        // Dva prsty naráz, žádný tah neběží -> gesto
+        setDrawingAllowed(false);
+      } else {
+        return; // druhý prst uprostřed tahu -> ignoruj
+      }
+    }
+
     if (e.touches.length === 1) {
       mode = "pan";
       panStartX = e.touches[0].clientX;
@@ -4060,14 +4080,15 @@ function pdfInitGestures() {
   }, { passive: true });
 
   viewport.addEventListener("touchmove", (e) => {
-    if (pdfEditMode || !mode) return;
+    if (pdfEditMode && drawTouchId !== null && e.touches.length < 2) return; // kreslí se, nic neděláme
+    if (!mode) return;
 
     if (mode === "pan" && e.touches.length === 1) {
       const dx = e.touches[0].clientX - panStartX;
       const dy = e.touches[0].clientY - panStartY;
       pdfStageX = stageStartX + dx;
       pdfStageY = stageStartY + dy;
-      pdfApplyTransform(); // živě, bez clampu (clamp až na konci gesta)
+      pdfApplyTransform();
     } else if (mode === "pinch" && e.touches.length === 2) {
       const [t1, t2] = e.touches;
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -4076,8 +4097,6 @@ function pdfInitGestures() {
 
       const midX = (t1.clientX + t2.clientX) / 2;
       const midY = (t1.clientY + t2.clientY) / 2;
-
-      // Zoom "sleduje" prsty: bod pod prsty zůstává pod prsty
       const rect = viewport.getBoundingClientRect();
       const originX = pinchStartMidX - rect.left;
       const originY = pinchStartMidY - rect.top;
@@ -4092,15 +4111,20 @@ function pdfInitGestures() {
   }, { passive: true });
 
   viewport.addEventListener("touchend", (e) => {
-    if (pdfEditMode) return;
+    // Uvolnil se prst co kreslil?
+    if (drawTouchId !== null) {
+      const stillDown = Array.from(e.touches).some(t => t.identifier === drawTouchId);
+      if (!stillDown) drawTouchId = null;
+    }
+
     if (e.touches.length === 0) {
       if (mode) {
         pdfClampStage();
         pdfApplyTransform();
       }
       mode = null;
+      if (pdfEditMode) setDrawingAllowed(true);
     } else if (e.touches.length === 1 && mode === "pinch") {
-      // Z pinche zbyl jeden prst → přepni na pan bez skoku
       mode = "pan";
       panStartX = e.touches[0].clientX;
       panStartY = e.touches[0].clientY;
@@ -4109,7 +4133,7 @@ function pdfInitGestures() {
     }
   }, { passive: true });
 }
-
+  
 // PINCH TO ZOOM
   
 const PDF_RENDER_SCALE = 2.5; // vysoké rozlišení, transform pak jen škáluje
