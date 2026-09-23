@@ -542,10 +542,13 @@
     .pdf-tool-btn:hover { background: rgba(255,255,255,0.15); }
     .pdf-tool-btn.active { background: #EE220C; }
     .pdf-toolbar {
-      transition: transform 0.25s ease;
+      transition: max-height 0.25s ease, opacity 0.2s ease;
+      max-height: 52px;
+      overflow: hidden;
     }
     .pdf-toolbar.pdf-toolbar-hidden {
-      transform: translateY(-100%);
+      max-height: 0;
+      opacity: 0;
     }
     .pdf-edit-options { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #232325; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .pdf-option-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
