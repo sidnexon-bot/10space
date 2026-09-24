@@ -4316,15 +4316,21 @@ async function renderCurrentPage() {
   if (!pdfDoc) return;
 
   // Ulož (i neuloženou) kresbu aktuální stránky, než ji zahodíme
-  if (window.pdfCurrentPageRef?.fabricCanvas) {
+  if (window.pdfCurrentPageRef?.publicFabricCanvas) {
     const pr = window.pdfCurrentPageRef;
-    window.pdfPreservedAnnotations = window.pdfPreservedAnnotations || {};
-    window.pdfPreservedAnnotations[pr.pageNum] = {
-      json: JSON.stringify(pr.fabricCanvas.toJSON()),
+    window.pdfPreservedAnnotations = { public: {}, personal: {} };
+    window.pdfPreservedAnnotations.public[pr.pageNum] = {
+      json: JSON.stringify(pr.publicFabricCanvas.toJSON()),
       width: pr.fitWidth,
       height: pr.fitHeight
     };
-    pr.fabricCanvas.dispose();
+    window.pdfPreservedAnnotations.personal[pr.pageNum] = {
+      json: JSON.stringify(pr.personalFabricCanvas.toJSON()),
+      width: pr.fitWidth,
+      height: pr.fitHeight
+    };
+    pr.publicFabricCanvas.dispose();
+    pr.personalFabricCanvas.dispose();
   }
 
   const stage = document.getElementById("pdf-stage");
@@ -4530,11 +4536,16 @@ window.pdfToggleEditMode = async () => {
 
   if (!pdfEditMode) {
     pdfEditMode = true;
+    pdfEditLayer = "personal";
     document.getElementById("pdf-edit-btn").classList.add("editing");
     document.getElementById("pdf-edit-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     document.getElementById("pdf-edit-subtoolbar").classList.remove("hidden");
-    const fc = window.pdfCurrentPageRef.fabricCanvas;
-    if (fc) fc.wrapperEl.style.pointerEvents = "auto";
+
+    const canEditPublic = ["ADMIN", "ART"].includes(currentUser?.role);
+    const layerToggle = document.getElementById("pdf-layer-toggle");
+    if (layerToggle) layerToggle.classList.toggle("hidden", !canEditPublic);
+
+    pdfActivateEditLayer();
     setPdfTool("pen");
   } else {
     pdfEditMode = false;
@@ -4542,14 +4553,41 @@ window.pdfToggleEditMode = async () => {
     document.getElementById("pdf-edit-btn").innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
     document.getElementById("pdf-edit-subtoolbar").classList.add("hidden");
     document.getElementById("pdf-edit-options").classList.add("hidden");
-    const fc = window.pdfCurrentPageRef.fabricCanvas;
-    if (fc) {
+
+    const pr = window.pdfCurrentPageRef;
+    [pr.publicFabricCanvas, pr.personalFabricCanvas].forEach(fc => {
+      if (!fc) return;
       fc.isDrawingMode = false;
       fc.discardActiveObject();
       fc.wrapperEl.style.pointerEvents = "none";
-    }
+    });
     await savePdfAnnotations();
   }
+};
+
+function pdfActivateEditLayer() {
+  const pr = window.pdfCurrentPageRef;
+  if (!pr) return;
+  const activeCanvas = pdfEditLayer === "public" ? pr.publicFabricCanvas : pr.personalFabricCanvas;
+  const inactiveCanvas = pdfEditLayer === "public" ? pr.personalFabricCanvas : pr.publicFabricCanvas;
+  if (activeCanvas) activeCanvas.wrapperEl.style.pointerEvents = "auto";
+  if (inactiveCanvas) inactiveCanvas.wrapperEl.style.pointerEvents = "none";
+
+  // Barva pera/textu podle aktivní vrstvy
+  if (pdfEditLayer === "public") {
+    pdfPenColor = pdfPublicPenColor;
+    pdfTextColor = pdfPublicPenColor;
+  } else {
+    pdfPenColor = pdfPersonalPenColor;
+    pdfTextColor = pdfPersonalPenColor;
+  }
+}
+
+window.pdfSetEditLayer = (layer) => {
+  pdfEditLayer = layer;
+  document.querySelectorAll(".pdf-layer-btn").forEach(b => b.classList.toggle("active", b.dataset.layer === layer));
+  pdfActivateEditLayer();
+  setPdfTool(pdfCurrentTool);
 };
 
 window.setPdfTool = (tool) => {
