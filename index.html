@@ -4099,6 +4099,9 @@ let pdfCurrentTool = "pen";
 let pdfPenColor = "#EE220C";
 let pdfPenWidth = 3;
 let pdfHighlighterColor = "rgba(255,224,0,0.5)";
+let pdfEditLayer = "personal"; // "personal" | "public" — kam se právě kreslí
+let pdfPersonalPenColor = "#EE220C"; // výchozí červená
+let pdfPublicPenColor = "#1a7a3c";   // výchozí tmavší zelená
 let pdfTextColor = "#EE220C";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -4405,61 +4408,78 @@ async function renderCurrentPage() {
   
 async function loadAndRenderCurrentAnnotations() {
   if (!pdfCurrentFileId || !window.pdfCurrentPageRef) return;
-
   const pr = window.pdfCurrentPageRef;
-  const fabricCanvas = new fabric.Canvas(pr.annotCanvasEl, {
+  const canEditPublic = ["ADMIN", "ART"].includes(currentUser?.role);
+
+  // --- VEŘEJNÁ VRSTVA (dole, vidí všichni, needituje ji nikdo mimo Admin/Art) ---
+  const publicCanvas = new fabric.Canvas(pr.publicAnnotCanvasEl, {
     isDrawingMode: false,
     selection: false
   });
-  fabricCanvas.wrapperEl.style.position = "absolute";
-  fabricCanvas.wrapperEl.style.top = "0";
-  fabricCanvas.wrapperEl.style.left = "0";
-  fabricCanvas.wrapperEl.style.pointerEvents = "none";
-  pr.fabricCanvas = fabricCanvas;
+  publicCanvas.wrapperEl.style.position = "absolute";
+  publicCanvas.wrapperEl.style.top = "0";
+  publicCanvas.wrapperEl.style.left = "0";
+  publicCanvas.wrapperEl.style.pointerEvents = "none";
+  pr.publicFabricCanvas = publicCanvas;
 
-  fabricCanvas.on("mouse:down", (opt) => {
-    if (!pdfEditMode) return;
+  publicCanvas.on("mouse:down", (opt) => {
+    if (!pdfEditMode || pdfEditLayer !== "public") return;
     if (pdfCurrentTool === "eraser") {
-      if (opt.target) {
-        fabricCanvas.remove(opt.target);
-        fabricCanvas.requestRenderAll();
-      }
+      if (opt.target) { publicCanvas.remove(opt.target); publicCanvas.requestRenderAll(); }
     } else if (pdfCurrentTool === "text") {
       if (!opt.target) {
-        const pointer = fabricCanvas.getPointer(opt.e);
-        const tb = new fabric.Textbox("Poznámka", {
-          left: pointer.x, top: pointer.y,
-          fontSize: 16, fill: pdfTextColor, width: 160
-        });
-        fabricCanvas.add(tb);
-        fabricCanvas.setActiveObject(tb);
+        const pointer = publicCanvas.getPointer(opt.e);
+        const tb = new fabric.Textbox("Poznámka", { left: pointer.x, top: pointer.y, fontSize: 16, fill: pdfPublicPenColor, width: 160 });
+        publicCanvas.add(tb);
+        publicCanvas.setActiveObject(tb);
         tb.enterEditing();
         tb.selectAll();
       }
     }
   });
-
-  fabricCanvas.on("path:created", (opt) => {
+  publicCanvas.on("path:created", (opt) => {
     if (pdfCurrentTool === "highlighter") {
       opt.path.set({ globalCompositeOperation: "multiply" });
-      fabricCanvas.requestRenderAll();
+      publicCanvas.requestRenderAll();
     }
   });
 
-  // Zachovaná (neuložená) kresba má přednost před RTDB
-  let pageData = null;
-  if (window.pdfPreservedAnnotations?.[pr.pageNum]) {
-    pageData = window.pdfPreservedAnnotations[pr.pageNum];
-    delete window.pdfPreservedAnnotations[pr.pageNum];
-  } else {
-    const uid = auth.currentUser.uid;
-    try {
-      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pr.pageNum}`));
-      pageData = snap.val();
-    } catch(e) {}
-  }
+  // --- OSOBNÍ VRSTVA (nahoře, vidí jen majitel) ---
+  const personalCanvas = new fabric.Canvas(pr.personalAnnotCanvasEl, {
+    isDrawingMode: false,
+    selection: false
+  });
+  personalCanvas.wrapperEl.style.position = "absolute";
+  personalCanvas.wrapperEl.style.top = "0";
+  personalCanvas.wrapperEl.style.left = "0";
+  personalCanvas.wrapperEl.style.pointerEvents = "none";
+  pr.personalFabricCanvas = personalCanvas;
 
-  if (pageData?.json) {
+  personalCanvas.on("mouse:down", (opt) => {
+    if (!pdfEditMode || pdfEditLayer !== "personal") return;
+    if (pdfCurrentTool === "eraser") {
+      if (opt.target) { personalCanvas.remove(opt.target); personalCanvas.requestRenderAll(); }
+    } else if (pdfCurrentTool === "text") {
+      if (!opt.target) {
+        const pointer = personalCanvas.getPointer(opt.e);
+        const tb = new fabric.Textbox("Poznámka", { left: pointer.x, top: pointer.y, fontSize: 16, fill: pdfPersonalPenColor, width: 160 });
+        personalCanvas.add(tb);
+        personalCanvas.setActiveObject(tb);
+        tb.enterEditing();
+        tb.selectAll();
+      }
+    }
+  });
+  personalCanvas.on("path:created", (opt) => {
+    if (pdfCurrentTool === "highlighter") {
+      opt.path.set({ globalCompositeOperation: "multiply" });
+      personalCanvas.requestRenderAll();
+    }
+  });
+
+  // --- Načti a vykresli uložená data ---
+  function applyPageData(fabricCanvas, pageData) {
+    if (!pageData?.json) return;
     const scaleFactor = pageData.width ? (pr.fitWidth / pageData.width) : 1;
     fabricCanvas.loadFromJSON(pageData.json, () => {
       if (scaleFactor !== 1) {
@@ -4476,8 +4496,35 @@ async function loadAndRenderCurrentAnnotations() {
       fabricCanvas.renderAll();
     });
   }
-}
 
+  // Veřejná vrstva
+  let publicData = null;
+  if (window.pdfPreservedAnnotations?.public?.[pr.pageNum]) {
+    publicData = window.pdfPreservedAnnotations.public[pr.pageNum];
+  } else {
+    try {
+      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/public/pages/${pr.pageNum}`));
+      publicData = snap.val();
+    } catch(e) {}
+  }
+  applyPageData(publicCanvas, publicData);
+
+  // Osobní vrstva
+  let personalData = null;
+  const uid = auth.currentUser.uid;
+  if (window.pdfPreservedAnnotations?.personal?.[pr.pageNum]) {
+    personalData = window.pdfPreservedAnnotations.personal[pr.pageNum];
+  } else {
+    try {
+      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pr.pageNum}`));
+      personalData = snap.val();
+    } catch(e) {}
+  }
+  applyPageData(personalCanvas, personalData);
+
+  window.pdfPreservedAnnotations = null;
+}
+  
 window.pdfToggleEditMode = async () => {
   if (!window.pdfCurrentPageRef) return;
 
