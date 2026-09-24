@@ -4358,14 +4358,21 @@ async function renderCurrentPage() {
   canvas.style.width = fitWidth + "px";
   canvas.style.height = fitHeight + "px";
 
-  const annotCanvas = document.createElement("canvas");
-  annotCanvas.id = "pdf-annot-current";
-  annotCanvas.width = fitWidth;
-  annotCanvas.height = fitHeight;
-  annotCanvas.style.cssText = "position:absolute;top:0;left:0;";
+  const publicAnnotCanvas = document.createElement("canvas");
+  publicAnnotCanvas.id = "pdf-annot-public";
+  publicAnnotCanvas.width = fitWidth;
+  publicAnnotCanvas.height = fitHeight;
+  publicAnnotCanvas.style.cssText = "position:absolute;top:0;left:0;";
+
+  const personalAnnotCanvas = document.createElement("canvas");
+  personalAnnotCanvas.id = "pdf-annot-personal";
+  personalAnnotCanvas.width = fitWidth;
+  personalAnnotCanvas.height = fitHeight;
+  personalAnnotCanvas.style.cssText = "position:absolute;top:0;left:0;";
 
   pageEl.appendChild(canvas);
-  pageEl.appendChild(annotCanvas);
+  pageEl.appendChild(publicAnnotCanvas);
+  pageEl.appendChild(personalAnnotCanvas);
   stage.appendChild(pageEl);
 
   const ctx = canvas.getContext("2d");
@@ -4375,7 +4382,8 @@ async function renderCurrentPage() {
     pageNum: pdfCurrentPage,
     fitWidth,
     fitHeight,
-    annotCanvasEl: annotCanvas
+    publicAnnotCanvasEl: publicAnnotCanvas,
+    personalAnnotCanvasEl: personalAnnotCanvas
   };
 
   // Reset transform na "fit" a vycentruj
