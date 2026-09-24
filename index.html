@@ -4594,11 +4594,17 @@ window.pdfSetEditLayer = (layer) => {
   setPdfTool(pdfCurrentTool);
 };
 
+function pdfGetActiveCanvas() {
+  const pr = window.pdfCurrentPageRef;
+  if (!pr) return null;
+  return pdfEditLayer === "public" ? pr.publicFabricCanvas : pr.personalFabricCanvas;
+}
+
 window.setPdfTool = (tool) => {
   pdfCurrentTool = tool;
   document.querySelectorAll(".pdf-tool-btn").forEach(b => b.classList.toggle("active", b.dataset.tool === tool));
 
-  const fc = window.pdfCurrentPageRef?.fabricCanvas;
+  const fc = pdfGetActiveCanvas();
   if (fc) {
     if (tool === "pen") {
       if (!fc.freeDrawingBrush) fc.freeDrawingBrush = new fabric.PencilBrush(fc);
@@ -4616,6 +4622,66 @@ window.setPdfTool = (tool) => {
   }
 
   renderPdfToolOptions(tool);
+};
+
+window.setPenWidth = (w) => {
+  pdfPenWidth = w;
+  const fc = pdfGetActiveCanvas();
+  if (fc?.freeDrawingBrush) fc.freeDrawingBrush.width = w;
+  renderPdfToolOptions("pen");
+};
+
+window.setPenColor = (c) => {
+  pdfPenColor = c;
+  if (pdfEditLayer === "public") pdfPublicPenColor = c; else pdfPersonalPenColor = c;
+  const fc = pdfGetActiveCanvas();
+  if (fc?.freeDrawingBrush) fc.freeDrawingBrush.color = c;
+  renderPdfToolOptions("pen");
+};
+
+window.setHighlighterColor = (c) => {
+  pdfHighlighterColor = c;
+  const fc = pdfGetActiveCanvas();
+  if (fc?.freeDrawingBrush) fc.freeDrawingBrush.color = c;
+  renderPdfToolOptions("highlighter");
+};
+
+window.setTextColor = (c) => {
+  pdfTextColor = c;
+  if (pdfEditLayer === "public") pdfPublicPenColor = c; else pdfPersonalPenColor = c;
+  renderPdfToolOptions("text");
+};
+
+window.addMusicSymbol = (type, label) => {
+  const fc = pdfGetActiveCanvas();
+  if (!fc) return;
+  const drawColor = pdfEditLayer === "public" ? pdfPublicPenColor : pdfPersonalPenColor;
+  const cx = fc.getWidth() / 2;
+  const cy = fc.getHeight() / 2;
+  let obj;
+
+  if (type === "dynamic") {
+    obj = new fabric.Textbox(label, {
+      left: cx - 20, top: cy, fontSize: 28, fontWeight: "bold", fontStyle: "italic",
+      fill: drawColor, width: 80
+    });
+  } else if (type === "ligature") {
+    obj = new fabric.Path("M 0 20 Q 40 -20 80 20", { left: cx - 40, top: cy, fill: "", stroke: drawColor, strokeWidth: 2 });
+  } else if (type === "crescendo") {
+    obj = new fabric.Path("M 0 10 L 60 0 M 0 10 L 60 20", { left: cx - 30, top: cy, fill: "", stroke: drawColor, strokeWidth: 2 });
+  } else if (type === "decrescendo") {
+    obj = new fabric.Path("M 60 10 L 0 0 M 60 10 L 0 20", { left: cx - 30, top: cy, fill: "", stroke: drawColor, strokeWidth: 2 });
+  } else if (type === "fermata") {
+    const arc = new fabric.Path("M 0 20 A 20 20 0 0 1 40 20", { fill: "", stroke: drawColor, strokeWidth: 2 });
+    const dot = new fabric.Circle({ left: 17, top: 8, radius: 3, fill: drawColor });
+    obj = new fabric.Group([arc, dot], { left: cx - 20, top: cy });
+  }
+
+  if (!obj) return;
+  fc.add(obj);
+  fc.setActiveObject(obj);
+  fc.requestRenderAll();
+  setPdfTool("select");
 };
 
 function renderPdfToolOptions(tool) {
@@ -4667,60 +4733,6 @@ function renderPdfToolOptions(tool) {
     box.innerHTML = "";
   }
 }
-
-window.setPenWidth = (w) => {
-  pdfPenWidth = w;
-  const fc = window.pdfCurrentPageRef?.fabricCanvas;
-  if (fc?.freeDrawingBrush) fc.freeDrawingBrush.width = w;
-  renderPdfToolOptions("pen");
-};
-
-window.setPenColor = (c) => {
-  pdfPenColor = c;
-  const fc = window.pdfCurrentPageRef?.fabricCanvas;
-  if (fc?.freeDrawingBrush) fc.freeDrawingBrush.color = c;
-  renderPdfToolOptions("pen");
-};
-
-window.setHighlighterColor = (c) => {
-  pdfHighlighterColor = c;
-  const fc = window.pdfCurrentPageRef?.fabricCanvas;
-  if (fc?.freeDrawingBrush) fc.freeDrawingBrush.color = c;
-  renderPdfToolOptions("highlighter");
-};
-
-window.setTextColor = (c) => { pdfTextColor = c; renderPdfToolOptions("text"); };
-
-window.addMusicSymbol = (type, label) => {
-  const fc = window.pdfCurrentPageRef?.fabricCanvas;
-  if (!fc) return;
-  const cx = fc.getWidth() / 2;
-  const cy = fc.getHeight() / 2;
-  let obj;
-
-  if (type === "dynamic") {
-    obj = new fabric.Textbox(label, {
-      left: cx - 20, top: cy, fontSize: 28, fontWeight: "bold", fontStyle: "italic",
-      fill: "#EE220C", width: 80
-    });
-  } else if (type === "ligature") {
-    obj = new fabric.Path("M 0 20 Q 40 -20 80 20", { left: cx - 40, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
-  } else if (type === "crescendo") {
-    obj = new fabric.Path("M 0 10 L 60 0 M 0 10 L 60 20", { left: cx - 30, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
-  } else if (type === "decrescendo") {
-    obj = new fabric.Path("M 60 10 L 0 0 M 60 10 L 0 20", { left: cx - 30, top: cy, fill: "", stroke: "#EE220C", strokeWidth: 2 });
-  } else if (type === "fermata") {
-    const arc = new fabric.Path("M 0 20 A 20 20 0 0 1 40 20", { fill: "", stroke: "#EE220C", strokeWidth: 2 });
-    const dot = new fabric.Circle({ left: 17, top: 8, radius: 3, fill: "#EE220C" });
-    obj = new fabric.Group([arc, dot], { left: cx - 20, top: cy });
-  }
-
-  if (!obj) return;
-  fc.add(obj);
-  fc.setActiveObject(obj);
-  fc.requestRenderAll();
-  setPdfTool("select");
-};
 
 async function savePdfAnnotations() {
   if (!pdfCurrentFileId || !window.pdfCurrentPageRef) return;
