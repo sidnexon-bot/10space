@@ -544,6 +544,10 @@
     .multi-toolbar { padding: 0 12px; font-size: 13px; }
     .pdf-btn.editing { background: #EE220C; }
     .pdf-edit-subtoolbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #2c2c2e; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .pdf-layer-toggle { display: flex; gap: 4px; padding: 2px; background: rgba(255,255,255,0.08); border-radius: 8px; flex-shrink: 0; margin-right: 8px; }
+    .pdf-layer-btn { padding: 6px 10px; border-radius: 6px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 12px; cursor: pointer; }
+    .pdf-layer-btn.active[data-layer="personal"] { background: #EE220C; color: #fff; }
+    .pdf-layer-btn.active[data-layer="public"] { background: #1a7a3c; color: #fff; }
     .pdf-tool-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 12px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
     .pdf-tool-btn:hover { background: rgba(255,255,255,0.15); }
     .pdf-tool-btn.active { background: #EE220C; }
@@ -4718,17 +4722,27 @@ window.addMusicSymbol = (type, label) => {
   setPdfTool("select");
 };
 
-async function savePdfAnnotations(asPublic) {
-  if (!pdfCurrentFileId || !window.pdfCurrentPageRef?.fabricCanvas) return;
+async function savePdfAnnotations() {
+  if (!pdfCurrentFileId || !window.pdfCurrentPageRef) return;
   const pr = window.pdfCurrentPageRef;
-  const target = asPublic ? "public" : auth.currentUser.uid;
-  const json = JSON.stringify(pr.fabricCanvas.toJSON());
-  await set(ref(db, `/annotations/${pdfCurrentFileId}/${target}/pages/${pr.pageNum}`), {
-    json,
-    width: pr.fitWidth,
-    height: pr.fitHeight
-  });
-  await set(ref(db, `/annotations/${pdfCurrentFileId}/${target}/updatedAt`), Date.now());
+  const uid = auth.currentUser.uid;
+
+  if (pr.personalFabricCanvas) {
+    const json = JSON.stringify(pr.personalFabricCanvas.toJSON());
+    await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pr.pageNum}`), {
+      json, width: pr.fitWidth, height: pr.fitHeight
+    });
+    await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/updatedAt`), Date.now());
+  }
+
+  const canEditPublic = ["ADMIN", "ART"].includes(currentUser?.role);
+  if (canEditPublic && pr.publicFabricCanvas) {
+    const json = JSON.stringify(pr.publicFabricCanvas.toJSON());
+    await set(ref(db, `/annotations/${pdfCurrentFileId}/public/pages/${pr.pageNum}`), {
+      json, width: pr.fitWidth, height: pr.fitHeight
+    });
+    await set(ref(db, `/annotations/${pdfCurrentFileId}/public/updatedAt`), Date.now());
+  }
 }
   
 window.pdfPrevPage = async () => {
@@ -5762,6 +5776,10 @@ async function processFilesWithEvid(fileResults) {
       </div>
     </div>
     <div class="pdf-edit-subtoolbar hidden" id="pdf-edit-subtoolbar">
+    <div class="pdf-layer-toggle hidden" id="pdf-layer-toggle">
+      <button class="pdf-layer-btn active" data-layer="personal" onclick="pdfSetEditLayer('personal')">Osobní</button>
+      <button class="pdf-layer-btn" data-layer="public" onclick="pdfSetEditLayer('public')">Veřejné</button>
+    </div>
     <button class="pdf-tool-btn active" data-tool="pen" onclick="setPdfTool('pen')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Pero
