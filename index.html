@@ -4843,6 +4843,17 @@ async function downloadOriginalPdf() {
   a.click();
 }
 
+async function renderAnnotationLayerToPng(pageData) {
+  if (!pageData?.json || !pageData.width || !pageData.height) return null;
+  const sc = new fabric.StaticCanvas(null, { width: pageData.width, height: pageData.height });
+  await new Promise(resolve => sc.loadFromJSON(pageData.json, resolve));
+  if (sc.getObjects().length === 0) { sc.dispose(); return null; }
+  sc.renderAll();
+  const dataUrl = sc.toDataURL({ format: "png", multiplier: 2 });
+  sc.dispose();
+  return await fetch(dataUrl).then(r => r.arrayBuffer());
+}
+
 async function downloadAnnotatedPdf() {
   const token = await auth.currentUser.getIdToken();
   const resp = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${pdfCurrentFileId}`, {
@@ -4852,20 +4863,42 @@ async function downloadAnnotatedPdf() {
   const pdfDocLib = await PDFLib.PDFDocument.load(originalBytes);
   const pages = pdfDocLib.getPages();
 
-  for (const pageRef of window.pdfPageRefs || []) {
-    const fc = pageRef.fabricCanvas;
-    if (!fc) continue;
-    const hasContent = fc.getObjects().length > 0;
-    if (!hasContent) continue;
+  // Uložené anotace všech stránek (obě vrstvy)
+  const uid = auth.currentUser.uid;
+  const [pubSnap, perSnap] = await Promise.all([
+    get(ref(db, `/annotations/${pdfCurrentFileId}/public/pages`)),
+    get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages`))
+  ]);
+  const pubPages = pubSnap.val() || {};
+  const perPages = perSnap.val() || {};
 
-    const dataUrl = fc.toDataURL({ format: "png", multiplier: 2 });
-    const pngBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
-    const pngImage = await pdfDocLib.embedPng(pngBytes);
+  const pr = window.pdfCurrentPageRef;
 
-    const page = pages[pageRef.pageNum - 1];
-    if (!page) continue;
+  for (let i = 0; i < pages.length; i++) {
+    const pageNum = i + 1;
+    let pubData = pubPages[pageNum];
+    let perData = perPages[pageNum];
+
+    // Otevřená stránka: použij živé plátno (zahrne i neuložené změny)
+    if (pr && pr.pageNum === pageNum) {
+      if (pr.publicFabricCanvas) {
+        pubData = { json: JSON.stringify(pr.publicFabricCanvas.toJSON()), width: pr.fitWidth, height: pr.fitHeight };
+      }
+      if (pr.personalFabricCanvas) {
+        perData = { json: JSON.stringify(pr.personalFabricCanvas.toJSON()), width: pr.fitWidth, height: pr.fitHeight };
+      }
+    }
+
+    const page = pages[i];
     const { width, height } = page.getSize();
-    page.drawImage(pngImage, { x: 0, y: 0, width, height });
+
+    // Pořadí: nejdřív veřejná, nad ni osobní
+    for (const layerData of [pubData, perData]) {
+      const pngBytes = await renderAnnotationLayerToPng(layerData);
+      if (!pngBytes) continue;
+      const pngImage = await pdfDocLib.embedPng(pngBytes);
+      page.drawImage(pngImage, { x: 0, y: 0, width, height });
+    }
   }
 
   const outBytes = await pdfDocLib.save();
