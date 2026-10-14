@@ -553,6 +553,7 @@
     .pdf-tool-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 12px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
     .pdf-tool-btn:hover { background: rgba(255,255,255,0.15); }
     .pdf-tool-btn.active { background: #EE220C; }
+    .pdf-tool-btn:disabled { opacity: 0.35; cursor: default; }
     .pdf-toolbar {
       transition: max-height 0.25s ease, opacity 0.2s ease;
       max-height: 52px;
@@ -4491,7 +4492,8 @@ async function loadAndRenderCurrentAnnotations() {
 
   // --- Načti a vykresli uložená data ---
   function applyPageData(fabricCanvas, pageData) {
-    if (!pageData?.json) return;
+  return new Promise(resolve => {
+    if (!pageData?.json) return resolve();
     const scaleFactor = pageData.width ? (pr.fitWidth / pageData.width) : 1;
     fabricCanvas.loadFromJSON(pageData.json, () => {
       if (scaleFactor !== 1) {
@@ -4506,8 +4508,10 @@ async function loadAndRenderCurrentAnnotations() {
         });
       }
       fabricCanvas.renderAll();
+      resolve();
     });
-  }
+  });
+}
 
   // Veřejná vrstva
   let publicData = null;
@@ -4534,6 +4538,8 @@ async function loadAndRenderCurrentAnnotations() {
   }
   applyPageData(personalCanvas, personalData);
 
+  pdfInitHistory(publicCanvas);
+  pdfInitHistory(personalCanvas);
   window.pdfPreservedAnnotations = null;
 }
   
@@ -4571,6 +4577,60 @@ window.pdfToggleEditMode = async () => {
   }
 };
 
+function pdfInitHistory(fc) {
+  fc._hist = [JSON.stringify(fc.toJSON())];
+  fc._histIdx = 0;
+  fc._histLock = false;
+  let pending = false;
+  const record = () => {
+    if (fc._histLock || pending) return;
+    pending = true;
+    // odloženě, aby se stihly dokončit i handlery typu path:created (zvýrazňovač)
+    setTimeout(() => {
+      pending = false;
+      if (fc._histLock) return;
+      fc._hist = fc._hist.slice(0, fc._histIdx + 1);
+      fc._hist.push(JSON.stringify(fc.toJSON()));
+      if (fc._hist.length > 60) fc._hist.shift();
+      fc._histIdx = fc._hist.length - 1;
+      pdfUpdateUndoButtons();
+    }, 0);
+  };
+  fc.on("object:added", record);
+  fc.on("object:removed", record);
+  fc.on("object:modified", record);
+}
+
+function pdfRestoreHistory(fc, idx) {
+  if (!fc?._hist || idx < 0 || idx >= fc._hist.length) return;
+  fc._histLock = true;
+  fc.discardActiveObject();
+  fc.loadFromJSON(fc._hist[idx], () => {
+    fc.renderAll();
+    fc._histIdx = idx;
+    fc._histLock = false;
+    pdfUpdateUndoButtons();
+  });
+}
+
+window.pdfUndo = () => {
+  const fc = pdfGetActiveCanvas();
+  if (fc?._hist && fc._histIdx > 0) pdfRestoreHistory(fc, fc._histIdx - 1);
+};
+
+window.pdfRedo = () => {
+  const fc = pdfGetActiveCanvas();
+  if (fc?._hist && fc._histIdx < fc._hist.length - 1) pdfRestoreHistory(fc, fc._histIdx + 1);
+};
+
+function pdfUpdateUndoButtons() {
+  const fc = pdfGetActiveCanvas();
+  const undoBtn = document.getElementById("pdf-undo-btn");
+  const redoBtn = document.getElementById("pdf-redo-btn");
+  if (undoBtn) undoBtn.disabled = !fc?._hist || fc._histIdx <= 0;
+  if (redoBtn) redoBtn.disabled = !fc?._hist || fc._histIdx >= fc._hist.length - 1;
+}
+
 function pdfActivateEditLayer() {
   const pr = window.pdfCurrentPageRef;
   if (!pr) return;
@@ -4587,6 +4647,8 @@ function pdfActivateEditLayer() {
     pdfPenColor = pdfPersonalPenColor;
     pdfTextColor = pdfPersonalPenColor;
   }
+  
+  pdfUpdateUndoButtons();
 }
 
 window.pdfSetEditLayer = (layer) => {
@@ -5827,6 +5889,14 @@ async function processFilesWithEvid(fileResults) {
       <button class="pdf-layer-btn active" data-layer="personal" onclick="pdfSetEditLayer('personal')">Osobní</button>
       <button class="pdf-layer-btn" data-layer="public" onclick="pdfSetEditLayer('public')">Veřejné</button>
     </div>
+    <button class="pdf-tool-btn" id="pdf-undo-btn" onclick="pdfUndo()" title="Zpět" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 3l-3 2.7"/></svg>
+      Zpět
+    </button>
+    <button class="pdf-tool-btn" id="pdf-redo-btn" onclick="pdfRedo()" title="Znovu" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 3l3 2.7"/></svg>
+      Znovu
+    </button>
     <button class="pdf-tool-btn active" data-tool="pen" onclick="setPdfTool('pen')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Pero
