@@ -4151,7 +4151,7 @@ function pdfInitGestures() {
   if (!viewport || viewport.dataset.gestureInit) return;
   viewport.dataset.gestureInit = "1";
 
-  let mode = null;
+  let mode = null; // "pan" | "pinch" | null (null v edit módu = kreslí Fabric)
   let drawTouchId = null;
   let tapStartX = 0, tapStartY = 0, tapStartTime = 0, tapMoved = false;
 
@@ -4163,9 +4163,23 @@ function pdfInitGestures() {
   let pinchStartMidX = 0, pinchStartMidY = 0;
   let pinchStartStageX = 0, pinchStartStageY = 0;
 
-  function setDrawingAllowed(allowed) {
-    const fc = window.pdfCurrentPageRef?.fabricCanvas;
-    if (fc) fc.wrapperEl.style.pointerEvents = allowed ? "auto" : "none";
+  // Zahodí rozkreslený tah (nebo rozpracovaný posun objektu) aktivní vrstvy
+  function cancelCurrentStroke() {
+    const fc = pdfGetActiveCanvas();
+    if (!fc) return;
+    fc.isDrawingMode = false;
+    fc._isCurrentlyDrawing = false;          // interní příznak Fabric 5.x
+    if (fc.contextTop) fc.clearContext(fc.contextTop);
+    if (fc._currentTransform) {              // rozpracovaný posun/změna objektu
+      fc._currentTransform = null;
+      if (fc._hist) pdfRestoreHistory(fc, fc._histIdx);
+    }
+  }
+
+  function resumeDrawingMode() {
+    const fc = pdfGetActiveCanvas();
+    if (!fc) return;
+    fc.isDrawingMode = (pdfCurrentTool === "pen" || pdfCurrentTool === "highlighter");
   }
 
   viewport.addEventListener("touchstart", (e) => {
@@ -4175,18 +4189,18 @@ function pdfInitGestures() {
       tapStartTime = Date.now();
       tapMoved = false;
     }
-    if (pdfEditMode) {
-      if (e.touches.length === 1 && drawTouchId === null) {
-        // Jeden prst, nic se nekreslí -> nech Fabric kreslit
-        drawTouchId = e.touches[0].identifier;
-        return;
-      }
-      if (e.touches.length === 2 && drawTouchId === null) {
-        // Dva prsty naráz, žádný tah neběží -> gesto
-        setDrawingAllowed(false);
-      } else {
-        return; // druhý prst uprostřed tahu -> ignoruj
-      }
+
+    // Edit mód: první prst nechá kreslit Fabricu
+    if (pdfEditMode && e.touches.length === 1) {
+      drawTouchId = e.changedTouches[0].identifier;
+      mode = null;
+      return;
+    }
+
+    // Edit mód: dopadl druhý prst -> zahoď rozkreslený tah a přepni na gesto
+    if (pdfEditMode && e.touches.length >= 2 && mode !== "pinch") {
+      cancelCurrentStroke();
+      drawTouchId = null;
     }
 
     if (e.touches.length === 1) {
@@ -4197,6 +4211,7 @@ function pdfInitGestures() {
       stageStartY = pdfStageY;
     } else if (e.touches.length === 2) {
       mode = "pinch";
+      tapMoved = true; // sevření nikdy nepočítej jako ťuknutí
       const [t1, t2] = e.touches;
       pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       pinchStartScale = pdfStageScale;
@@ -4213,8 +4228,7 @@ function pdfInitGestures() {
       const dy = Math.abs(e.touches[0].clientY - tapStartY);
       if (dx > 8 || dy > 8) tapMoved = true;
     }
-    if (pdfEditMode && drawTouchId !== null && e.touches.length < 2) return; // kreslí se, nic neděláme
-    if (!mode) return;
+    if (!mode) return; // v edit módu při kreslení je mode === null, pohyb řeší Fabric
 
     if (mode === "pan" && e.touches.length === 1) {
       const dx = e.touches[0].clientX - panStartX;
@@ -4244,38 +4258,41 @@ function pdfInitGestures() {
   }, { passive: true });
 
   viewport.addEventListener("touchend", (e) => {
-    // Uvolnil se prst co kreslil?
     if (drawTouchId !== null) {
       const stillDown = Array.from(e.touches).some(t => t.identifier === drawTouchId);
       if (!stillDown) drawTouchId = null;
     }
 
     if (e.touches.length === 0) {
+      const wasGesture = mode !== null;
       if (mode) {
         pdfClampStage();
         pdfApplyTransform();
       }
       mode = null;
-      if (pdfEditMode) setDrawingAllowed(true);
+      drawTouchId = null;
+      if (pdfEditMode && wasGesture) resumeDrawingMode();
+
+      // Ťuknutí (listování / schování lišty) jen mimo edit mód
+      if (!pdfEditMode && !tapMoved && Date.now() - tapStartTime < 250) {
+        const rect = viewport.getBoundingClientRect();
+        const relX = (tapStartX - rect.left) / rect.width;
+        const atFitZoom = Math.abs(pdfStageScale - 1) < 0.02;
+
+        if (atFitZoom && relX < 0.2) {
+          pdfPrevPage();
+        } else if (atFitZoom && relX > 0.8) {
+          pdfNextPage();
+        } else {
+          pdfToggleToolbar();
+        }
+      }
     } else if (e.touches.length === 1 && mode === "pinch") {
       mode = "pan";
       panStartX = e.touches[0].clientX;
       panStartY = e.touches[0].clientY;
       stageStartX = pdfStageX;
       stageStartY = pdfStageY;
-    }
-    if (e.touches.length === 0 && !tapMoved && Date.now() - tapStartTime < 250 && drawTouchId === null) {
-      const rect = viewport.getBoundingClientRect();
-      const relX = (tapStartX - rect.left) / rect.width;
-      const atFitZoom = Math.abs(pdfStageScale - 1) < 0.02;
-    
-      if (atFitZoom && relX < 0.2) {
-        pdfPrevPage();
-      } else if (atFitZoom && relX > 0.8) {
-        pdfNextPage();
-      } else {
-        pdfToggleToolbar();
-      }
     }
   }, { passive: true });
 }
@@ -4850,8 +4867,7 @@ window.pdfZoomOut = () => {
 };
 
 function reenableEditMode() {
-  const pr = window.pdfCurrentPageRef;
-  if (pr?.fabricCanvas) pr.fabricCanvas.wrapperEl.style.pointerEvents = "auto";
+  pdfActivateEditLayer();
   setPdfTool(pdfCurrentTool);
 }
 
