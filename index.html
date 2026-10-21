@@ -4139,11 +4139,9 @@ window.openPdfViewer = async (driveFileId, title) => {
   pdfCurrentFileId = driveFileId;
   document.getElementById("pdf-title").textContent = title || "Dokument";
   document.getElementById("pdf-overlay").classList.remove("hidden");
-  document.getElementById("pdf-stage").innerHTML = `
-    <div style="color:#fff;display:flex;align-items:center;gap:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap">
-      <div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>
-      Načítám PDF...
-    </div>`;
+  document.getElementById("pdf-stage").innerHTML = "";
+  pdfShowLoading(pdfLoadingSpinner("Načítám PDF..."));
+  
   try {
     const token = await auth.currentUser.getIdToken();
     const url = `${FUNCTIONS.getFileStream}?driveFileId=${driveFileId}`;
@@ -4157,7 +4155,7 @@ window.openPdfViewer = async (driveFileId, title) => {
     await renderCurrentPage();
     pdfInitGestures();
   } catch(err) {
-    document.getElementById("pdf-stage").innerHTML = `<div style="color:#ff6b6b;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">Chyba: ${err.message}</div>`;
+    pdfShowLoading(`<div style="color:#ff6b6b">Chyba: ${err.message}</div>`);
   }
 };
 
@@ -4166,6 +4164,26 @@ async function pdfRenderPage(pageNum) {
   document.getElementById("pdf-zoom-info").textContent = Math.round(pdfScale * 100) + "%";
   const pageEl = document.getElementById(`pdf-page-${pageNum}`);
   if (pageEl) pageEl.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function pdfShowLoading(html) {
+  const viewport = document.getElementById("pdf-viewport");
+  let ov = document.getElementById("pdf-loading-overlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "pdf-loading-overlay";
+    ov.style.cssText = "position:absolute;inset:0;background:#1c1c1e;display:flex;align-items:center;justify-content:center;z-index:10;";
+    viewport.appendChild(ov);
+  }
+  ov.innerHTML = html;
+}
+
+function pdfLoadingSpinner(text) {
+  return `<div style="color:#fff;display:flex;align-items:center;gap:12px"><div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>${text}</div>`;
+}
+
+function pdfHideLoading() {
+  document.getElementById("pdf-loading-overlay")?.remove();
 }
 
 function pdfInitGestures() {
@@ -4383,10 +4401,7 @@ async function renderCurrentPage() {
   const viewport = document.getElementById("pdf-viewport");
   stage.innerHTML = "";
 
-  const loadingOverlay = document.createElement("div");
-  loadingOverlay.style.cssText = "position:absolute;inset:0;background:#1c1c1e;display:flex;align-items:center;justify-content:center;z-index:10;";
-  loadingOverlay.innerHTML = `<div style="color:#fff;display:flex;align-items:center;gap:12px"><div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#fff"></div>Načítám stránku...</div>`;
-  viewport.appendChild(loadingOverlay);
+  pdfShowLoading(pdfLoadingSpinner("Načítám stránku..."));
 
   const page = await pdfDoc.getPage(pdfCurrentPage);
   const baseViewport = page.getViewport({ scale: 1 });
@@ -4452,7 +4467,7 @@ async function renderCurrentPage() {
   document.getElementById("pdf-total-pages").textContent = pdfDoc.numPages;
   document.getElementById("pdf-zoom-info").textContent = "100%";
 
-  loadingOverlay.remove();
+  pdfHideLoading();
 
   await loadAndRenderCurrentAnnotations();
   if (pdfEditMode) reenableEditMode();
@@ -4903,6 +4918,7 @@ window.pdfFitWidth = () => {
 };
 
 window.closePdfViewer = () => {
+  pdfHideLoading();
   document.getElementById("pdf-overlay").classList.add("hidden");
   pdfDoc = null;
   pdfCurrentFileId = null;
