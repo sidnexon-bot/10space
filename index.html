@@ -1261,6 +1261,19 @@
     body.dark .drive-toolbar-btn:hover { background: #3a3a3c; }
     body.dark .drive-toolbar-btn.active-filter { background: rgba(255,69,58,0.15); border-color: #ff453a; color: #ff453a; }
 
+    .drive-toolbar-group { display: flex; gap: 8px; }
+    .drive-toolbar-spacer { flex: 1; }
+    .drive-toolbar-btn.primary { background: #EE220C; border-color: #EE220C; color: #fff; }
+    .drive-toolbar-btn.primary:hover { background: #cc1a09; }
+    body.dark .drive-toolbar-btn.primary { background: #ff453a; border-color: #ff453a; color: #fff; }
+    
+    .drive-add-mobile { display: none; }
+    @media (max-width: 768px) {
+      .drive-add-desktop { display: none; }
+      .drive-add-mobile { display: flex; }
+      .drive-toolbar-spacer { display: none; }
+    }
+
     .share-manage-row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f2f2f7; font-size: 14px; }
     .share-manage-row:last-child { border-bottom: none; }
     .share-manage-label { color: #8e8e93; width: 130px; flex-shrink: 0; }
@@ -1383,18 +1396,6 @@
         </div>
       </div>
     
-      <!-- Upload tlačítka -->
-      <div class="upload-btn-wrap">
-        <button class="upload-btn" onclick="openUpload()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nahrát
-        </button>
-        <button class="upload-btn" onclick="createFolder()" style="background:#f2f2f7;color:#1c1c1e;margin-top:6px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-          Nová složka
-        </button>
-      </div>
-    
       <!-- Záložky -->
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" onclick="switchTab('recent')" id="tab-recent">
@@ -1469,6 +1470,25 @@
 
       <!-- DRIVE TOOLBAR -->
       <div class="drive-toolbar hidden" id="drive-toolbar">
+        <!-- Desktop: dvě samostatná tlačítka -->
+        <div class="drive-toolbar-group drive-add-desktop">
+          <button class="drive-toolbar-btn primary" onclick="openUpload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nahrát
+          </button>
+          <button class="drive-toolbar-btn" onclick="createFolder()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+            Nová složka
+          </button>
+        </div>
+      
+        <!-- Mobil: jedno tlačítko + -->
+        <button class="drive-toolbar-btn primary drive-add-mobile" onclick="openAddMenu()" aria-label="Přidat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      
+        <div class="drive-toolbar-spacer"></div>
+      
         <button class="drive-toolbar-btn" onclick="openSortSheet()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
           <span id="sort-label">Seřadit</span>
@@ -5360,6 +5380,13 @@ function filterDriveItems(items) {
   if (driveFilterType === "folder") return items.filter(f => f.isFolder);
   return items.filter(f => !f.isFolder && getMimeTypeCategory(f.mimeType) === driveFilterType);
 }
+
+window.openAddMenu = () => {
+  openBottomSheet("Přidat", [
+    { label: "Nahrát", action: "openUpload();closeBottomSheet()", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>` },
+    { label: "Nová složka", action: "createFolder();closeBottomSheet()", icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>` }
+  ]);
+};
 
 const vokativMap = {
   "Zdeněk": "Zdendo",
