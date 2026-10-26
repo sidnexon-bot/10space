@@ -1631,8 +1631,8 @@
         </div>
         <div>Název</div>
         <div>Kód</div>
-        <div>Přidáno</div>
-        <div>Změněno</div>
+        <div id="list-date-header">Změněno</div>
+        <div>Velikost</div>
         <div></div>
       </div>
 
@@ -1894,7 +1894,7 @@ async function loadDriveFiles(folderId) {
     .filter(([id]) => getUserAccess(id) !== "none")
     .map(([id, f]) => ({
       id, name: f.name, mimeType: "application/vnd.google-apps.folder",
-      modifiedTime: f.modifiedTime, isFolder: true
+      createdTime: f.createdTime, modifiedTime: f.modifiedTime, isFolder: true
     }));
 
   const files = Object.entries(window.driveFiles || {})
@@ -1902,7 +1902,7 @@ async function loadDriveFiles(folderId) {
     .filter(([id]) => getUserAccess(id) !== "none")
     .map(([id, f]) => ({
       id, name: f.name, mimeType: f.mimeType, size: f.size,
-      modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
+      createdTime: f.createdTime, modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
     }));
 
   return [...folders, ...files];
@@ -1913,7 +1913,7 @@ async function loadAllDriveFiles() {
     .filter(([id]) => getUserAccess(id) !== "none")
     .map(([id, f]) => ({
       id, name: f.name, mimeType: f.mimeType, size: f.size,
-      modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
+      createdTime: f.createdTime, modifiedTime: f.modifiedTime, isFolder: false, driveFileId: f.driveFileId
     }));
 }
 
@@ -2476,25 +2476,12 @@ async function renderDashboard() {
 function renderDriveItems(files, skipSort) {
   const area = document.getElementById("content-area");
   if (files.length === 0) {
-    area.innerHTML = `<div class="empty-state"><p>Žádné položky</p></div>`;
+    area.innerHTML = `<div class="empty-state"><p>${driveFilterType !== "all" ? "Žádné položky odpovídající filtru" : "Žádné položky"}</p></div>`;
     return;
   }
 
-  if (!skipSort) {
-    files.sort((a, b) => {
-      if (a.isFolder && !b.isFolder) return -1;
-      if (!a.isFolder && b.isFolder) return 1;
-      return (a.name || "").localeCompare(b.name || "", "cs");
-    });
-  }
+  if (!skipSort) files = sortDriveItems(files);
 
-  // Řaď abecedně — složky nahoře, pak soubory
-  files.sort((a, b) => {
-    if (a.isFolder && !b.isFolder) return -1;
-    if (!a.isFolder && b.isFolder) return 1;
-    return (a.name || "").localeCompare(b.name || "", "cs");
-  });
-    
   area.innerHTML = files.map(f => `
     <div class="list-item" id="item-${f.id}" onclick="handleDriveItemClick(event, '${f.id}', ${f.isFolder})">
       <div class="list-item-checkbox" onclick="event.stopPropagation()">
@@ -2505,7 +2492,7 @@ function renderDriveItems(files, skipSort) {
         <span class="list-item-name-text" onclick="event.stopPropagation();${f.isFolder ? `navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\\\'")}')` : `handleDriveNameClick('${f.id}', '${f.mimeType}', false)`}">${f.name}</span>
       </div>
       <div class="list-item-code">${getEvidCode(f.id)}</div>
-      <div class="list-item-date">${f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString("cs-CZ") : "—"}</div>
+      <div class="list-item-date">${driveItemDate(f) ? new Date(driveItemDate(f)).toLocaleDateString("cs-CZ") : "—"}</div>
       <div class="list-item-date">${formatFileSize(f.size)}</div>
       <div class="list-item-dots">
         <button class="dots-btn" onclick="event.stopPropagation();openDriveContextMenu(event, '${f.id}', '${f.name}', ${f.isFolder})">
@@ -2545,21 +2532,9 @@ window.navigateToDriveFolder = (folderId, folderName) => {
   
   renderDriveBreadcrumb();
   
-  // Respektuj aktivní filtr při navigaci
-  if (driveFilterType !== "all") {
-    setDriveFilterInFolder(folderId);
-  } else {
-    renderDriveFolderContent(folderId);
-  }
+  // Aktivní filtr i řazení se aplikují v renderDriveFolderContent
+  renderDriveFolderContent(folderId);
 };
-
-function setDriveFilterInFolder(folderId) {
-  loadDriveFiles(folderId).then(driveFiles => {
-    const filtered = filterDriveItems(driveFiles);
-    const sorted = sortDriveItems(filtered);
-    renderDriveItems(sorted, true);
-  });
-}
 
 function renderDriveBreadcrumb() {
   const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
@@ -5465,11 +5440,14 @@ let driveSortBy = "name"; // "name" | "created" | "modified"
 let driveSortDir = "asc"; // "asc" | "desc"
 let driveFilterType = "all"; // "all" | "folder" | "document" | "image" | "audio" | "video"
 
+const DRIVE_SORT_LABELS = { name: "Abecedně", modified: "Datum změny", created: "Datum přidání" };
+const DRIVE_FILTER_LABELS = { all: "Filtrovat", folder: "Složky", document: "Dokumenty", image: "Obrázky", audio: "Audio", video: "Video", other: "Ostatní" };
+
 window.openSortSheet = () => {
   const options = [
-    { value: "name", label: "Abecedně" },
-    { value: "created", label: "Datum přidání" },
-    { value: "modified", label: "Datum změny" }
+    { value: "name", label: DRIVE_SORT_LABELS.name },
+    { value: "modified", label: DRIVE_SORT_LABELS.modified },
+    { value: "created", label: DRIVE_SORT_LABELS.created }
   ];
   openBottomSheet("Seřadit podle", options.map(o => ({
     label: o.label + (o.value === driveSortBy ? (driveSortDir === "asc" ? " ↑" : " ↓") : ""),
@@ -5485,20 +5463,17 @@ window.setDriveSort = (sortBy) => {
     driveSortBy = sortBy;
     driveSortDir = sortBy === "name" ? "asc" : "desc"; // datum defaultně nejnovější první
   }
-  const labels = { name: "Abecedně", created: "Datum přidání", modified: "Datum změny" };
-  document.getElementById("sort-label").textContent = labels[sortBy];
+  document.getElementById("sort-label").textContent = DRIVE_SORT_LABELS[sortBy] + (driveSortDir === "asc" ? " ↑" : " ↓");
+  // Sloupec s datem ukazuje to datum, podle kterého se řadí
+  const dateHeader = document.getElementById("list-date-header");
+  if (dateHeader) dateHeader.textContent = sortBy === "created" ? "Přidáno" : "Změněno";
   renderTab();
 };
 
 window.openDriveFilterSheet = () => {
-  const options = [
-    { value: "all", label: "Vše" },
-    { value: "folder", label: "Složky" },
-    { value: "document", label: "Dokumenty" },
-    { value: "image", label: "Obrázky" },
-    { value: "audio", label: "Audio" },
-    { value: "video", label: "Video" }
-  ];
+  const options = ["all", "folder", "document", "image", "audio", "video", "other"].map(value => ({
+    value, label: value === "all" ? "Vše" : DRIVE_FILTER_LABELS[value]
+  }));
   openBottomSheet("Filtrovat podle typu", options.map(o => ({
     label: o.label + (o.value === driveFilterType ? " ✓" : ""),
     action: `setDriveFilter('${o.value}');closeBottomSheet()`,
@@ -5506,44 +5481,45 @@ window.openDriveFilterSheet = () => {
   })));
 };
 
+// Filtr platí pro aktuální složku (stejně jako řazení); globálně hledá vyhledávací pole
 window.setDriveFilter = (type) => {
   driveFilterType = type;
-  const labels = { all: "Filtrovat", folder: "Složky", document: "Dokumenty", image: "Obrázky", audio: "Audio", video: "Video" };
-  document.getElementById("drive-filter-label").textContent = labels[type];
-  const btn = document.getElementById("drive-filter-btn");
-  btn.classList.toggle("active-filter", type !== "all");
-  if (type === "all") {
-    renderDriveFolderContent(window.currentFolder);
-  } else {
-    const allFiles = Object.entries(window.driveFiles || {})
-      .filter(([id]) => getUserAccess(id) !== "none")
-      .map(([id, f]) => ({ id, ...f, isFolder: false }))
-      .filter(f => type === "folder" ? false : getMimeTypeCategory(f.mimeType) === type);
-    const allFolders = type === "folder"
-      ? Object.entries(window.driveFolders || {})
-          .filter(([id]) => getUserAccess(id) !== "none")
-          .map(([id, f]) => ({ id, ...f, isFolder: true }))
-      : [];
-    const combined = [...allFolders, ...allFiles];
-    const sorted = sortDriveItems(combined);
-    renderDriveItems(sorted, true);
+  document.getElementById("drive-filter-label").textContent = DRIVE_FILTER_LABELS[type];
+  document.getElementById("drive-filter-btn").classList.toggle("active-filter", type !== "all");
+  renderDriveFolderContent(window.currentFolder);
+};
+
+// Jednorázová reindexace Drive (jen ADMIN/ART — kontroluje funkce). Spuštění z konzole: reindexDrive()
+window.reindexDrive = async () => {
+  if (!confirm("Znovu načíst strukturu Drive (může trvat několik minut)?")) return;
+  showSpinner();
+  try {
+    const r = await callFn(FUNCTIONS.indexDrive, {});
+    alert(`Hotovo: ${r.folders} složek, ${r.files} souborů`);
+    location.reload();
+  } catch (err) {
+    alert("Chyba reindexace: " + err.message);
+  } finally {
+    hideSpinner();
   }
 };
-  
+
+// Datum zobrazené ve sloupci a použité při řazení (createdTime je v cache jen po reindexaci Drive)
+function driveItemDate(f) {
+  return driveSortBy === "created" ? (f.createdTime || f.modifiedTime) : f.modifiedTime;
+}
+
+// Složky vždy nahoře, uvnitř skupiny podle zvoleného klíče a směru
 function sortDriveItems(items) {
-  const sorted = [...items];
-  sorted.sort((a, b) => {
-    let cmp = 0;
-    if (driveSortBy === "name") {
-      cmp = (a.name || "").localeCompare(b.name || "", "cs");
-    } else if (driveSortBy === "modified") {
-      cmp = new Date(a.modifiedTime || 0) - new Date(b.modifiedTime || 0);
-    } else if (driveSortBy === "created") {
-      cmp = new Date(a.modifiedTime || 0) - new Date(b.modifiedTime || 0); // Drive API nemá createdTime v cache, fallback na modified
-    }
-    return driveSortDir === "asc" ? cmp : -cmp;
+  const dir = driveSortDir === "asc" ? 1 : -1;
+  const time = (f) => { const t = new Date(driveItemDate(f) || 0).getTime(); return Number.isNaN(t) ? 0 : t; };
+  const byName = (a, b) => (a.name || "").localeCompare(b.name || "", "cs", { numeric: true, sensitivity: "base" });
+  return [...items].sort((a, b) => {
+    if (!!a.isFolder !== !!b.isFolder) return a.isFolder ? -1 : 1;
+    if (driveSortBy === "name") return byName(a, b) * dir;
+    const diff = time(a) - time(b);
+    return diff !== 0 ? diff * dir : byName(a, b); // stejné datum → podle názvu
   });
-  return sorted;
 }
 
 function filterDriveItems(items) {
