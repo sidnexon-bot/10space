@@ -14,6 +14,32 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* DESIGN TOKENY — světlý režim; tmavý je v "body.dark" níže */
+    :root {
+      --bg: #f2f2f7;
+      --surface: #fff;
+      --surface-2: #f2f2f7;
+      --surface-hover: #f9f9fb;
+      --border: #e5e5ea;
+      --btn-border: #d8d8dd;
+      --input-bg: #fff;
+      --input-border: #d8d8dd;
+      --text: #1c1c1e;
+      --muted: #8e8e93;
+      --muted-2: #6e6e73;
+      --accent: #EE220C;
+      --accent-hover: #cc1a09;
+      --accent-text: #EE220C;
+      --accent-soft: #fff0ee;
+      --overlay: rgba(0,0,0,0.4);
+      --shadow-modal: 0 8px 40px rgba(0,0,0,0.15);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 16px;
+      --btn-h: 36px;
+      --btn-h-sm: 30px;
+    }
+
     .bottom-sheet-overlay {
       position: fixed;
       inset: 0;
@@ -477,7 +503,6 @@
     #content-area {
         padding-bottom: calc(90px + env(safe-area-inset-bottom));
       }
-    }
     .upload-zone { margin: 8px 12px; padding: 24px 16px; }
     .multi-toolbar { padding: 0 12px; font-size: 13px; }
     .detail-close-btn { display: none; }
@@ -495,7 +520,8 @@
     .projekt-detail-body { padding: 0px; gap: 12px; padding-bottom: 120px; }
     .projekt-info-label { width: 80px; }
     .projekt-wiki-actions { flex-wrap: wrap; }
-  
+  }
+
     /* FLOATING PILL */
     .bottom-wrap { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; padding-bottom: calc(12px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 200; }
     .bottom {
@@ -853,9 +879,23 @@
     /* DARK MODE */
     body.dark {
       --bg: #1c1c1e;
-      --card: #2c2c2e;
+      --surface: #2c2c2e;
+      --surface-2: #3a3a3c;
+      --surface-hover: #3a3a3c;
+      --border: #3a3a3c;
+      --btn-border: #48484a;
+      --input-bg: #3a3a3c;
+      --input-border: #48484a;
       --text: #ffffff;
       --muted: #8e8e93;
+      --muted-2: #aeaeb2;
+      --accent-hover: #ff3b2b;
+      --accent-text: #ff453a;
+      --accent-soft: rgba(255,69,58,0.15);
+      --overlay: rgba(0,0,0,0.6);
+      --shadow-modal: 0 8px 40px rgba(0,0,0,0.5);
+      color: var(--text);
+      color-scheme: dark; /* nativní prvky (radio, select, posuvníky) se přizpůsobí */
     }
     
     body.dark .app-body,
@@ -884,12 +924,6 @@
       background: #2c2c2e;
     }
     
-    body.dark .upload-btn {
-      background: #3a3a3c !important;
-      color: #fff !important;
-      border-color: #48484a !important;
-    }
-    body.dark .upload-btn:hover { background: #48484a !important; }
     
     body.dark .right-sidebar {
       background: #2c2c2e;
@@ -992,14 +1026,7 @@
       border-bottom-color: #3a3a3c;
       color: #fff;
     }
-    body.dark .multi-toolbar-btn {
-      background: #3a3a3c;
-      border-color: #48484a;
-      color: #fff;
-    }
 
-    body.dark #download-choice-modal h3 { color: #fff; }
-    body.dark #download-choice-modal button[style*="background:#f2f2f7"] { background: #2c2c2e !important; color: #fff !important; }
     
     body.dark .context-menu {
       background: #2c2c2e;
@@ -1071,16 +1098,6 @@
     body.dark h1 { color: #fff; }
     
     /* Tlačítka v projektech */
-    body.dark .projekt-card-btn {
-      background: #3a3a3c;
-      color: #fff;
-      border-color: #48484a;
-    }
-    body.dark .projekt-card-btn.primary {
-      background: #ff453a;
-      color: #fff;
-      border-color: #ff453a;
-    }
     
     /* Mobilní profile menu jméno */
     body.dark .mobile-profile-menu-header { background: #2c2c2e; }
@@ -1109,15 +1126,6 @@
     }
     
     /* Wiki tlačítka */
-    body.dark .projekt-wiki-btn {
-      background: #3a3a3c;
-      color: #fff;
-      border-color: #48484a;
-    }
-    body.dark .projekt-wiki-btn.ai {
-      color: #ff453a;
-      border-color: #ff453a;
-    }
 
     /* Zavřít projekt — override */
     body.dark #projekt-overlay .pdf-btn {
@@ -1262,15 +1270,12 @@
     .drive-toolbar-btn.active-filter { border-color: #EE220C; color: #EE220C; background: #fff0ee; }
     
     body.dark .drive-toolbar { border-bottom-color: #3a3a3c; }
-    body.dark .drive-toolbar-btn { background: #2c2c2e; border-color: #3a3a3c; color: #fff; }
-    body.dark .drive-toolbar-btn:hover { background: #3a3a3c; }
     body.dark .drive-toolbar-btn.active-filter { background: rgba(255,69,58,0.15); border-color: #ff453a; color: #ff453a; }
 
     .drive-toolbar-group { display: flex; gap: 8px; }
     .drive-toolbar-spacer { flex: 1; }
     .drive-toolbar-btn.primary { background: #EE220C; border-color: #EE220C; color: #fff; }
     .drive-toolbar-btn.primary:hover { background: #cc1a09; }
-    body.dark .drive-toolbar-btn.primary { background: #ff453a; border-color: #ff453a; color: #fff; }
     
     .drive-add-mobile { display: none; }
     @media (max-width: 768px) {
@@ -1302,6 +1307,121 @@
     .impersonate-banner button {
       background: rgba(255,255,255,0.2); border: none; color: #fff;
       padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       JEDNOTNÁ UI VRSTVA — vše níže čte design tokeny (:root / body.dark),
+       takže světlý i tmavý režim se řídí jedním místem.
+       Velikosti tlačítek: standard = --btn-h (36 px), malé = --btn-h-sm (30 px);
+       na mobilu 44 px (dotykový cíl). Rádius vždy --radius-md.
+       Varianty: primary (výplň) · secondary (výchozí) · danger (obrys) · ghost.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* Tmavý režim: text dědí tokenem (dřív zůstával #1c1c1e a spoléhalo se na výjimky) */
+
+    /* ── MODALY ───────────────────────────────────────────────────────── */
+    .modal-overlay { background: var(--overlay); padding: 16px; }
+    .modal { background: var(--surface); color: var(--text); box-shadow: var(--shadow-modal); max-height: calc(100vh - 32px); overflow-y: auto; }
+    .modal h2, .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+    .modal p { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+    .modal-section-title { color: var(--muted); }
+    .modal-hint { font-size: 13px; color: var(--muted); }
+    .modal-note { background: var(--surface-hover); color: var(--text); border-radius: var(--radius-md); padding: 12px; font-size: 13px; word-break: break-all; margin-top: 8px; }
+    .modal-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .modal-option { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .modal-option:hover { background: var(--surface-hover); }
+    .modal-option.selected { background: var(--accent-soft); border-color: var(--accent); }
+    .modal-skupina-btn { background: var(--surface); color: var(--text); border-color: var(--border); border-radius: var(--radius-md); }
+    .modal-skupina-btn:hover { background: var(--surface-hover); }
+    .modal-skupina-btn.selected { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
+    .modal-preview { color: var(--muted); }
+    .modal-preview span { color: var(--accent-text); }
+    .modal-footer-stack { flex-direction: column; gap: 8px; margin-top: 12px; }
+    .modal-footer-stack .modal-btn { width: 100%; }
+    .move-folder-item { color: var(--text); border-bottom-color: var(--border); }
+    .move-folder-item:hover { background: var(--surface-hover); }
+
+    /* Pole formulářů */
+    .field { width: 100%; height: 40px; padding: 0 12px; margin-top: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--input-bg); border: 1px solid var(--input-border); border-radius: var(--radius-md); outline: none; }
+    .field:focus { border-color: var(--accent); }
+    .field-pin { font-size: 16px; text-align: center; letter-spacing: 4px; }
+    .detail-input, .acl-member-select { color: var(--text); background: var(--input-bg); border-color: var(--input-border); }
+    .acl-member-select { border-radius: var(--radius-md); }
+
+    /* ── TLAČÍTKA ─────────────────────────────────────────────────────── */
+    /* základ (standardní velikost) */
+    /* (display u .drive-toolbar-btn se nemění: .drive-add-mobile/-desktop ho přepínají) */
+    .modal-btn, .multi-toolbar-btn, .upload-btn { display: inline-flex; }
+    .modal-btn, .drive-toolbar-btn, .multi-toolbar-btn, .upload-btn {
+      align-items: center; justify-content: center; gap: 6px;
+      min-height: var(--btn-h); padding: 0 16px;
+      font-family: inherit; font-size: 14px; font-weight: 500; line-height: 1;
+      border: 1px solid var(--btn-border); border-radius: var(--radius-md);
+      background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .modal-btn:hover, .drive-toolbar-btn:hover, .multi-toolbar-btn:hover { background: var(--surface-hover); }
+    .drive-toolbar-btn.active-filter, .drive-toolbar-btn.active-filter:hover { background: var(--accent-soft); border-color: var(--accent-text); color: var(--accent-text); }
+    /* malá */
+    .projekt-card-btn, .projekt-wiki-btn, .detail-save-btn, .detail-cancel-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      min-height: var(--btn-h-sm); padding: 0 12px;
+      font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1;
+      border: 1px solid var(--btn-border); border-radius: var(--radius-md);
+      background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .projekt-card-btn:hover, .projekt-wiki-btn:hover, .detail-cancel-btn:hover { background: var(--surface-hover); }
+    /* primary */
+    .modal-btn-primary, .drive-toolbar-btn.primary, .upload-btn, .projekt-card-btn.primary, .detail-save-btn, .primary-btn {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+    .modal-btn-primary:hover, .drive-toolbar-btn.primary:hover, .upload-btn:hover, .projekt-card-btn.primary:hover, .detail-save-btn:hover, .primary-btn:hover {
+      background: var(--accent-hover); border-color: var(--accent-hover);
+    }
+    /* danger / AI akcent = obrys v barvě akcentu */
+    .multi-toolbar-btn.danger, .projekt-card-btn.danger, .projekt-wiki-btn.ai, .modal-btn-danger {
+      color: var(--accent-text); border-color: var(--accent-text);
+    }
+    /* ghost */
+    .modal-btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+    .modal-btn-ghost:hover { background: var(--surface-hover); }
+    .modal-btn:disabled, .modal-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+    /* přihlašovací tlačítko je jediné „velké" */
+    .primary-btn { min-height: 48px; font-size: 16px; font-weight: 600; border-radius: var(--radius-md); }
+
+    /* karty projektů: tlačítka se zalamují do řádků místo textu */
+    .projekt-card-footer { flex-wrap: wrap; }
+
+    /* ── DETAIL, VERZE, NAHRÁVÁNÍ, DALŠÍ POVRCHY ──────────────────────── */
+    .detail-value { color: var(--text); }
+    .detail-static, .version-meta { color: var(--muted-2); }
+    .version-card { background: var(--surface-hover); }
+    .mobile-detail-modal { background: var(--surface); color: var(--text); }
+    .mobile-detail-modal-tabs { border-bottom-color: var(--border); }
+    .upload-progress-panel { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .upload-progress-header, .upload-progress-item { border-bottom-color: var(--border); }
+    .upload-progress-bar-wrap { background: var(--surface-2); }
+    .dots-btn:hover, .folder-tree-item:hover { background: var(--surface-2); color: var(--text); }
+    .login-card { background: var(--surface); color: var(--text); }
+    .login-card p { color: var(--muted-2); }
+    body.login-page { background: var(--bg); }
+
+    /* Zbylé inline barvy v JS šablonách (drobečky, ukazatele, tlačítka) */
+    body.dark [style*="color:#1c1c1e"] { color: var(--text) !important; }
+    body.dark [style*="background:#f2f2f7"] { background: var(--surface-2) !important; }
+    body.dark [style*="background:#f9f9fb"] { background: var(--surface-hover) !important; }
+
+    /* ── MOBIL ────────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      /* prázdná lišta pod hlavičkou: drobečky v kořeni Drive jen opakují název */
+      .content-header.at-root { display: none; }
+      .modal-btn, .drive-toolbar-btn, .upload-btn { min-height: 44px; }
+      .multi-toolbar-btn { min-height: 36px; }
+      .projekt-card-btn, .projekt-wiki-btn, .detail-save-btn, .detail-cancel-btn { min-height: 36px; }
+      .modal { padding: 20px; }
+      .modal-footer:not(.modal-footer-stack) .modal-btn { flex: 1; }
+      .field { height: 44px; }
     }
 
   </style>
@@ -2114,6 +2234,9 @@ window.switchTab = (tab) => {
   // Breadcrumb jen v Drive
   const breadcrumbEl = document.getElementById("breadcrumb");
   if (breadcrumbEl) breadcrumbEl.style.display = (tab === "folders") ? "flex" : "none";
+  // Lišta s drobečkovou navigací jen v Drive (jinde by byla prázdná)
+  document.getElementById("content-header")?.classList.toggle("hidden", tab !== "folders");
+  document.getElementById("content-header")?.classList.add("at-root"); // přepnutí záložky = kořen
   
   // List header jen v Drive a Oblíbené
   const listHeaderEl = document.getElementById("list-header");
@@ -2441,6 +2564,7 @@ function setDriveFilterInFolder(folderId) {
 function renderDriveBreadcrumb() {
   const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
   const currentName = crumbs[crumbs.length - 1].name;
+  document.getElementById("content-header")?.classList.toggle("at-root", driveBreadcrumb.length === 0);
   const backHtml = crumbs.length > 1 ? `
     <button onclick="driveGoBack()" style="background:none;border:none;cursor:pointer;color:#6e6e73;display:flex;align-items:center;padding:0;margin-right:4px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -2649,6 +2773,7 @@ function renderBreadcrumb(folderId) {
     id = f.rodic;
   }
   const currentName = trail.length > 0 ? trail[trail.length - 1].name : "";
+  document.getElementById("content-header")?.classList.toggle("at-root", trail.length === 0);
   const crumbs = [{ id: null, name: "10space" }, ...trail.slice(0, -1)];
   document.getElementById("breadcrumb").innerHTML = crumbs.map((c, i) =>
     i < crumbs.length - 1
@@ -3578,7 +3703,7 @@ async function renderProjekty() {
           <button class="projekt-card-btn primary" onclick="event.stopPropagation();otevritProjekt('${p.id}')">Otevřít projekt</button>
           ${p.driveFolderId ? `<button class="projekt-card-btn" onclick="event.stopPropagation();switchTab('folders');setTimeout(()=>navigateToDriveFolder('${p.driveFolderId}', '${(p.nazev || "").replace(/'/g, "\\'")}'),300)">Drive složka</button>` : ""}
           <button class="projekt-card-btn" onclick="event.stopPropagation();shareProjekt('${p.id}')">Sdílet projekt</button>
-          ${currentUser?.role === "ADMIN" ? `<button class="projekt-card-btn" style="color:#EE220C;border-color:#EE220C" onclick="event.stopPropagation();smazatProjekt('${p.id}')">Smazat</button>` : ""}        
+          ${currentUser?.role === "ADMIN" ? `<button class="projekt-card-btn danger" onclick="event.stopPropagation();smazatProjekt('${p.id}')">Smazat</button>` : ""}        
         </div>
       </div>
     `;
@@ -3873,7 +3998,7 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
       
       <div id="projekt-slozka-obsah" class="hidden">
         <div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px">
-          <button onclick="zavritProjektSlozku()" style="background:#f2f2f7;border:none;cursor:pointer;color:#1c1c1e;font-size:13px;padding:5px 10px;border-radius:6px">← Zpět</button>
+          <button class="projekt-card-btn" onclick="zavritProjektSlozku()">← Zpět</button>
           <span style="font-size:13px;font-weight:600" id="projekt-slozka-nazev"></span>
         </div>
         <div id="projekt-slozka-list"></div>
@@ -6017,11 +6142,13 @@ async function processFilesWithEvid(fileResults) {
   </div>
     <div class="modal-overlay" id="download-choice-modal">
       <div class="modal" style="max-width:320px">
-        <h3 style="margin-bottom:16px;color:#1c1c1e">Stáhnout PDF</h3>
-        <p style="color:#8e8e93;font-size:14px;margin-bottom:20px">Toto PDF obsahuje tvé anotace. Kterou verzi chceš stáhnout?</p>
-        <button onclick="confirmDownload(true)" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;background:#EE220C;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">S anotacemi</button>
-        <button onclick="confirmDownload(false)" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Bez anotací (originál)</button>
-        <button onclick="closeDownloadModal()" style="width:100%;justify-content:center;padding:12px;background:transparent;color:#8e8e93;border:none;border-radius:8px;font-size:14px;cursor:pointer">Zrušit</button>
+        <h3>Stáhnout PDF</h3>
+        <p>Toto PDF obsahuje tvé anotace. Kterou verzi chceš stáhnout?</p>
+        <div class="modal-footer modal-footer-stack">
+          <button class="modal-btn modal-btn-primary" onclick="confirmDownload(true)">S anotacemi</button>
+          <button class="modal-btn modal-btn-secondary" onclick="confirmDownload(false)">Bez anotací (originál)</button>
+          <button class="modal-btn modal-btn-ghost" onclick="closeDownloadModal()">Zrušit</button>
+        </div>
       </div>
     </div>
   </div>
@@ -6073,9 +6200,9 @@ async function processFilesWithEvid(fileResults) {
     <h2>Sdílet s PIN kódem</h2>
     <div id="share-modal-step1">
       <div class="modal-section-title">PIN kód (4-6 číslic)</div>
-      <input type="text" id="share-pin-input" maxlength="6" placeholder="1234" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:16px;text-align:center;letter-spacing:4px;margin-top:8px" inputmode="numeric">
+      <input type="text" id="share-pin-input" maxlength="6" placeholder="1234" class="field field-pin" inputmode="numeric">
       <div class="modal-section-title">Platnost</div>
-      <select id="share-expiry-select" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:14px;margin-top:8px">
+      <select id="share-expiry-select" class="field">
         <option value="7">7 dní</option>
         <option value="30" selected>30 dní</option>
         <option value="90">90 dní</option>
@@ -6087,7 +6214,7 @@ async function processFilesWithEvid(fileResults) {
     </div>
     <div id="share-modal-step2" class="hidden">
       <div class="modal-section-title">Odkaz vytvořen</div>
-      <div style="background:#f9f9fb;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;margin-top:8px" id="share-result-url"></div>
+      <div class="modal-note" id="share-result-url"></div>
       <div class="modal-footer">
         <button class="modal-btn modal-btn-primary" onclick="copyShareLink()" style="width:100%">Kopírovat odkaz</button>
       </div>
@@ -6101,17 +6228,17 @@ async function processFilesWithEvid(fileResults) {
     <h2>Spravovat odkaz</h2>
     <div id="share-manage-content"></div>
     <div class="modal-section-title">Prodloužit o</div>
-    <select id="extend-days-select" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:14px;margin-bottom:12px">
+    <select id="extend-days-select" class="field" style="margin-bottom:12px">
       <option value="7">7 dní</option>
       <option value="14">14 dní</option>
       <option value="30" selected>30 dní</option>
       <option value="90">90 dní</option>
     </select>
-    <div class="modal-footer" style="flex-direction:column;gap:8px;margin-top:8px">
+    <div class="modal-footer modal-footer-stack">
       <button class="modal-btn modal-btn-secondary" onclick="copyShareTokenLink()" style="width:100%">Zkopírovat odkaz</button>
       <button class="modal-btn modal-btn-secondary" onclick="openRegeneratePinPrompt()" style="width:100%">Vygenerovat nový PIN a odkaz</button>
       <button class="modal-btn modal-btn-primary" onclick="extendShareTokenFromModal()" style="width:100%">Prodloužit platnost</button>
-      <button class="modal-btn modal-btn-secondary" onclick="deactivateShareToken()" style="width:100%;color:#EE220C">Deaktivovat</button>
+      <button class="modal-btn modal-btn-secondary modal-btn-danger" onclick="deactivateShareToken()" style="width:100%">Deaktivovat</button>
       <button class="modal-btn modal-btn-secondary" onclick="closeShareManageModal()" style="width:100%">Zavřít</button>
     </div>
   </div>
@@ -6121,8 +6248,8 @@ async function processFilesWithEvid(fileResults) {
 <div class="modal-overlay" id="move-modal">
   <div class="modal" style="width:380px">
     <h2>Přesunout do...</h2>
-    <div id="move-breadcrumb" style="font-size:13px;color:#8e8e93;margin-bottom:8px"></div>
-    <div id="move-folder-list" style="max-height:320px;overflow-y:auto;border:1px solid #e5e5ea;border-radius:8px"></div>
+    <div id="move-breadcrumb" class="modal-hint" style="margin-bottom:8px"></div>
+    <div id="move-folder-list" class="modal-list"></div>
     <div class="modal-footer" style="margin-top:16px">
       <button class="modal-btn modal-btn-secondary" onclick="closeMoveModal()">Zrušit</button>
       <button class="modal-btn modal-btn-primary" onclick="confirmMove()">Přesunout sem</button>
@@ -6136,7 +6263,7 @@ async function processFilesWithEvid(fileResults) {
     <h2>Nový PIN a odkaz</h2>
     <div id="regenerate-pin-step1">
       <div class="modal-section-title">Nový PIN (4-6 číslic)</div>
-      <input type="text" id="regenerate-pin-input" maxlength="6" placeholder="1234" style="width:100%;padding:10px;border:1px solid #e5e5ea;border-radius:8px;font-size:16px;text-align:center;letter-spacing:4px;margin-top:8px" inputmode="numeric">
+      <input type="text" id="regenerate-pin-input" maxlength="6" placeholder="1234" class="field field-pin" inputmode="numeric">
       <div class="modal-footer">
         <button class="modal-btn modal-btn-secondary" onclick="closeRegeneratePinModal()">Zrušit</button>
         <button class="modal-btn modal-btn-primary" onclick="confirmRegeneratePin()">Uložit nový PIN</button>
@@ -6144,8 +6271,8 @@ async function processFilesWithEvid(fileResults) {
     </div>
     <div id="regenerate-pin-step2" class="hidden">
       <div class="modal-section-title">Nový odkaz vytvořen</div>
-      <div style="background:#f9f9fb;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;margin-top:8px" id="regenerate-result-url"></div>
-      <div class="modal-footer" style="flex-direction:column;gap:8px">
+      <div class="modal-note" id="regenerate-result-url"></div>
+      <div class="modal-footer modal-footer-stack">
         <button class="modal-btn modal-btn-primary" onclick="copyRegeneratedLink()" style="width:100%">Kopírovat odkaz</button>
         <button class="modal-btn modal-btn-secondary" onclick="closeRegeneratePinModal()" style="width:100%">Zavřít</button>
       </div>
