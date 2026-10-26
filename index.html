@@ -1622,8 +1622,26 @@ const FUNCTIONS = {
   createShareToken: "https://createsharetoken-etp6s2ynnq-uc.a.run.app",
   regenerateSharePin: "https://regeneratesharepin-etp6s2ynnq-uc.a.run.app",
   verifyShareToken: "https://verifysharetoken-etp6s2ynnq-uc.a.run.app",
-  setDriveAcl: "https://setdriveacl-etp6s2ynnq-uc.a.run.app"
+  setDriveAcl: "https://setdriveacl-etp6s2ynnq-uc.a.run.app",
+  listShareTokens: "https://listsharetokens-etp6s2ynnq-uc.a.run.app",
+  manageShareToken: "https://managesharetoken-etp6s2ynnq-uc.a.run.app",
+  getMyAcl: "https://getmyacl-etp6s2ynnq-uc.a.run.app",
+  getFileAcl: "https://getfileacl-etp6s2ynnq-uc.a.run.app",
+  generateProjektWiki: "https://generateprojektwiki-etp6s2ynnq-uc.a.run.app"
 };
+
+// Volání Cloud Functions s ID tokenem; chyby vrací jako výjimku
+async function callFn(url, body = {}) {
+  const token = await auth.currentUser.getIdToken();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
 
 let currentUser = null;
 let allFolders = {};
@@ -1660,9 +1678,11 @@ window.handleGoogleLogin = async () => {
   try {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    const snapshot = await get(ref(db, "/members"));
-    const members = snapshot.val();
-    const member = Object.values(members).find(m => m.email === result.user.email);
+    let member = null;
+    try {
+      const snapshot = await get(ref(db, "/members"));
+      member = Object.values(snapshot.val() || {}).find(m => m.email === result.user.email);
+    } catch (e) { /* nečlen: pravidla odepřou čtení */ }
     if (!member) {
       document.getElementById("login-error").textContent = "Přístup zamítnut";
       document.getElementById("login-error").classList.remove("hidden");
@@ -1680,9 +1700,11 @@ window.handleLogout = async () => { await signOut(auth); location.reload(); };
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    const snapshot = await get(ref(db, "/members"));
-    const members = snapshot.val();
-    const member = Object.values(members).find(m => m.email === user.email);
+    let member = null;
+    try {
+      const snapshot = await get(ref(db, "/members"));
+      member = Object.values(snapshot.val() || {}).find(m => m.email === user.email);
+    } catch (e) { /* nečlen: pravidla odepřou čtení */ }
     if (!member) {
       await signOut(auth);
       hideSplash();
@@ -1893,12 +1915,23 @@ async function loadData() {
   }
 
   // Načti ACL pro aktuálního uživatele
-  const aclSnap = await get(ref(db, "/acl"));
-  const allAcl = aclSnap.val() || {};
+  // /acl je pro klienty zavřené — přístupy efektivního uživatele vrací funkce getMyAcl
+  window.myAcl = {};
   window.userAccessCache = {}; // cache výsledků kontroly přístupu
+  window.loadMyAcl = async (asMemberId) => {
+    try {
+      const r = await callFn(FUNCTIONS.getMyAcl, asMemberId ? { asMemberId } : {});
+      window.myAcl = r.acl || {};
+    } catch (e) {
+      console.error("getMyAcl:", e.message);
+      window.myAcl = {};
+    }
+    window.userAccessCache = {};
+  };
+  await window.loadMyAcl();
   
   function getUserAccess(fileId) {
-    const effectiveUid = impersonateUid || currentUser.uid;
+    const effectiveUid = impersonateUid || "self";
     const cacheKey = `${effectiveUid}_${fileId}`;
     if (window.userAccessCache[cacheKey] !== undefined) {
       return window.userAccessCache[cacheKey];
@@ -1908,9 +1941,8 @@ async function loadData() {
     let access = "read";
     
     for (let i = 0; i < 15; i++) {
-      const fileAcl = allAcl[current];
-      if (fileAcl && fileAcl[effectiveUid] !== undefined) {
-        access = fileAcl[effectiveUid];
+      if (window.myAcl[current] !== undefined) {
+        access = window.myAcl[current];
         break;
       }
       const folder = window.driveFolders?.[current];
@@ -2163,7 +2195,7 @@ async function renderDashboard() {
     get(ref(db, "/projekty")),
     get(ref(db, "/akce")),
     get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`)),
-    get(ref(db, "/shareTokens"))
+    callFn(FUNCTIONS.listShareTokens).catch(() => ({ tokens: {} }))
   ]);
 
   const projekty = projektSnap.val() || {};
@@ -2252,7 +2284,7 @@ async function renderDashboard() {
   const poznamky = poznamkySnap.val() || "";
   
   // Sdílené tokeny
-  const shareTokens = shareSnap.val() || {};
+  const shareTokens = shareSnap.tokens || {};
   const now = Date.now();
   const activeShares = Object.entries(shareTokens)
     .filter(([token, s]) => s.expiruje > now)
@@ -3866,43 +3898,8 @@ window.regenerovatWiki = async (projektId) => {
   btn.textContent = "Generuji...";
   btn.disabled = true;
 
-  const akceSnap = await get(ref(db, `/akce/${projektId}`));
-  const akce = akceSnap.val();
-  const projektSnap = await get(ref(db, `/projekty/${projektId}`));
-  const projekt = projektSnap.val();
-
-  const configSnap = await get(ref(db, "/gemini_config/apiKey"));
-  const apiKey = configSnap.val();
-  const datum = projekt?.datum || "";
-
-  const prompt = `Jsi asistent pěveckého spolku 10men. Napiš stručný interní popis nadcházející akce v budoucím čase, ve třetí osobě v češtině, maximálně 2-3 věty.
-
-  Pravidla:
-  - Piš kultivovaně ale přirozeně, v celých větách
-  - Zmiň POUZE pole která mají neprázdnou hodnotu
-  - NIKDY nevymýšlej ani nedoplňuj informace které nejsou v datech
-  - Pokud je pole prázdné, prázdný řetězec nebo "undefined", vůbec ho nezmiňuj
-  - Oblečení: "neformální" = tričko 10men, "formální" = košile a kravata — zmiň jen pokud je vyplněno
-  - Hospodu zmiň jen pokud je konkrétně vyplněna — nikdy ji nevymýšlej
-  - Popis je interní pro členy sboru
-  
-  Údaje (ignoruj prázdná pole):
-  Název: ${akce.name || ""}
-  Datum: ${datum}
-  Místo: ${akce.place || ""}${akce.sraz ? `\nSraz: ${akce.sraz}` : ""}${akce.doprava ? `\nDoprava: ${akce.doprava}` : ""}${akce.obleceni ? `\nOblečení: ${akce.obleceni === "neformální" ? "tričko 10men" : akce.obleceni === "formální" ? "košile a kravata" : akce.obleceni}` : ""}${akce.type ? `\nTyp: ${akce.type}` : ""}${akce.note ? `\nPoznámka: ${akce.note}` : ""}${akce.hospoda ? `\nHospoda po akci: ${akce.hospoda}` : ""}`;
-
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 200
-      })
-    });
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || "";
+    const { text } = await callFn(FUNCTIONS.generateProjektWiki, { projektId });
     if (text) {
       document.getElementById("wiki-text").textContent = text;
       await set(ref(db, `/projekty/${projektId}/wikiText`), text);
@@ -5532,8 +5529,10 @@ window.openShareModalMobile = (id) => {
 
 window.openShareManageSheet = async (token) => {
   shareManageToken = token;
-  const snap = await get(ref(db, `/shareTokens/${token}`));
-  const data = snap.val();
+  let data;
+  try {
+    data = (await callFn(FUNCTIONS.manageShareToken, { token, action: "get" })).token;
+  } catch (err) { return; }
   if (!data) return;
 
   function getFileTypeLabel(mimeType) {
@@ -5584,8 +5583,7 @@ window.closeShareManageModal = () => {
 
 window.extendShareTokenFromModal = async () => {
   const days = parseInt(document.getElementById("extend-days-select").value);
-  const newExpiry = Date.now() + days * 24 * 60 * 60 * 1000;
-  await set(ref(db, `/shareTokens/${shareManageToken}/expiruje`), newExpiry);
+  await callFn(FUNCTIONS.manageShareToken, { token: shareManageToken, action: "extend", days });
   closeShareManageModal();
   renderDashboard();
 };
@@ -5593,7 +5591,7 @@ window.extendShareTokenFromModal = async () => {
 window.deactivateShareToken = async () => {
   if (!shareManageToken) return;
   if (!confirm("Deaktivovat tento sdílený odkaz?")) return;
-  await set(ref(db, `/shareTokens/${shareManageToken}/expiruje`), 0);
+  await callFn(FUNCTIONS.manageShareToken, { token: shareManageToken, action: "deactivate" });
   closeShareManageModal();
   renderDashboard();
 };
@@ -5601,7 +5599,7 @@ window.deactivateShareToken = async () => {
 window.deleteShareToken = async () => {
   if (!shareManageToken) return;
   if (!confirm("Trvale smazat tento sdílený odkaz?")) return;
-  await remove(ref(db, `/shareTokens/${shareManageToken}`));
+  await callFn(FUNCTIONS.manageShareToken, { token: shareManageToken, action: "delete" });
   closeShareManageModal();
   renderDashboard();
 };
@@ -5670,14 +5668,17 @@ window.copyRegeneratedLink = async () => {
 };
 
 window.openAclModal = async (fileId) => {
-  const membersSnap = await get(ref(db, "/members"));
-  const members = Object.values(membersSnap.val() || {});
-  const aclSnap = await get(ref(db, `/acl/${fileId}`));
-  const acl = aclSnap.val() || {};
+  let members = [];
+  try {
+    members = (await callFn(FUNCTIONS.getFileAcl, { fileId })).members;
+  } catch (err) {
+    alert("Chyba: " + err.message);
+    return;
+  }
 
   document.getElementById("acl-members-list").innerHTML = members.map(m => {
-    const uid = m.uid || m.id;
-    const currentAccess = acl[uid] || "default";
+    const uid = m.id;
+    const currentAccess = m.access || "default";
     return `
       <div class="acl-member-row">
         <span class="acl-member-name">${m.name || m.email}</span>
@@ -5696,12 +5697,7 @@ window.openAclModal = async (fileId) => {
 
 window.updateAcl = async (fileId, uid, access) => {
   try {
-    const token = await auth.currentUser.getIdToken();
-    await fetch(FUNCTIONS.setDriveAcl, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ fileId, uid, access })
-    });
+    await callFn(FUNCTIONS.setDriveAcl, { fileId, memberId: uid, access });
   } catch(err) {
     alert("Chyba: " + err.message);
   }
@@ -5721,17 +5717,17 @@ window.openImpersonateSheet = async () => {
   })));
 };
 
-window.startImpersonate = (uid, name) => {
+window.startImpersonate = async (uid, name) => {
   impersonateUid = uid;
-  window.userAccessCache = {}; // reset cache
+  await window.loadMyAcl(uid);
   document.getElementById("impersonate-text").textContent = `Zobrazuješ jako: ${name}`;
   document.getElementById("impersonate-banner").classList.remove("hidden");
   renderTab();
 };
 
-window.stopImpersonate = () => {
+window.stopImpersonate = async () => {
   impersonateUid = null;
-  window.userAccessCache = {};
+  await window.loadMyAcl();
   document.getElementById("impersonate-banner").classList.add("hidden");
   renderTab();
 };
