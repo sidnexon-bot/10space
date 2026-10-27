@@ -62,12 +62,12 @@ function computeNext() {
   const events = Object.entries(S.akce).map(([id, a]) => ({ id, ...a }))
     .filter((a) => a.date && a.date >= today && !["Zrušená", "Nápad", "Proběhlá"].includes(a.status) && !a.is_template)
     .sort((a, b) => (a.date + (a.start || "")).localeCompare(b.date + (b.start || "")));
-  const entries = Object.values(S.program);
+  const entries = Object.values(S.program), skipped = [];
   for (const ev of events) {
     const mine = entries.filter((p) => p.id_akce === ev.id).sort((a, b) => (a.order || 0) - (b.order || 0));
-    if (!mine.length) continue;
+    if (!mine.length) { skipped.push({ name: ev.name || "Akce", date: ev.date }); continue; }
     const items = mine.map((p, i) => { const s = songOf(p), fid = s?.driveFileId || null; return { fileId: fid, title: s?.name || (window.driveFiles?.[fid]?.name) || "Skladba", code: s?.code || "", order: i + 1 }; });
-    return { event: { id: ev.id, name: ev.name || "Akce", date: ev.date, start: ev.start || "", place: ev.place || "" }, items };
+    return { event: { id: ev.id, name: ev.name || "Akce", date: ev.date, start: ev.start || "", place: ev.place || "" }, items, skipped };
   }
   return { event: null, items: [] };
 }
@@ -89,10 +89,25 @@ function countAnn(layer) {
   for (const v of Object.values(layer.pages || {})) { try { if (JSON.parse(v?.json).objects?.length) n++; } catch (e) { /* prázdné */ } }
   return n;
 }
+/* PDF reader si zápisy, které se nepodařilo odeslat (bez připojení, zavřená záložka), drží v zařízení
+   (localStorage "pdf2.outbox.{uid}") a odešle je při příštím otevření nebo po obnovení připojení. Server je do té doby
+   nemá, a proto je při obnově offline kopie přikládáme na stav ze serveru, jinak by se poznámky psané bez
+   připojení ztratily z kopie dřív, než dorazí na server. */
+function applyOutbox(rec, fileId) {
+  let box = {};
+  try { box = JSON.parse(localStorage.getItem("pdf2.outbox." + S.uid) || "{}") || {}; } catch (e) { return; }
+  for (const e of Object.values(box)) {
+    if (!e || e.fileId !== fileId) continue;
+    const slot = e.layerKey === "public" ? "public" : e.layerKey === S.uid ? "own" : null; if (!slot) continue;
+    rec[slot] = rec[slot] || {}; rec[slot].pagesV2 = rec[slot].pagesV2 || {};
+    if (e.payload === null) delete rec[slot].pagesV2[e.page]; else rec[slot].pagesV2[e.page] = e.payload;
+  }
+}
 async function refreshAnnot(id) {
   const { db, ref, get } = ctx();
   const [pub, own] = await Promise.all([get(ref(db, `/annotations/${id}/public`)), get(ref(db, `/annotations/${id}/${S.uid}`))]);
   const rec = { public: pub.val(), own: own.val(), savedAt: Date.now() };
+  applyOutbox(rec, id);
   await kv.set(`annot:${S.uid}:${id}`, rec); S.annot[id] = { own: countAnn(rec.own), pub: countAnn(rec.public) };
 }
 async function annotInfo(id) { // zobrazí se jen při vykreslení, bez dotazu do sítě, když už je v zařízení
@@ -239,10 +254,10 @@ function pinChip(id) {
 function annChip(id) { const a = S.annot[id]; return a && a.own ? `<span class="dk-chip pen" title="Máte v těchto notách poznámky">${ICON.pen}<span>${a.own}</span></span>` : ""; }
 function itemRow(it, extra = "") {
   const open = it.fileId;
-  return `<div class="dk-row${open ? "" : " off"}" ${open ? `data-open="${esc(it.fileId)}" data-title="${esc(it.title)}" role="button" tabindex="0"` : ""}>
+  return `<div class="dk-row${open ? "" : " off"}${extra ? " has-acts" : ""}" ${open ? `data-open="${esc(it.fileId)}" data-title="${esc(it.title)}" role="button" tabindex="0"` : ""}>
     <span class="dk-ic">${ICON.pdf}</span>
     <span class="dk-t"><b>${esc(it.title)}</b>${it.code ? `<small>${esc(it.code)}</small>` : ""}</span>
-    ${open ? annChip(it.fileId) + pinChip(it.fileId) : `<span class="dk-chip">Bez not</span>`}${extra}</div>`;
+    <span class="dk-chips">${open ? annChip(it.fileId) + pinChip(it.fileId) : `<span class="dk-chip">Bez not</span>`}</span>${extra ? `<span class="dk-acts">${extra}</span>` : ""}</div>`;
 }
 function syncLine() {
   const s = S.sync, n = S.next?.items.filter((x) => x.fileId).length || 0;
@@ -256,9 +271,15 @@ function drawNext() {
   const n = S.next, ev = n?.event;
   if (!ev) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div><div class="dk-empty">${ICON.star}<p><b>Program zatím není vyplněn.</b></p><p>Noty z programu nejbližší akce se sem uloží automaticky a stáhnou se do zařízení, jakmile je program vyplněn v 10base.</p></div></div>`;
   return `<div class="dashboard-card dk-card">
-    <div class="dashboard-card-title"><span>Příští akce</span>${syncLine()}</div>
+    <div class="dashboard-card-title"><span>${n.skipped?.length ? "Nejbližší akce s programem" : "Příští akce"}</span>${syncLine()}</div>
     <div class="dk-ev"><b>${esc(ev.name)}</b><small>${esc(fmtDate(ev.date))}${ev.start ? ", " + esc(ev.start) : ""}${ev.place ? " · " + esc(ev.place) : ""}</small></div>
-    <div class="dk-rows">${n.items.map((it) => itemRow(it)).join("")}</div></div>`;
+    <div class="dk-rows">${n.items.map((it) => itemRow(it)).join("")}</div>${skippedNote(n)}</div>`;
+}
+function skippedNote(n) {
+  const k = n.skipped || []; if (!k.length) return "";
+  const short = (d) => { try { return new Date(d + "T12:00:00").toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" }); } catch (e) { return d; } };
+  const list = k.slice(0, 3).map((x) => `${esc(x.name)} ${esc(short(x.date))}`).join(", ") + (k.length > 3 ? ` a ${k.length - 3} dalších` : "");
+  return `<div class="dk-note">Dřívější akce zatím nemají vyplněný program: ${list}. Jakmile ho vyplníte, stáhnou se i jejich noty.</div>`;
 }
 function usage() { const p = Object.values(S.pins); return p.length ? `Offline v zařízení: ${p.length} ${p.length === 1 ? "soubor" : p.length < 5 ? "soubory" : "souborů"} · ${fmtMB(p.reduce((a, b) => a + (b.size || 0), 0))}` : ""; }
 function drawHome() {
