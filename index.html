@@ -1714,7 +1714,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjDCB3gpqytTHnG7zKLKJGXMNeW5vyC_I",
@@ -1816,7 +1816,10 @@ window.handleGoogleLogin = async () => {
   }
 };
 
-window.handleLogout = async () => { await signOut(auth); location.reload(); };
+window.handleLogout = async () => {
+  try { await caches.delete("pdf-v1"); localStorage.removeItem("pdf2.cacheIdx"); } catch (e) { /* bez Cache API */ }
+  await signOut(auth); location.reload();
+};
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -4235,7 +4238,7 @@ let pdfTextColor = "#EE220C";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-window.openPdfViewer = async (driveFileId, title) => {
+window.openPdfViewerLegacy = async (driveFileId, title) => {
   pdfCurrentFileId = driveFileId;
   document.getElementById("pdf-title").textContent = title || "Dokument";
   document.getElementById("pdf-overlay").classList.remove("hidden");
@@ -5046,6 +5049,7 @@ window.pdfFitWidth = () => {
 };
 
 window.closePdfViewer = () => {
+  pdfReaderApi?.close();
   pdfHideLoading();
   document.getElementById("pdf-overlay").classList.add("hidden");
   pdfDoc = null;
@@ -5209,6 +5213,93 @@ async function downloadAnnotatedPdf() {
     }
   }, { passive: true });
 })();
+
+// ── NOVÝ PDF PROHLÍŽEČ (pdf-reader.js) ─────────────────────────────────
+// Načítá se až při prvním otevření PDF. Kdyby se nenačetl (chybí soubor, starý prohlížeč),
+// otevře se původní prohlížeč. Ručně lze vynutit původní: localStorage.pdfViewer = "legacy".
+const PDF_READER_URL = "./pdf-reader.js?v=1";
+const PDF_CACHE = "pdf-v1", PDF_CACHE_MAX = 25;
+let pdfReaderApi = null;
+
+async function pdfCacheKeyIndex() { try { return JSON.parse(localStorage.getItem("pdf2.cacheIdx") || "[]"); } catch (e) { return []; } }
+
+async function pdfGetBytes(fileId, onProgress) {
+  const modified = window.driveFiles?.[fileId]?.modifiedTime || "";
+  const prefix = `https://pdf-cache.invalid/${fileId}/`, key = prefix + encodeURIComponent(modified);
+  let cache = null;
+  try { cache = await caches.open(PDF_CACHE); } catch (e) { /* bez Cache API */ }
+  if (cache) {
+    const hit = await cache.match(key);
+    if (hit) { onProgress?.(1); return await hit.arrayBuffer(); }
+  }
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(fileId)}`, { headers: { "Authorization": `Bearer ${token}` } });
+    if (!res.ok) throw new Error("Server vrátil " + res.status);
+    const total = parseInt(res.headers.get("Content-Length") || "0", 10);
+    const rd = res.body?.getReader();
+    let buf;
+    if (rd) {
+      const chunks = []; let got = 0;
+      for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; if (total) onProgress?.(Math.min(got / total, 0.99)); }
+      const all = new Uint8Array(got); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+      buf = all.buffer;
+    } else buf = await res.arrayBuffer();
+    if (cache) {
+      try {
+        for (const k of await cache.keys()) if (k.url.startsWith(prefix) && k.url !== key) await cache.delete(k); // starší verze téhož souboru
+        await cache.put(key, new Response(buf.slice(0), { headers: { "Content-Type": "application/pdf" } }));
+        const idx = (await pdfCacheKeyIndex()).filter(k => k !== key); idx.push(key);
+        while (idx.length > PDF_CACHE_MAX) await cache.delete(idx.shift());
+        localStorage.setItem("pdf2.cacheIdx", JSON.stringify(idx));
+      } catch (e) { /* plné úložiště: PDF se prostě nezapamatuje */ }
+    }
+    onProgress?.(1);
+    return buf;
+  } catch (err) {
+    if (cache) { // bez připojení: použij starší uloženou verzi
+      for (const k of await cache.keys()) if (k.url.startsWith(prefix)) return await (await cache.match(k)).arrayBuffer();
+    }
+    throw err;
+  }
+}
+
+function buildPdfReaderEnv() {
+  const annRef = (fileId, layerKey, sub) => ref(db, `/annotations/${fileId}/${layerKey}/${sub}`);
+  return {
+    pdfjsLib, fabric: window.fabric, PDFLib: window.PDFLib,
+    get user() { return { uid: auth.currentUser.uid, role: currentUser?.role }; },
+    get canEditPublic() { return ["ADMIN", "ART"].includes(currentUser?.role); },
+    getPdfBytes: pdfGetBytes,
+    readAnnotPage: async (fileId, layerKey, page) => {
+      const [v2, legacy] = await Promise.all([get(annRef(fileId, layerKey, `pagesV2/${page}`)), get(annRef(fileId, layerKey, `pages/${page}`))]);
+      return { v2: v2.val(), legacy: legacy.val() };
+    },
+    writeAnnotPage: (fileId, layerKey, page, data) =>
+      update(ref(db, `/annotations/${fileId}/${layerKey}`), { [`pagesV2/${page}`]: data, updatedAt: Date.now() }),
+    readAllAnnot: async (fileId, layerKey) => {
+      const v = (await get(ref(db, `/annotations/${fileId}/${layerKey}`))).val() || {};
+      return { v2: v.pagesV2 || {}, legacy: v.pages || {} };
+    },
+    deleteLegacyPage: (fileId, layerKey, page) => remove(annRef(fileId, layerKey, `pages/${page}`)),
+    openLegacy: (fileId, title) => window.openPdfViewerLegacy(fileId, title)
+  };
+}
+
+window.openPdfViewer = async (driveFileId, title) => {
+  if (localStorage.getItem("pdfViewer") === "legacy") return window.openPdfViewerLegacy(driveFileId, title);
+  try {
+    if (!pdfReaderApi) {
+      const mod = await import(PDF_READER_URL);
+      pdfReaderApi = mod.createPdfReader(buildPdfReaderEnv());
+    }
+    await pdfReaderApi.open(driveFileId, title);
+  } catch (err) {
+    console.error("Nový PDF prohlížeč se nepodařilo spustit, otevírám původní:", err);
+    pdfReaderApi = null;
+    return window.openPdfViewerLegacy(driveFileId, title);
+  }
+};
 
 window.pdfToggleToolbar = () => {
   if (pdfEditMode) return; // v edit módu nech toolbar viditelný
@@ -5498,7 +5589,13 @@ window.reindexDrive = async () => {
     alert(`Hotovo: ${r.folders} složek, ${r.files} souborů`);
     location.reload();
   } catch (err) {
-    alert("Chyba reindexace: " + err.message);
+    if (err instanceof TypeError) {
+      // Spojení vypadne po ~2 min, ale funkce na serveru běží dál a obvykle doběhne
+      alert("Spojení s prohlížečem vypadlo, ale reindexace na serveru pravděpodobně doběhla. Stránka se obnoví.");
+      location.reload();
+    } else {
+      alert("Chyba reindexace: " + err.message);
+    }
   } finally {
     hideSpinner();
   }
