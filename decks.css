@@ -1,0 +1,78 @@
+/* 10space – Osobní desky (decks.js). Proměnné aplikace s pojistkou, funguje s redesign.css i bez něj. */
+.dk-wrap { box-sizing: border-box; width: 100%; max-width: 500px; margin: 0 auto; padding: 16px 16px 40px; display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 769px) { .dk-wrap { max-width: calc(1200px + 16%); padding: 24px 8% 40px; } }
+.dk-card { padding-bottom: 8px; }
+.dk-card .dashboard-card-title { gap: 8px; min-height: 30px; }
+.dk-rows { display: flex; flex-direction: column; }
+.dk-row { display: flex; align-items: center; gap: 12px; padding: 10px 6px; margin: 0 -6px; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dk-row + .dk-row { border-top: 1px solid var(--hair, rgba(120, 120, 128, 0.16)); border-radius: 0; }
+.dk-row:hover { background: var(--surface-2, rgba(120, 120, 128, 0.08)); border-radius: 12px; }
+.dk-row:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: -2px; border-radius: 12px; }
+.dk-row.off { cursor: default; opacity: 0.55; }
+.dk-row.off:hover { background: transparent; }
+.dk-ic { width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); }
+.dk-ic.fold { background: var(--surface-2, #f2f2f7); color: var(--text, #1c1c1e); }
+.dk-ic svg, .dk-chip svg, .dk-go svg, .dk-new svg, .dk-bar svg, .dk-mini svg, .dk-opts svg, .dk-empty svg, .dk-sync svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.dk-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dk-t b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-t small { font-size: 12px; color: var(--muted, #8e8e93); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-go { color: var(--muted, #8e8e93); display: inline-flex; }
+.dk-chip { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; height: 24px; padding: 0 9px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--surface-2, #f2f2f7); color: var(--muted, #8e8e93); }
+.dk-chip svg { width: 14px; height: 14px; }
+.dk-chip.ok { background: rgba(52, 199, 89, 0.14); color: #1f9d46; }
+body.dark .dk-chip.ok { color: #4cd37a; }
+.dk-chip.run { background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); }
+.dk-chip.err { background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); }
+.dk-chip.pen { background: rgba(255, 159, 10, 0.16); color: #b86e00; }
+body.dark .dk-chip.pen { color: #ffb340; }
+.dk-ev { display: flex; flex-direction: column; gap: 2px; padding: 2px 0 10px; }
+.dk-ev b { font-size: 17px; letter-spacing: -0.01em; }
+.dk-ev small { font-size: 13px; color: var(--muted, #8e8e93); }
+.dk-ev small::first-letter { text-transform: uppercase; }
+.dk-sync { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--muted, #8e8e93); }
+.dk-sync.ok { color: #1f9d46; } body.dark .dk-sync.ok { color: #4cd37a; }
+.dk-sync.run, .dk-sync.err { color: var(--accent-text, #EE220C); }
+.dk-sync svg { width: 15px; height: 15px; }
+.dk-link { border: none; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; padding: 0 0 0 6px; }
+.dk-empty { padding: 18px 8px 14px; text-align: center; color: var(--muted, #8e8e93); font-size: 13px; line-height: 1.5; }
+.dk-empty b { color: var(--text, #1c1c1e); font-size: 14px; }
+.dk-empty p { margin: 4px 0; }
+.dk-empty svg { width: 28px; height: 28px; margin-bottom: 6px; color: var(--muted, #8e8e93); }
+.dk-empty.err { color: var(--accent-text, #EE220C); }
+.dk-empty-s { padding: 18px; text-align: center; color: var(--muted, #8e8e93); font-size: 13px; }
+.dk-foot { text-align: center; font-size: 12px; color: var(--muted, #8e8e93); padding: 2px 8px; }
+.dk-new { height: 32px; min-height: 32px; padding: 0 12px; font-size: 13px; text-transform: none; letter-spacing: 0; }
+.dk-new svg { width: 16px; height: 16px; }
+.dk-bar { display: flex; align-items: center; gap: 6px; }
+.dk-bar h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-back { margin-left: -8px; }
+.dk-opts { display: flex; align-items: center; gap: 4px; padding: 0 0 8px; border-bottom: 1px solid var(--hair, rgba(120, 120, 128, 0.16)); margin-bottom: 4px; }
+.dk-spacer { flex: 1; }
+.dk-mini { width: 34px; height: 34px; color: var(--muted, #8e8e93); }
+.dk-mini svg { width: 18px; height: 18px; }
+.dk-card .mp-icon { width: 36px; height: 36px; flex-shrink: 0; border: none; border-radius: 50%; background: transparent; color: inherit; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.dk-card .mp-icon:hover:not(:disabled) { background: var(--surface-2, rgba(120, 120, 128, 0.14)); }
+.dk-bar .mp-icon { width: 40px; height: 40px; border: none; border-radius: 50%; background: transparent; color: inherit; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.dk-card .mp-icon:disabled, .dk-bar .mp-icon:disabled, .dk-new:disabled, .dk-bar .drive-toolbar-btn:disabled { opacity: 0.4; cursor: default; }
+.dk-switch { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; padding: 4px 0; }
+.dk-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.dk-switch i { width: 40px; height: 24px; border-radius: 12px; background: var(--surface-2, #d1d1d6); position: relative; transition: background 0.2s; flex-shrink: 0; }
+.dk-switch i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s; }
+.dk-switch input:checked + i { background: var(--accent, #EE220C); }
+.dk-switch input:checked + i::after { transform: translateX(16px); }
+.dk-switch input:focus-visible + i { outline: 2px solid var(--accent, #EE220C); outline-offset: 2px; }
+.dk-switch input:disabled + i { opacity: 0.4; }
+
+/* dialogy */
+.dk-ov { z-index: 3600; }
+.dk-modal { width: 440px; }
+.dk-modal p { margin-bottom: 10px; }
+.dk-pick { max-height: min(46vh, 360px); overflow-y: auto; margin-top: 10px; margin-left: -6px; margin-right: -6px; }
+.dk-pick-n { font-size: 12px; color: var(--muted, #8e8e93); margin-top: 6px; min-height: 16px; }
+.dk-choose { display: flex; flex-direction: column; margin: 2px -6px 6px; max-height: 40vh; overflow-y: auto; }
+.dk-pick-row { display: flex; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 12px; cursor: pointer; }
+.dk-pick-row:hover { background: var(--surface-2, rgba(120, 120, 128, 0.1)); }
+.dk-pick-row input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent, #EE220C); }
+.dk-pick-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.dk-pick-t b { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.dk-pick-t small { font-size: 12px; color: var(--muted, #8e8e93); }
