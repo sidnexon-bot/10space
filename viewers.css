@@ -1,0 +1,135 @@
+/* 10space – styly přehrávače médií a prohlížeče dokumentů (viewers.js).
+   Používá proměnné aplikace (--surface, --text, --accent …) s pojistkou na výchozí hodnoty,
+   takže funguje s redesign.css i bez něj, ve světlém i tmavém režimu. */
+
+body.mp-lock { overflow: hidden; }
+.mp-card { --btn-bg: #ebebf0; }
+body.dark .mp-card { --btn-bg: #2a2a2e; }
+.mp-icon, .mp-chip, .mp-play, .mp-q, .vw-opt { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mp-icon svg, .mp-chip svg, .mp-play svg, .vw-opt-ic svg, .mp-art svg, .mp-q-ic svg {
+  width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ── Přehrávač ───────────────────────────────────────────────────── */
+.mp-overlay { position: fixed; inset: 0; z-index: 3500; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); padding: 16px; }
+.mp-overlay.open { display: flex; }
+.mp-card {
+  width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+  background: var(--raised, var(--surface, #fff)); color: var(--text, #1c1c1e);
+  border-radius: 24px; padding: 18px 18px 20px; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+}
+.mp-head { display: flex; align-items: flex-start; gap: 6px; }
+.mp-head-text { flex: 1; min-width: 0; }
+.mp-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.mp-sub { font-size: 12px; color: var(--muted, #8e8e93); margin-top: 2px; }
+.mp-icon { width: 40px; height: 40px; flex-shrink: 0; border: none; border-radius: 50%; background: transparent; color: inherit; display: inline-flex; align-items: center; justify-content: center; }
+.mp-icon:hover { background: var(--surface-2, rgba(120, 120, 128, 0.14)); }
+.mp-icon:disabled { opacity: 0.35; cursor: default; }
+
+.mp-stage { position: relative; border-radius: 18px; overflow: hidden; background: var(--surface-2, #f2f2f7); display: flex; align-items: center; justify-content: center; }
+.mp-stage audio { display: none; }
+.mp-stage.video { background: #000; aspect-ratio: 16 / 9; }
+.mp-stage video { width: 100%; height: 100%; max-height: 56vh; display: block; background: #000; }
+.mp-stage.audio, .mp-stage.midi { padding: 26px 0; }
+.mp-art { width: 112px; height: 112px; border-radius: 28px; background: var(--accent-soft, #fff0ee); color: var(--accent-text, var(--accent, #EE220C)); display: flex; align-items: center; justify-content: center; }
+.mp-art svg { width: 52px; height: 52px; stroke-width: 1.6; }
+
+.mp-status { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; color: var(--muted, #8e8e93); text-align: center; }
+.mp-status.hidden { display: none; }
+.mp-status.err { color: var(--accent-text, #EE220C); }
+.mp-bar { width: 100%; height: 5px; border-radius: 3px; background: var(--surface-2, #e5e5ea); overflow: hidden; }
+.mp-bar i { display: block; height: 100%; background: var(--accent, #EE220C); transition: width 0.2s; }
+
+.mp-seek { display: flex; align-items: center; gap: 10px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted, #8e8e93); }
+.mp-track { position: relative; flex: 1; height: 28px; display: flex; align-items: center; }
+.mp-ab { position: absolute; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: var(--accent, #EE220C); opacity: 0.35; pointer-events: none; display: none; }
+.mp-overlay input[type="range"], .mp-vol input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; margin: 0; padding: 0; border: 0; cursor: pointer; accent-color: var(--accent, #EE220C); }
+.mp-overlay input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--surface-2, #d1d1d6); }
+.mp-overlay input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--surface-2, #d1d1d6); }
+.mp-overlay input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--accent, #EE220C); border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.mp-overlay input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent, #EE220C); border: 0; }
+
+.mp-controls { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.mp-controls .mp-icon { width: 46px; height: 46px; }
+.mp-controls .mp-icon svg { width: 26px; height: 26px; }
+.mp-play { width: 64px; height: 64px; border: none; border-radius: 50%; background: var(--accent, #EE220C); color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(238, 34, 12, 0.35); }
+.mp-play svg { width: 30px; height: 30px; }
+.mp-play:active { transform: scale(0.95); }
+
+.mp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.mp-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border: none; border-radius: 14px; background: var(--btn-bg, var(--surface-2, #ebebf0)); color: var(--text, #1c1c1e); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.mp-chip svg { width: 16px; height: 16px; }
+.mp-chip.on { background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); }
+.mp-chip:disabled { opacity: 0.4; }
+.mp-vol { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 130px; max-width: 200px; }
+.mp-vol .mp-icon { width: 34px; height: 34px; }
+
+.mp-queue { display: flex; flex-direction: column; gap: 2px; max-height: 190px; overflow-y: auto; margin: 0 -6px; padding-top: 4px; border-top: 1px solid var(--hair, rgba(120, 120, 128, 0.2)); }
+.mp-q { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 8px; border: none; border-radius: 12px; background: transparent; color: inherit; text-align: left; font-size: 14px; }
+.mp-q:hover { background: var(--surface-2, rgba(120, 120, 128, 0.12)); }
+.mp-q.cur { background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); font-weight: 600; }
+.mp-q-ic svg { width: 18px; height: 18px; }
+.mp-q-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-q-size { font-size: 12px; color: var(--muted, #8e8e93); flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .mp-overlay { padding: 0; align-items: flex-end; }
+  .mp-card { max-width: none; border-radius: 24px 24px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); max-height: 94vh; }
+  .mp-stage video { max-height: 38vh; }
+}
+
+/* ── Volba otevření dokumentu ────────────────────────────────────── */
+.vw-choice { z-index: 3600; }
+.vw-modal { width: 440px; }
+.vw-modal p { margin-bottom: 12px; }
+.vw-opt { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; margin-top: 8px; border: none; border-radius: 16px; text-align: left; background: var(--btn-bg, var(--surface-2, #f2f2f7)); color: var(--text, #1c1c1e); }
+.vw-opt:hover { background: color-mix(in srgb, var(--btn-bg, #f2f2f7) 90%, #000); }
+.vw-opt:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: 2px; }
+.vw-opt.off { opacity: 0.5; cursor: default; }
+.vw-opt-ic { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); }
+.vw-opt-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vw-opt-t b { font-size: 15px; font-weight: 600; }
+.vw-opt-t small { font-size: 12px; color: var(--muted, #8e8e93); line-height: 1.35; }
+
+/* ── Prohlížeč dokumentů ─────────────────────────────────────────── */
+.dv-overlay { position: fixed; inset: 0; z-index: 3500; display: none; flex-direction: column; background: var(--bg, #f2f2f7); color: var(--text, #1c1c1e); }
+.dv-overlay.open { display: flex; }
+.dv-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px calc(10px) 16px; padding-top: calc(10px + env(safe-area-inset-top)); flex-shrink: 0; background: color-mix(in srgb, var(--bg, #f2f2f7) 86%, transparent); -webkit-backdrop-filter: saturate(1.6) blur(24px); backdrop-filter: saturate(1.6) blur(24px); }
+.dv-title { flex: 1; min-width: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-body { flex: 1; min-height: 0; overflow: auto; position: relative; display: flex; flex-direction: column; }
+.dv-center { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(320px, 80%); font-size: 13px; color: var(--muted, #8e8e93); text-align: center; }
+.dv-center.err { color: var(--accent-text, #EE220C); }
+.dv-paper { flex: 1; min-height: 0; width: 100%; max-width: 900px; margin: 0 auto; padding: 0 12px 12px; display: flex; }
+.dv-frame { flex: 1; width: 100%; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 22px rgba(0, 0, 0, 0.08); }
+body.dark .dv-frame { box-shadow: none; }
+.dv-text { margin: 0 auto; width: 100%; max-width: 900px; padding: 18px 16px 80px; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dv-note { text-align: center; font-size: 12px; color: var(--muted, #8e8e93); padding: 10px; }
+
+.dv-sheet { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 12px 12px; }
+.dv-grid { flex: 1; min-height: 0; overflow: auto; background: var(--card, var(--surface, #fff)); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card, none); }
+.dv-tabs { display: flex; gap: 4px; padding: 6px 8px; overflow-x: auto; background: var(--card, var(--surface, #fff)); border-radius: 0 0 18px 18px; border-top: 1px solid var(--hair, rgba(120, 120, 128, 0.2)); }
+.dv-tab { flex-shrink: 0; border: none; border-radius: 10px; padding: 6px 12px; font: inherit; font-size: 13px; background: transparent; color: var(--muted, #8e8e93); cursor: pointer; }
+.dv-tab.on { background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); font-weight: 600; }
+.dv-table { border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.dv-table th, .dv-table td { padding: 5px 10px; border-right: 1px solid var(--hair, rgba(120, 120, 128, 0.18)); border-bottom: 1px solid var(--hair, rgba(120, 120, 128, 0.18)); white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.dv-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface-2, #f2f2f7); color: var(--muted, #8e8e93); font-weight: 600; font-size: 12px; text-align: center; }
+.dv-table th.rn { position: sticky; left: 0; z-index: 1; background: var(--surface-2, #f2f2f7); color: var(--muted, #8e8e93); font-weight: 500; font-size: 12px; text-align: center; min-width: 38px; }
+.dv-table thead th.rn { z-index: 3; }
+
+.dv-slides { padding: 4px 12px 40px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.dv-slide-box { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+.dv-slide { position: relative; overflow: hidden; border-radius: 10px; box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18); color: #1c1c1e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.2; }
+.dv-slide-no { font-size: 12px; color: var(--muted, #8e8e93); text-align: center; }
+.dv-shape { position: absolute; box-sizing: border-box; overflow: hidden; }
+.dv-shape.dv-ph { display: flex; align-items: center; justify-content: center; background: rgba(120, 120, 128, 0.12); color: var(--muted, #8e8e93); font-size: 12px; }
+.dv-pt { border-collapse: collapse; width: 100%; font-size: 12px; } .dv-pt td { border: 1px solid #c7c7cc; padding: 3px 6px; }
+
+@media (max-width: 600px) {
+  .dv-bar .mp-chip span { display: none; }
+  .dv-bar .mp-chip { padding: 0 10px; }
+}
+
+/* Dashboard: řádek nedávného souboru je klikatelný */
+.dashboard-file-row.clickable { cursor: pointer; border-radius: 10px; margin: 0 -8px; padding: 7px 8px; transition: background 0.15s; }
+.dashboard-file-row.clickable:hover { background: var(--surface-2, rgba(120, 120, 128, 0.1)); }
+.dashboard-file-row.clickable:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: -2px; }
