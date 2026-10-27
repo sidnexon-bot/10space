@@ -292,3 +292,20 @@ html[data-platform="android"] body.dark .bottom button:active .icon::before { ba
 @media (prefers-reduced-motion: reduce) {
   .bottom button, html[data-platform="android"] .bottom button .icon::before { transition: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   9) ŠÍŘKA KARET – stejná jako v 10base
+   Mobil: obsah nejvýš 500 px na střed, okraj 16 px (karta 468 px).
+   Od 769 px: okraj 8 % šířky plochy vedle panelu, karta nejvýš 1200 px na střed.
+   Týká se dashboardu, seznamu projektů a detailu projektu; seznam souborů
+   v Drive zůstává přes celou šířku (je to tabulka, ne karty).           */
+.dashboard-header, .dashboard-grid, .projekty-grid, .projekt-detail-body {
+  box-sizing: border-box; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto;
+  padding-left: 16px; padding-right: 16px;
+}
+.projekt-detail-body { padding-top: 20px; }
+@media (min-width: 769px) {
+  .dashboard-header, .dashboard-grid, .projekty-grid, .projekt-detail-body {
+    max-width: calc(1200px + 16%); padding-left: 8%; padding-right: 8%;
+  }
+}
