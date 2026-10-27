@@ -1,0 +1,294 @@
+/* ════════════════════════════════════════════════════════════════════
+   10space – sjednocený vzhled s 10base (portal10men)
+   Přídavná vrstva nad vloženým <style> v index.html. Červená #EE220C zůstává
+   identitou 10space (10base má modrou), mění se tvary, plochy, tlačítka, lišta.
+   Zapnutí: <link rel="stylesheet" href="redesign.css"> na konci <head>
+            + <script src="platform.js"></script> v <head>.
+   Vypnutí: odebrat ty dva řádky. Nic jiného se nemění.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── 1) Tokeny: jedna plocha, bez dekorativních čar ──────────────────
+   Tmavý režim je čistě černý (#000, OLED). Karty se od pozadí oddělují
+   plochou, ne okrajem. Původní proměnné (--surface, --border …) se jen
+   přepisují, takže se přebarví vše, co je používá.                       */
+:root {
+  --r-card: 18px;
+  --r-ctl: 14px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 22px rgba(0, 0, 0, 0.06);
+  --hair: rgba(60, 60, 67, 0.12);
+  --raised: #ffffff;
+  --card: #ffffff;
+  --btn-bg: #ffffff;           /* tlačítko na pozadí stránky: bílá plocha se stínem */
+  --border: var(--hair);
+  --btn-border: transparent;
+  --input-border: transparent;
+  --input-bg: #ffffff;
+  --radius-md: var(--r-ctl);
+  --radius-lg: var(--r-card);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.22);
+}
+body.dark {
+  --bg: #000000;
+  --card: #151517;
+  --surface: #151517;
+  --raised: #1d1d20;
+  --surface-2: #222225;
+  --surface-hover: #1d1d20;
+  --text: #ececee;
+  --muted: #8e8e93;
+  --btn-bg: #1f1f22;
+  --border: rgba(255, 255, 255, 0.08);
+  --hair: rgba(255, 255, 255, 0.08);
+  --btn-border: transparent;
+  --input-bg: #1c1c1f;
+  --input-border: #2a2a2e;
+  --shadow-card: none;
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body.dark,
+body.dark .app-body, body.dark .main-content, body.dark .content-area, body.dark #content-area,
+body.dark .projekt-overlay { background: #000000; }
+html.dark { background: #000000; }
+.dashboard-card-title, .modal-section-title, .sidebar-section-title { letter-spacing: 0.06em; }
+h1, .topbar-left h1, .dashboard-greeting, .login-card h1 { letter-spacing: -0.03em; }
+
+/* ── 2) Karty a plochy: jednotné zaoblení, bez okraje ──────────────── */
+.dashboard-card, .projekt-card, .projekt-sekce, .login-card, .upload-progress-panel {
+  background: var(--card);
+  border-color: transparent;
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+}
+.dashboard-card { padding: 18px; }
+.dashboard-grid { gap: 14px; }
+.projekt-card:hover { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 12px 28px rgba(0, 0, 0, 0.09); }
+body.dark .dashboard-card, body.dark .projekt-card, body.dark .projekt-sekce { background: var(--card); border-color: transparent; }
+body.dark .projekt-card:hover { box-shadow: none; background: var(--raised); }
+.dashboard-projekt-row, .dashboard-share-row, .projekt-info-row { border-bottom-color: var(--hair); }
+body.dark .dashboard-projekt-row, body.dark .dashboard-share-row, body.dark .projekt-info-row { border-bottom-color: var(--hair); }
+.dashboard-projekt-days, .dashboard-share-days { border-radius: 8px; background: var(--surface-2); }
+body.dark .dashboard-projekt-days, body.dark .dashboard-share-days { background: #222225; }
+.dashboard-note-textarea { border-radius: var(--r-ctl); background: var(--surface-2); }
+body.dark .dashboard-note-textarea { background: #1c1c1f; }
+.projekt-detail-header, .content-header, .multi-toolbar { border-bottom: none; }
+body.dark .projekt-detail-header, body.dark .content-header, body.dark .multi-toolbar { background: #000000; border-bottom: none; }
+body.dark .projekt-detail-header { background: #000000; }
+
+/* Seznam souborů: řádky jsou plochy, mezi nimi jen jemná dělicí čára */
+.list-header, .list-item { border-bottom-color: var(--hair); }
+.list-item.active-detail { border-left: none; box-shadow: inset 3px 0 0 var(--accent-text); }
+body.dark .list-header, body.dark .list-item { background: #000000; border-bottom-color: var(--hair); }
+body.dark .list-item:hover { background: #151517; }
+body.dark .list-item.active-detail { background: rgba(255, 69, 58, 0.10); border-left-color: transparent; }
+body.dark .list-item.selected { background: rgba(255, 69, 58, 0.14); }
+
+/* ── 3) Horní lišta: průhledné sklo bez čáry pod sebou ────────────── */
+.topbar {
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  -webkit-backdrop-filter: saturate(1.6) blur(24px);
+  backdrop-filter: saturate(1.6) blur(24px);
+  border-bottom: none;
+  box-shadow: none;
+}
+body.dark .topbar { background: rgba(0, 0, 0, 0.84); border-bottom: none; }
+@media (max-width: 768px) {
+  .topbar { background: color-mix(in srgb, var(--bg) 84%, transparent); }
+  body.dark .topbar { background: rgba(0, 0, 0, 0.84); }
+  .topbar-left h1 { letter-spacing: -0.03em; }
+}
+
+/* Vyhledávání: plocha bez okraje */
+.search-bar { border-color: transparent; border-radius: var(--r-ctl); background: #ffffff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 3px 10px rgba(0, 0, 0, 0.04); }
+.search-select { border-right-color: var(--hair); }
+body.dark .search-bar { background: #1c1c1f; border-color: transparent; box-shadow: none; }
+.search-results, .context-menu, .desktop-profile-menu, .mobile-profile-menu { border-radius: 16px; border-color: transparent; box-shadow: var(--shadow-modal); }
+body.dark .search-results, body.dark .context-menu, body.dark .desktop-profile-menu,
+body.dark .mobile-profile-menu, body.dark .mobile-profile-menu-header { background: var(--raised); border-color: transparent; }
+body.dark .search-result-item:hover, body.dark .context-menu-item:hover,
+body.dark .desktop-profile-menu-item:hover { background: #26262a; }
+.desktop-profile-menu-header, .desktop-profile-menu-sep, .context-menu-sep { border-color: var(--hair); }
+body.dark .context-menu-sep, body.dark .desktop-profile-menu-sep, body.dark .mobile-profile-menu-sep { background: var(--hair); }
+
+/* dělicí čáry bez významu pryč (členění dává mezera) */
+.sidebar-divider, body.dark .sidebar-divider { border: 0 !important; }
+.drive-toolbar, body.dark .drive-toolbar, .upload-progress-header { border-bottom: none !important; border-top: none !important; }
+.search-select { border-radius: 0; background: transparent; }
+body.dark .search-select { background: transparent; }
+
+/* ── 4) Postranní panel: bez dělicí čáry, aktivní položka s proužkem ── */
+.left-sidebar, .right-sidebar { border-right: none; border-left: none; background: var(--bg); }
+.right-sidebar { background: var(--card); }
+body.dark .left-sidebar { background: #000000; border-right: none; }
+body.dark .right-sidebar { background: #0e0e10; }
+.sidebar-divider { height: 14px; background: none; margin: 0; }
+body.dark .sidebar-divider { background: none; }
+.sidebar-tab { border-radius: 12px; }
+.sidebar-tab.active { box-shadow: inset 3px 0 0 var(--accent); }
+body.dark .sidebar-tab.active { box-shadow: inset 3px 0 0 #ff453a; }
+body.dark .sidebar-tab:hover { background: #151517; }
+.sidebar-profile { background: var(--card); box-shadow: var(--shadow-card); border-radius: 16px; }
+body.dark .sidebar-profile { background: #151517; }
+.detail-tabs, .mobile-detail-modal-tabs { border-bottom-color: var(--hair); }
+body.dark .detail-tabs { border-bottom-color: var(--hair); }
+
+/* ── 5) Tlačítka: plocha odlišná od podkladu, ne okraj ──────────────
+   Na stránce je tlačítko bílé se stínem, uvnitř karty a okna tmavší šedé;
+   v tmavém režimu jsou o stupeň světlejší než podklad.                  */
+.modal, .dashboard-card, .projekt-card, .projekt-sekce, .mobile-detail-modal, .right-sidebar { --btn-bg: #ebebf0; }
+body.dark :is(.modal, .dashboard-card, .projekt-card, .projekt-sekce, .mobile-detail-modal, .right-sidebar) { --btn-bg: #2a2a2e; }
+.modal-btn, .drive-toolbar-btn, .multi-toolbar-btn,
+.projekt-card-btn, .projekt-wiki-btn, .detail-save-btn, .detail-cancel-btn, .modal-skupina-btn {
+  background: var(--btn-bg); border-color: transparent; border-radius: var(--r-ctl);
+}
+.modal-btn:hover, .drive-toolbar-btn:hover, .multi-toolbar-btn:hover,
+.projekt-card-btn:hover, .projekt-wiki-btn:hover, .detail-cancel-btn:hover { background: color-mix(in srgb, var(--btn-bg) 92%, #000); }
+body.dark .modal-btn:hover, body.dark .drive-toolbar-btn:hover, body.dark .multi-toolbar-btn:hover,
+body.dark .projekt-card-btn:hover, body.dark .projekt-wiki-btn:hover, body.dark .detail-cancel-btn:hover { background: color-mix(in srgb, var(--btn-bg) 88%, #fff); }
+body:not(.dark) :is(.drive-toolbar-btn, .multi-toolbar-btn) { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.05); }
+.modal-btn-secondary { background: var(--btn-bg); }
+body.dark .modal-btn-secondary { background: var(--btn-bg); color: var(--text); }
+/* hlavní akce zůstávají červené, tlačítka s obrysem (Smazat…) se plní jemným odstínem */
+.modal-btn-primary, .drive-toolbar-btn.primary, .upload-btn, .projekt-card-btn.primary, .detail-save-btn, .primary-btn {
+  background: var(--accent); border-color: transparent; color: #fff; box-shadow: none;
+}
+.modal-btn-primary:hover, .drive-toolbar-btn.primary:hover, .upload-btn:hover, .projekt-card-btn.primary:hover, .detail-save-btn:hover, .primary-btn:hover { background: var(--accent-hover); }
+.multi-toolbar-btn.danger, .projekt-card-btn.danger, .projekt-wiki-btn.ai, .modal-btn-danger {
+  background: var(--accent-soft); border-color: transparent; color: var(--accent-text);
+}
+.drive-toolbar-btn.active-filter, .drive-toolbar-btn.active-filter:hover { border-color: transparent; }
+.dots-btn { border-radius: 10px; }
+body.dark .multi-toolbar-btn { background: var(--btn-bg); border-color: transparent; color: var(--text); }
+body.dark .projekt-slozka-btn { background: #2a2a2e; border-color: transparent; }
+.modal-btn-ghost { background: transparent; }
+
+/* Pole formulářů */
+.field, .detail-input, .acl-member-select, input, select, textarea { border-radius: var(--r-ctl); }
+.field, .detail-input, .acl-member-select { border-color: var(--input-border); background: var(--input-bg); }
+body:not(.dark) .field, body:not(.dark) .detail-input { background: var(--surface-2); }
+body.dark input, body.dark select, body.dark textarea { background: #1c1c1f; border-color: #2a2a2e; }
+.field:focus { border-color: var(--accent); }
+
+/* ── 6) Okna a dolní list ─────────────────────────────────────────── */
+.modal { border-radius: 24px; box-shadow: var(--shadow-modal); }
+.modal-option { border-color: var(--hair); border-radius: var(--r-ctl); }
+.modal-option.selected, .modal-skupina-btn.selected { border-color: var(--accent); }
+body.dark .modal, body.dark .bottom-sheet, body.dark .mobile-detail-modal { background: var(--raised); }
+body.dark .modal-option { background: var(--raised); border-color: var(--hair); }
+body.dark .modal-option.selected { background: var(--accent-soft); border-color: #ff453a; }
+body.dark .bottom-sheet-sep, body.dark .bottom-sheet-handle { background: #2a2a2e; }
+body.dark .bottom-sheet-item:active { background: #26262a; }
+.bottom-sheet { border-radius: 24px 24px 0 0; }
+.bottom-sheet-sep { background: var(--hair); }
+.modal-list { border-color: var(--hair); }
+body.dark .modal-list { border-color: var(--hair); }
+
+/* ── 7) Místo pro plovoucí lištu ────────────────────────────────────── */
+@media (max-width: 768px) {
+  .main-content, .content-area, #content-area { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   8) SPODNÍ PLOVOUCÍ LIŠTA (mobil)
+   Výchozí (Apple i ostatní): Liquid Glass; Android: Samsung One UI.
+   Stejná konstrukce jako v 10base, akcent je červený.
+   ════════════════════════════════════════════════════════════════════ */
+.bottom-wrap { padding: 0 16px calc(10px + env(safe-area-inset-bottom)); }
+.bottom {
+  position: relative; isolation: isolate; overflow: visible;
+  display: flex; gap: 2px; width: min(100%, 440px); max-width: none; margin: 0; padding: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.28));
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+  backdrop-filter: blur(22px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 14px 34px rgba(20, 24, 40, 0.18), 0 2px 6px rgba(20, 24, 40, 0.08),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(255, 255, 255, 0.30),
+    inset 0 0 16px rgba(255, 255, 255, 0.20);
+  pointer-events: auto;
+}
+.bottom::before {
+  content: ""; position: absolute; inset: 0; left: 0; right: 0; top: 0; height: auto; border-radius: inherit; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(110% 120% at 12% -10%, rgba(255, 255, 255, 0.75), transparent 46%),
+    radial-gradient(90% 110% at 92% 115%, rgba(255, 255, 255, 0.40), transparent 52%);
+  opacity: 0.9;
+}
+.bottom button {
+  background: transparent; border: none; border-radius: 999px;
+  padding: 8px 2px 7px; gap: 3px;
+  color: #55555b; font-size: 10px; font-weight: 600; letter-spacing: 0.01em;
+  box-shadow: none; transition: background 0.25s ease, box-shadow 0.25s ease, color 0.2s ease, transform 0.15s ease;
+}
+.bottom button small { font-size: 10px; margin-top: 0; }
+.bottom button .icon svg { width: 23px; height: 23px; }
+.bottom button.active {
+  color: #EE220C;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.46));
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 1), inset 0 -1px 2px rgba(0, 0, 0, 0.05), 0 3px 12px rgba(20, 24, 40, 0.12);
+}
+.bottom button.active .icon svg { stroke: #EE220C; transform: none; }
+.bottom button:active { transform: scale(0.96); opacity: 1; }
+
+body.dark .bottom {
+  background: linear-gradient(180deg, rgba(96, 96, 104, 0.46), rgba(38, 38, 42, 0.34));
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.30),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.22), inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 18px rgba(255, 255, 255, 0.05);
+}
+body.dark .bottom::before {
+  background:
+    radial-gradient(110% 120% at 12% -10%, rgba(255, 255, 255, 0.26), transparent 46%),
+    radial-gradient(90% 110% at 92% 115%, rgba(255, 255, 255, 0.10), transparent 52%);
+}
+body.dark .bottom button { background: transparent; color: #a0a0a8; }
+body.dark .bottom button.active {
+  color: #ff453a;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.09));
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.28), inset 0 -1px 2px rgba(0, 0, 0, 0.25), 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+body.dark .bottom button.active .icon svg { stroke: #ff453a; }
+
+/* ── Android: Samsung One UI ─────────────────────────────────────── */
+html[data-platform="android"] .bottom-wrap { padding: 0 12px calc(12px + env(safe-area-inset-bottom)); }
+html[data-platform="android"] .bottom {
+  width: 100%; max-width: 520px; gap: 0; padding: 8px 6px 6px; border-radius: 30px;
+  background: #ffffff; border: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.10);
+}
+html[data-platform="android"] .bottom::before { display: none; }
+html[data-platform="android"] .bottom button {
+  gap: 5px; padding: 4px 2px 2px; border-radius: 18px;
+  color: #5f5f66; font-size: 11px; font-weight: 500; background: transparent; box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-platform="android"] .bottom button small { font-size: 11px; font-weight: 500; }
+html[data-platform="android"] .bottom button .icon { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 32px; }
+html[data-platform="android"] .bottom button .icon::before {
+  content: ""; position: absolute; left: 50%; top: 0; width: 64px; height: 32px; border-radius: 16px;
+  transform: translateX(-50%) scaleX(0.5); opacity: 0; background: rgba(238, 34, 12, 0.14);
+  transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1), opacity 0.18s ease;
+}
+html[data-platform="android"] .bottom button .icon svg { position: relative; width: 24px; height: 24px; transition: none; }
+html[data-platform="android"] .bottom button.active { background: transparent; box-shadow: none; color: #1c1c1e; font-weight: 600; }
+html[data-platform="android"] .bottom button.active small { font-weight: 700; }
+html[data-platform="android"] .bottom button.active .icon::before { transform: translateX(-50%) scaleX(1); opacity: 1; }
+html[data-platform="android"] .bottom button.active .icon svg { stroke: #c81b08; transform: none; }
+html[data-platform="android"] .bottom button:active { transform: none; opacity: 1; }
+html[data-platform="android"] .bottom button:active .icon::before { transform: translateX(-50%) scaleX(1); opacity: 1; background: rgba(0, 0, 0, 0.08); }
+
+html[data-platform="android"] body.dark .bottom,
+body.dark html[data-platform="android"] .bottom { background: #1f1f21; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04); }
+html[data-platform="android"] body.dark .bottom button { color: #a9a9b0; background: transparent; }
+html[data-platform="android"] body.dark .bottom button.active { color: #f2f2f7; background: transparent; box-shadow: none; }
+html[data-platform="android"] body.dark .bottom button .icon::before { background: rgba(255, 69, 58, 0.26); }
+html[data-platform="android"] body.dark .bottom button.active .icon svg { stroke: #ff7a70; }
+html[data-platform="android"] body.dark .bottom button:active .icon::before { background: rgba(255, 255, 255, 0.10); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom button, html[data-platform="android"] .bottom button .icon::before { transition: none; }
+}
