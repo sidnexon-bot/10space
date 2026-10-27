@@ -195,8 +195,8 @@ body.dark .modal-list { border-color: var(--hair); }
    ════════════════════════════════════════════════════════════════════ */
 .bottom-wrap { padding: 0 16px calc(10px + env(safe-area-inset-bottom)); }
 .bottom {
-  position: relative; isolation: isolate; overflow: visible;
-  display: flex; gap: 2px; width: min(100%, 440px); max-width: none; margin: 0; padding: 6px;
+  position: relative; isolation: isolate;
+  display: flex; gap: 2px; width: min(100%, 440px); padding: 6px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.28));
   -webkit-backdrop-filter: blur(22px) saturate(190%);
@@ -220,8 +220,10 @@ body.dark .modal-list { border-color: var(--hair); }
   padding: 8px 2px 7px; gap: 3px;
   color: #55555b; font-size: 10px; font-weight: 600; letter-spacing: 0.01em;
   box-shadow: none; transition: background 0.25s ease, box-shadow 0.25s ease, color 0.2s ease, transform 0.15s ease;
+  min-height: 52px;
 }
 .bottom button small { font-size: 10px; margin-top: 0; }
+.bottom button .icon { width: 22px; height: 22px; }
 .bottom button .icon svg { width: 23px; height: 23px; }
 .bottom button.active {
   color: #EE220C;
