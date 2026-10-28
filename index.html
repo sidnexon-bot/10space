@@ -2402,7 +2402,7 @@ async function renderDashboard() {
     .map(([id, p]) => ({ id, ...p }))
     .filter(p => {
       const a = akce[p.id];
-      if (a?.type === "Zkouška") return false;
+      if (!isExternalProjekt(a, p)) return false;
       return p.datum && p.datum >= dnes;
     })
     .sort((a, b) => (a.datum || "").localeCompare(b.datum || ""))
@@ -2454,7 +2454,7 @@ async function renderDashboard() {
   let todoItems = [];
   for (const [id, p] of Object.entries(projekty)) {
     const a = akce[id];
-    if (!a?.rider) continue;
+    if (!a?.rider || !isExternalProjekt(a, p)) continue;
     try {
       const rider = JSON.parse(a.rider);
       const vsechnyTodo = [...(rider.todo_pred || []), ...(rider.todo_den || [])];
@@ -3705,6 +3705,16 @@ window.skipEvid = () => {
 // PROJEKTY
 let archivOtevren = false;
 
+// Projekty jsou jen externí vystoupení a soutěže. Typ Koncert a Soutěž platí vždy; zkoušky, soustředění, schůzky,
+// plánování a grilovačky se nezobrazují (u akcí bez vyplněného typu rozhoduje název).
+const INTERNAL_AKCE = /zkou[sš]k|soust[rř]ed|sch[uů]z|porad|brig[aá]d|grilov|pl[aá]nov[aá]n/i;
+function isExternalProjekt(a, p) {
+  const type = a?.type || "";
+  if (type === "Koncert" || type === "Soutěž") return true;
+  if (type === "Zkouška" || type === "Soustředění" || a?.is_grilovacka === true) return false;
+  return !INTERNAL_AKCE.test(`${type} ${a?.name || p?.nazev || ""}`);
+}
+
 async function renderProjekty() {
   const area = document.getElementById("content-area");
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
@@ -3727,7 +3737,7 @@ async function renderProjekty() {
 
   for (const [id, p] of Object.entries(projekty)) {
     const akceData = akce[id];
-    if (akceData?.type === "Zkouška") continue;
+    if (!isExternalProjekt(akceData, p)) continue;
     if (!p.datum || p.datum >= dnes) {
       nadchazejici.push({ id, ...p });
     } else {
