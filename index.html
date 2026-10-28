@@ -3863,6 +3863,7 @@ if (rider?.garant) {
 
 // Info řádky
 const infoRows = [
+  { label: "Interní kód", value: `<span class="kd-row" data-kod-row="${projektId}"></span>` }, // vyplní kody.js
   { label: "Datum", value: datum },
   { label: "Místo", value: akce?.place || projekt.misto || null },
   { label: "Sraz", value: akce?.sraz || null },
@@ -4020,9 +4021,6 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
         </div>
       `).join("")}
     </div>
-
-    <!-- KÓD PROJEKTU (kody.js) -->
-    <div id="kody-sekce" data-akce="${projektId}"></div>
   
     <!-- WIKI -->
     <div class="projekt-sekce">

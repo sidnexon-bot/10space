@@ -25,3 +25,9 @@
 .kd-gtitle { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
 body.dark .kd-general { background: var(--raised, #1c1c1e); }
 @media (min-width: 769px) { .kd-general { margin: 8px 24px 28px; } }
+
+/* řádek „Interní kód“ v informacích o akci */
+.projekt-info-value:has(> .kd-row), .kd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.kd-row .kd-code { font-size: 15px; padding: 5px 10px; }
+.kd-row .kd-code.sm { font-size: 12px; padding: 4px 8px; }
+.kd-code.closed { opacity: 0.55; text-decoration: line-through; }

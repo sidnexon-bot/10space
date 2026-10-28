@@ -1,7 +1,7 @@
 /* 10space – kódy projektů (nákladová čísla): číslo akce E1234, jeho účetní položky E1234-001, -002 … a obecné kódy G1234 (režie).
    Čísla a položky zapisuje jen server (funkce projektKodyApi, jen administrátor), tady se čtou z /projektKody a zobrazují:
    • štítek s číslem na kartě projektu,
-   • sekce „Účetní kód“ v detailu projektu (kopírování, přidání položky -002 …),
+   • řádek „Interní kód“ mezi informacemi o akci v detailu projektu (kopírování; administrátor spravuje položky -002 …),
    • sekce „Obecné kódy (režie)“ pod seznamem projektů.
    Vypnutí: odebrat <script src="kody.js"> a <link href="kody.css"> z <head>. */
 (function () {
@@ -14,7 +14,7 @@
   var toast = function (m) { (window.showToast || window.alert)(m); };
   var COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
   var MORE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>';
-  var ICON = { edit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  var ICON = { plus: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>', edit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
     lock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
     unlock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1.8"/></svg>' };
 
@@ -33,11 +33,18 @@
       (admin ? '<button type="button" class="kd-add" data-add="' + esc(cislo) + '">+ Přidat položku</button>' : "") + "</div>";
   }
 
-  function detailHtml(akceId) {
+  // obsah řádku „Interní kód“: číslo akce, jeho položky a (administrátor) tlačítko pro správu položek
+  function rowHtml(akceId) {
     var have = S.byAkce[akceId];
     if (!S.loaded) return "";
-    if (!have || !have.cislo) return isAdmin() ? '<div class="projekt-sekce"><div class="projekt-sekce-title">Účetní kód</div><p class="kd-hint">Tomuto projektu zatím nebyl přidělen kód.</p><button type="button" class="kd-add" data-assign="' + esc(akceId) + '">Přidělit kód</button></div>' : "";
-    return '<div class="projekt-sekce"><div class="projekt-sekce-title">Účetní kód</div><p class="kd-hint">Na tento kód a jeho položky se v 10korun účtují výdaje a příjmy projektu.</p>' + numberBlock(have.cislo, {}) + "</div>";
+    if (!have || !have.cislo) return isAdmin() ? '<button type="button" class="kd-add" data-assign="' + esc(akceId) + '">Přidělit kód</button>' : "";
+    var c = have.cislo, admin = isAdmin();
+    var chips = sorted(c).map(function (k) {
+      var p = S.polozky[c][k], closed = p.stav === "uzavrena";
+      return '<button type="button" class="kd-code sm' + (closed ? " closed" : "") + '" data-copy="' + esc(p.kod) + '" title="' + esc(p.nazev + (closed ? " (uzavřená)" : "")) + '">' + esc(p.kod) + "</button>";
+    }).join("");
+    return '<button type="button" class="kd-code" data-copy="' + esc(c) + '" title="Kopírovat číslo">' + esc(c) + COPY + "</button>" + chips +
+      (admin ? '<button type="button" class="kd-more" data-manage="' + esc(c) + '" aria-label="Spravovat položky kódu" aria-haspopup="menu">' + MORE + "</button>" : "");
   }
 
   function generalHtml() {
@@ -54,7 +61,7 @@
   function renderAll() {
     var s = sig = JSON.stringify([S.loaded, S.byAkce, S.cisla, S.polozky, isAdmin()]);
     document.querySelectorAll("[data-kod-akce]").forEach(function (b) { var c = S.byAkce[b.dataset.kodAkce]; var t = c && c.cislo ? c.cislo : ""; if (b.textContent !== t) b.textContent = t; });
-    var d = document.getElementById("kody-sekce"); if (d) fill(d, detailHtml(d.dataset.akce));
+    document.querySelectorAll("[data-kod-row]").forEach(function (d) { var h = rowHtml(d.dataset.kodRow); fill(d, h); var r = d.closest(".projekt-info-row"); if (r) r.style.display = h ? "" : "none"; });
     var g = document.getElementById("kody-general"); if (g) fill(g, generalHtml());
     sig = s;
   }
@@ -81,7 +88,7 @@
   var ask = function (title, value, ph) { return window.tenDialog.prompt(title, value || "", { title: title, ok: "Uložit", placeholder: ph || "" }); };
 
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-copy],[data-more],[data-add],[data-assign],[data-gnew],[data-grename]"); if (!t) return;
+    var t = e.target.closest && e.target.closest("[data-copy],[data-more],[data-manage],[data-add],[data-assign],[data-gnew],[data-grename]"); if (!t) return;
     e.stopPropagation();
     if (t.dataset.copy) return copy(t.dataset.copy);
     if (!isAdmin()) return;
@@ -89,6 +96,16 @@
     if (t.dataset.gnew) return ask("Nový obecný kód", "", "Např. Občerstvení").then(function (n) { if (n) return run({ action: "general_create", nazev: n }, "Obecný kód vytvořen."); });
     if (t.dataset.grename) { var gc = t.dataset.grename; return ask("Přejmenovat obecný kód", (S.cisla[gc] || {}).nazev).then(function (n) { if (n) return run({ action: "general_rename", cislo: gc, nazev: n }, "Přejmenováno."); }); }
     if (t.dataset.add) { var c1 = t.dataset.add; return ask("Nová položka kódu " + c1, "", "Např. Honoráře").then(function (n) { if (n) return run({ action: "polozka_add", cislo: c1, nazev: n }, "Položka přidána."); }); }
+    if (t.dataset.manage) {
+      var mc = t.dataset.manage, items = [{ label: "Přidat položku", icon: ICON.plus, onClick: function () { ask("Nová položka kódu " + mc, "", "Např. Honoráře").then(function (n) { if (n) run({ action: "polozka_add", cislo: mc, nazev: n }, "Položka přidána."); }); } }];
+      sorted(mc).forEach(function (k) {
+        var p = S.polozky[mc][k], closed = p.stav === "uzavrena";
+        items.push({ label: "Přejmenovat " + p.kod, icon: ICON.edit, onClick: function () { ask("Přejmenovat položku " + p.kod, p.nazev).then(function (n) { if (n && n !== p.nazev) run({ action: "polozka_update", cislo: mc, poradi: k, nazev: n }, "Přejmenováno."); }); } });
+        items.push(closed ? { label: "Znovu otevřít " + p.kod, icon: ICON.unlock, onClick: function () { run({ action: "polozka_update", cislo: mc, poradi: k, stav: "aktivni" }, "Položka znovu otevřena."); } }
+          : { label: "Uzavřít " + p.kod, icon: ICON.lock, onClick: function () { window.tenDialog.confirm("Uzavřít položku " + p.kod + "? Kód zůstane, jen se na ni přestanou nabízet nové platby.", { title: "Uzavřít položku", ok: "Uzavřít", danger: false }).then(function (y) { if (y) run({ action: "polozka_update", cislo: mc, poradi: k, stav: "uzavrena" }, "Položka uzavřena."); }); } });
+      });
+      return window.openBottomSheet("Kód " + mc, items);
+    }
     if (t.dataset.more) {
       var pr = t.dataset.more.split("|"), cislo = pr[0], poradi = pr[1], p = (S.polozky[cislo] || {})[poradi]; if (!p) return;
       var closed = p.stav === "uzavrena";
