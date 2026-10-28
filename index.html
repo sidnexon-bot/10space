@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="platform.js"></script>
+  <script src="ui.js"></script>
   <title>10space</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1429,6 +1430,7 @@
   <link rel="stylesheet" href="redesign.css">
   <link rel="stylesheet" href="viewers.css">
   <link rel="stylesheet" href="decks.css">
+  <link rel="stylesheet" href="ui.css">
 </head>
 <body class="login-page" id="body">
 
@@ -1465,24 +1467,20 @@
     <img id="mobile-avatar-img" src="" alt="" onerror="this.style.display='none'">
     <span id="mobile-avatar-initials"></span>
   </button>
-    <div class="mobile-profile-menu" id="mobile-profile-menu">
-      <div class="mobile-profile-menu-header">
-        <div class="mobile-profile-menu-name" id="mob-profile-name"></div>
-        <div class="mobile-profile-menu-email" id="mob-profile-email"></div>
+    <div class="mobile-profile-menu" id="mobile-profile-menu" role="menu" aria-labelledby="mobile-avatar-btn">
+      <div class="pm-info">
+        <div class="pm-avatar" id="mob-profile-avatar" aria-hidden="true"></div>
+        <div class="pm-id">
+          <div class="pm-name" id="mob-profile-name"></div>
+          <div class="pm-email" id="mob-profile-email"></div>
+          <div class="pm-tags"><span class="pm-role" id="mob-profile-role"></span></div>
+        </div>
       </div>
-      <div class="mobile-profile-menu-item" onclick="switchTab('decks');closeMobileProfileMenu()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Osobní desky
+      <div class="pm-group">
+        <div class="pm-item" role="menuitem" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="--i:0" onclick="toggleDarkMode();closeMobileProfileMenu()"><span class="pm-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span><span class="pm-label dark-mode-toggle-label"></span></div>
       </div>
-      <div class="mobile-profile-menu-sep"></div>
-      <div class="mobile-profile-menu-item" onclick="toggleDarkMode();closeMobileProfileMenu()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <span class="dark-mode-toggle-label"></span>
-      </div>
-      <div class="mobile-profile-menu-sep"></div>
-      <div class="mobile-profile-menu-item danger" onclick="handleLogout();closeMobileProfileMenu()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Odhlásit se
+      <div class="pm-group">
+        <div class="pm-item pm-logout" role="menuitem" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="--i:1" onclick="handleLogout();closeMobileProfileMenu()"><span class="pm-icon pm-red"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span><span class="pm-label">Odhlásit se</span></div>
       </div>
     </div>
   </div>
@@ -1538,10 +1536,6 @@
         <button class="sidebar-tab" onclick="switchTab('projects')" id="tab-projects">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="3" width="6" height="18" rx="1"/></svg>
           Projekty
-        </button>
-        <button class="sidebar-tab" onclick="switchTab('favorites')" id="tab-favorites">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Oblíbené
         </button>
         <button class="sidebar-tab" onclick="switchTab('decks')" id="tab-decks">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-2 2V6a2 2 0 0 1 2-2z"/><path d="M8 9h6M8 13h4"/></svg>
@@ -1726,7 +1720,10 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get as _get, set, update, remove, onValue as _onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+// čtení přes zálohu v zařízení (ui.js): při výpadku nebo pomalé síti se použijí naposledy uložená data
+const get = (r) => window.tenData ? window.tenData.get(_get, r) : _get(r);
+const onValue = (r, cb, err) => window.tenData ? window.tenData.onValue(_onValue, r, cb, err) : _onValue(r, cb, err);
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjDCB3gpqytTHnG7zKLKJGXMNeW5vyC_I",
@@ -1762,7 +1759,7 @@ const FUNCTIONS = {
   generateProjektWiki: "https://generateprojektwiki-etp6s2ynnq-uc.a.run.app"
 };
 
-window.__tenCtx = { get auth() { return auth; }, get FUNCTIONS() { return FUNCTIONS; }, get db() { return db; }, ref: ref, get: get, update: update, onValue: onValue }; // pro viewers.js a decks.js
+window.__tenCtx = { get auth() { return auth; }, get FUNCTIONS() { return FUNCTIONS; }, get db() { return db; }, get user() { return currentUser; }, ref: ref, get: get, update: update, onValue: onValue }; // pro viewers.js, decks.js a ui.js
 // čtení z databáze, které bez připojení (nebo při velmi pomalé síti) nezablokuje start aplikace
 const offlineGet = (path) => navigator.onLine === false ? Promise.resolve({ val: () => null }) : Promise.race([get(ref(db, path)), new Promise((r) => setTimeout(() => r({ val: () => null }), 8000))]);
 
@@ -1777,6 +1774,20 @@ async function callFn(url, body = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
+}
+
+// Sdílené odkazy: Cloud Function může být pomalá (studený start), proto se výsledek drží v paměti i v zařízení,
+// ukazuje se hned a obnoví se na pozadí.
+const shareCache = { v: window.tenCache?.get("shares", 120000) || null, t: Date.now(), p: null };
+const shareFresh = () => !!shareCache.v && Date.now() - shareCache.t < 20000;
+function loadShares(force) {
+  if (!force && shareFresh()) return Promise.resolve(shareCache.v);
+  if (shareCache.p) return shareCache.p;
+  shareCache.p = callFn(FUNCTIONS.listShareTokens)
+    .then((r) => { shareCache.v = r; shareCache.t = Date.now(); window.tenCache?.set("shares", r); return r; })
+    .catch(() => shareCache.v || { tokens: {} })
+    .finally(() => { shareCache.p = null; });
+  return shareCache.p;
 }
 
 let currentUser = null;
@@ -1833,6 +1844,7 @@ window.handleGoogleLogin = async () => {
 };
 
 window.handleLogout = async () => {
+  window.tenResume?.clear();
   try { await caches.delete("pdf-v1"); localStorage.removeItem("pdf2.cacheIdx"); } catch (e) { /* bez Cache API */ }
   await signOut(auth); location.reload();
 };
@@ -1911,6 +1923,7 @@ function showApp() {
 }
 // DRIVE API
 async function loadDriveFiles(folderId) {
+  if (window.aclLoaded === false && window.aclReady) await window.aclReady;
   const parentId = folderId || "0B23cZAlYDWOndmtIZU45WWJrbWM";
 
   const folders = Object.entries(window.driveFolders || {})
@@ -1933,6 +1946,7 @@ async function loadDriveFiles(folderId) {
 }
 
 async function loadAllDriveFiles() {
+  if (window.aclLoaded === false && window.aclReady) await window.aclReady;
   return Object.entries(window.driveFiles || {})
     .filter(([id]) => getUserAccess(id) !== "none")
     .map(([id, f]) => ({
@@ -2025,6 +2039,7 @@ function getDriveFileIcon(mimeType, size) {
   
 // LOAD DATA
 async function loadData() {
+  loadShares(true).catch(() => {}); // zahřeje Cloud Function a naplní paměť dřív, než se otevře dashboard
   // Načti složky z RTDB
   const slozkySnap = await offlineGet("/slozky");
   allFolders = slozkySnap.val() || {};
@@ -2042,6 +2057,8 @@ async function loadData() {
     window.driveFiles = snap.val() || {};
     if (["documents", "media", "folders"].includes(currentTab)) {
       renderTab();
+    } else if (currentTab === "recent" && document.getElementById("dashboard-recent-empty") && Object.keys(window.driveFiles).length) {
+      renderTab(); // dashboard se vykreslil dřív, než dorazila data souborů
     }
   });
 
@@ -2068,13 +2085,23 @@ async function loadData() {
       window.myAcl = r.acl || {};
     } catch (e) {
       console.error("getMyAcl:", e.message);
-      window.myAcl = {};
+      if (!window.aclLoaded) { // oprávnění se ještě nikdy nenačetla: do té doby se nic neukazuje, zkusí se to znovu
+        window.aclRetries = (window.aclRetries || 0) + 1;
+        if (window.aclRetries <= 8) setTimeout(() => window.loadMyAcl(asMemberId), Math.min(30000, 2000 * window.aclRetries));
+        return;
+      } // jinak zůstanou poslední známá oprávnění
     }
+    window.aclLoaded = true;
+    if (!asMemberId) window.tenCache?.set("acl." + (auth.currentUser?.uid || ""), window.myAcl);
     window.userAccessCache = {};
   };
-  await window.loadMyAcl();
+  // oprávnění se nečekají: z paměti se použijí hned (do 2 minut, bez připojení i starší), živá je pak nahradí
+  const aclCached = window.tenCache?.get("acl." + (auth.currentUser?.uid || ""), navigator.onLine === false ? 14 * 24 * 3600 * 1000 : 120000);
+  if (aclCached) { window.myAcl = aclCached; window.aclLoaded = true; } else window.aclLoaded = false;
+  window.aclReady = window.loadMyAcl().then(() => { if (["folders", "documents", "media"].includes(currentTab)) renderTab(); });
   
   function getUserAccess(fileId) {
+    if (window.aclLoaded === false) return "none"; // oprávnění ještě nedorazila
     const effectiveUid = impersonateUid || "self";
     const cacheKey = `${effectiveUid}_${fileId}`;
     if (window.userAccessCache[cacheKey] !== undefined) {
@@ -2117,8 +2144,10 @@ async function loadData() {
   });
 
   if (window.tenDecks) window.tenDecks.start(); else window.__tenStartRequested = true;
-  // bez připojení se Dashboard (čte z databáze) nenačte, rovnou se otevřou osobní desky s offline notami
-  switchTab(window.location.hash === "#/osobni" || navigator.onLine === false ? "decks" : "recent");
+  // po výpadku, zavření nebo znovunačtení naváže tam, kde uživatel skončil (do 2 minut); jinak Dashboard, bez připojení osobní desky
+  window.tenResume?.init(auth.currentUser?.uid);
+  const resumed = window.tenResume ? await window.tenResume.restore() : false;
+  if (!resumed) switchTab(window.location.hash === "#/osobni" || navigator.onLine === false ? "decks" : "recent");
 }
 
 function openFileFromDeepLink(fileId) {
@@ -2289,21 +2318,31 @@ window.switchTab = (tab) => {
   renderTab();
 };
   
+// Vykreslení záložky, které při chybě (typicky výpadek bez uložených dat) ukáže hlášku a „Zkusit znovu“ místo věčného kolečka
+function safeRender(tab, fn) {
+  Promise.resolve().then(fn).catch((e) => {
+    console.warn("Vykreslení záložky selhalo:", e && e.message);
+    if (currentTab !== tab) return;
+    const a = document.getElementById("content-area");
+    if (a) a.innerHTML = `<div class="empty-state"><p>${navigator.onLine === false ? "Bez připojení: tuto část zatím nemáme uloženou v zařízení." : "Obsah se nepodařilo načíst."}</p><button class="modal-btn" onclick="document.querySelector('.sidebar-tab.active')?.click()">Zkusit znovu</button></div>`;
+  });
+}
+
 function renderTab() {
   const area = document.getElementById("content-area");
 
   if (currentTab === "recent") {
-    renderDashboard();
+    safeRender("recent", renderDashboard);
     return;
   }
 
   if (currentTab === "folders") {
-    renderDriveFolderContent(window.currentFolder);
+    safeRender("folders", () => renderDriveFolderContent(window.currentFolder));
     return;
   }
 
   if (currentTab === "projects") {
-    renderProjekty();
+    safeRender("projects", renderProjekty);
     return;
   }
 
@@ -2346,12 +2385,13 @@ async function renderDashboard() {
 
   const datum = new Date().toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  const [projektSnap, akceSnap, poznamkySnap, shareSnap] = await Promise.all([
+  const sharesP = loadShares(!shareFresh()); // pomalá Cloud Function dashboard nezdržuje, karta se doplní, až dorazí
+  const [projektSnap, akceSnap, poznamkySnap] = await Promise.all([
     get(ref(db, "/projekty")),
     get(ref(db, "/akce")),
-    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`)),
-    callFn(FUNCTIONS.listShareTokens).catch(() => ({ tokens: {} }))
+    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`)).catch(() => null) // bez připojení se poznámky nenačtou
   ]);
+  const shareSnap = shareCache.v || { loading: true };
 
   const projekty = projektSnap.val() || {};
   const akce = akceSnap.val() || {};
@@ -2408,7 +2448,7 @@ async function renderDashboard() {
           <span class="dashboard-file-time">${formatCas(f.modifiedTime)}</span>
         </div>
       `).join("")
-    : `<div class="dashboard-empty">Zatím žádná nedávná aktivita</div>`;
+    : `<div class="dashboard-empty" id="dashboard-recent-empty">Zatím žádná nedávná aktivita</div>`;
 
   // To-do z projektů (rider)
   let todoItems = [];
@@ -2436,33 +2476,33 @@ async function renderDashboard() {
     : `<div class="dashboard-empty">Žádné úkoly k řešení</div>`;
 
   // Osobní poznámky
-  const poznamky = poznamkySnap.val() || "";
+  const poznamky = poznamkySnap ? (poznamkySnap.val() || "") : "";
   
   // Sdílené tokeny
-  const shareTokens = shareSnap.tokens || {};
   const now = Date.now();
-  const activeShares = Object.entries(shareTokens)
-    .filter(([token, s]) => s.expiruje > now)
-    .sort((a, b) => a[1].expiruje - b[1].expiruje);
-  
   function dnyDoExpirace(expiruje) {
     const diff = Math.ceil((expiruje - now) / (1000 * 60 * 60 * 24));
     if (diff <= 1) return "vyprší dnes";
     return `${diff} dní`;
   }
-  
-  const shareHtml = activeShares.length > 0
-    ? activeShares.map(([token, s]) => {
-        const dny = Math.ceil((s.expiruje - now) / (1000 * 60 * 60 * 24));
-        const expiringClass = dny <= 3 ? "expiring" : "";
-        return `
+  function buildShareHtml(shareTokens) {
+    const activeShares = Object.entries(shareTokens || {})
+      .filter(([token, s]) => s.expiruje > now)
+      .sort((a, b) => a[1].expiruje - b[1].expiruje);
+    return activeShares.length > 0
+      ? activeShares.map(([token, s]) => {
+          const dny = Math.ceil((s.expiruje - now) / (1000 * 60 * 60 * 24));
+          const expiringClass = dny <= 3 ? "expiring" : "";
+          return `
           <div class="dashboard-share-row" onclick="openShareManageSheet('${token}')">
             <span class="dashboard-share-name">${s.nazev || "—"}</span>
             <span class="dashboard-share-days ${expiringClass}">${dnyDoExpirace(s.expiruje)}</span>
           </div>
         `;
-      }).join("")
-    : `<div class="dashboard-empty">Žádné aktivní sdílené odkazy</div>`;
+        }).join("")
+      : `<div class="dashboard-empty">Žádné aktivní sdílené odkazy</div>`;
+  }
+  const shareHtml = shareSnap.loading ? `<div class="dashboard-empty">Načítám…</div>` : buildShareHtml(shareSnap.tokens);
 
   area.innerHTML = `
     <div class="dashboard-header">
@@ -2480,7 +2520,7 @@ async function renderDashboard() {
       </div>
       <div class="dashboard-card">
         <div class="dashboard-card-title">Mé poznámky</div>
-        <textarea class="dashboard-note-textarea" id="dashboard-notes" placeholder="Napiš si poznámku...">${poznamky}</textarea>
+        <textarea class="dashboard-note-textarea" id="dashboard-notes" ${poznamkySnap ? "" : "disabled"} placeholder="${poznamkySnap ? "Napiš si poznámku..." : "Poznámky jsou dostupné po připojení"}">${poznamky}</textarea>
       </div>
       <div class="dashboard-card">
         <div class="dashboard-card-title">To-do z projektů</div>
@@ -2488,10 +2528,13 @@ async function renderDashboard() {
       </div>
       <div class="dashboard-card">
         <div class="dashboard-card-title">Sdílené odkazy</div>
-        ${shareHtml}
+        <div id="dashboard-share-list">${shareHtml}</div>
       </div>
     </div>
   `;
+
+  // karta se sdílenými odkazy se doplní (nebo obnoví), až dorazí odpověď funkce
+  sharesP.then((r) => { const el = document.getElementById("dashboard-share-list"); if (el && JSON.stringify(r) !== JSON.stringify(shareSnap)) el.innerHTML = buildShareHtml(r.tokens); });
 
   // Autosave poznámek
   let saveTimeout;
@@ -3273,7 +3316,7 @@ window.contextAction = async (action) => {
   if (action === "delete") {
   const isFolder = !!window.driveFolders?.[contextItemId];
   const itemName = isFolder ? window.driveFolders[contextItemId]?.name : window.driveFiles[contextItemId]?.name || doc?.nazev;
-  if (!confirm(`Smazat "${itemName}"?`)) return;
+  if (!(await window.tenDialog.confirm(`Smazat "${itemName}"?`, { ok: "Smazat" }))) return;
   const token = await auth.currentUser.getIdToken();
   const res = await fetch(FUNCTIONS.deleteFile, {
     method: "POST",
@@ -3294,7 +3337,7 @@ window.contextAction = async (action) => {
   const isFolder = !!window.driveFolders?.[contextItemId];
   const item = isFolder ? window.driveFolders[contextItemId] : window.driveFiles?.[contextItemId];
   const currentName = item?.name || "";
-  const newName = prompt("Nový název:", currentName);
+  const newName = await window.tenDialog.prompt("Nový název", currentName, { ok: "Přejmenovat" });
   if (newName && newName !== currentName) {
     try {
       const token = await auth.currentUser.getIdToken();
@@ -3407,7 +3450,7 @@ window.openVersionMenu = (e, docId, version) => {
 window.multiDownload = () => alert("Hromadné stažení — bude implementováno");
 window.multiMove = () => alert("Přesunout — bude implementováno");
 window.multiDelete = async () => {
-  if (!confirm(`Smazat ${selectedItems.size} položek?`)) return;
+  if (!(await window.tenDialog.confirm(`Smazat ${selectedItems.size} položek?`, { ok: "Smazat" }))) return;
   const token = await auth.currentUser.getIdToken();
   for (const id of selectedItems) {
     await fetch(FUNCTIONS.deleteFile, {
@@ -3423,7 +3466,7 @@ window.multiDelete = async () => {
 };
 
 window.createFolder = async () => {
-  const name = prompt("Název složky:");
+  const name = await window.tenDialog.prompt("Nová složka", "", { placeholder: "Název složky", ok: "Vytvořit" });
   if (!name) return;
 
   try {
@@ -3696,9 +3739,11 @@ async function renderProjekty() {
   probehle.sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
 
   function projektCard(p, archiv = false) {
+    (window.__projektyMap ||= {})[p.id] = p;
     const datum = p.datum ? new Date(p.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
     return `
       <div class="projekt-card ${archiv ? "archiv" : ""}" onclick="otevritProjekt('${p.id}')">
+        <button type="button" class="pc-more" aria-label="Akce projektu" aria-haspopup="menu" onclick="event.stopPropagation();openProjektMenu(this,'${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
         <div class="projekt-card-header">
           <div class="projekt-card-name">${p.nazev || "—"}</div>
           <div class="projekt-card-datum">${datum}</div>
@@ -3711,12 +3756,6 @@ async function renderProjekty() {
             Shrnuto pomocí Marek AI
           </div>
         ` : ""}
-        <div class="projekt-card-footer">
-          <button class="projekt-card-btn primary" onclick="event.stopPropagation();otevritProjekt('${p.id}')">Otevřít projekt</button>
-          ${p.driveFolderId ? `<button class="projekt-card-btn" onclick="event.stopPropagation();switchTab('folders');setTimeout(()=>navigateToDriveFolder('${p.driveFolderId}', '${(p.nazev || "").replace(/'/g, "\\'")}'),300)">Drive složka</button>` : ""}
-          <button class="projekt-card-btn" onclick="event.stopPropagation();shareProjekt('${p.id}')">Sdílet projekt</button>
-          ${currentUser?.role === "ADMIN" ? `<button class="projekt-card-btn danger" onclick="event.stopPropagation();smazatProjekt('${p.id}')">Smazat</button>` : ""}        
-        </div>
       </div>
     `;
   }
@@ -3763,10 +3802,17 @@ window.otevritProjekt = async (projektId) => {
   document.getElementById("projekt-detail-body").innerHTML = `
     <div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
 
-  const [projektSnap, akceSnap] = await Promise.all([
-    get(ref(db, `/projekty/${projektId}`)),
-    get(ref(db, `/akce/${projektId}`))
-  ]);
+  let projektSnap, akceSnap;
+  try {
+    [projektSnap, akceSnap] = await Promise.all([
+      get(ref(db, `/projekty/${projektId}`)),
+      get(ref(db, `/akce/${projektId}`))
+    ]);
+  } catch (e) {
+    document.getElementById("projekt-detail-title").textContent = "Projekt";
+    document.getElementById("projekt-detail-body").innerHTML = `<div class="empty-state"><p>${navigator.onLine === false ? "Bez připojení: tento projekt zatím nemáme uložený v zařízení." : "Projekt se nepodařilo načíst."}</p></div>`;
+    return;
+  }
 
   const projekt = projektSnap.val();
   const akce = akceSnap.val();
@@ -3789,8 +3835,8 @@ const hospodaInfo = rider?.hospoda?.nazev
   ? `${rider.hospoda.nazev}${rider.hospoda.cas ? `, ${rider.hospoda.cas}` : ""}${rider.hospoda.jmeno ? `, rezervace: ${rider.hospoda.jmeno}` : ""}`
   : (akce?.hospoda || null);
 
-// Garant
-const membersSnap = await get(ref(db, "/members"));
+// Garant (seznam členů se do zařízení neukládá, bez připojení se garant nezobrazí)
+const membersSnap = await get(ref(db, "/members")).catch(() => ({ val: () => ({}) }));
 const members = membersSnap.val() || {};
 
 let garantJmeno = "";
@@ -4206,16 +4252,26 @@ function updateSearchFilterIcon(value) {
 window.openProfileSheet = (e) => {
   e.stopPropagation();
   const menu = document.getElementById("mobile-profile-menu");
-  menu.classList.toggle("active");
+  if (menu.classList.contains("active")) return closeMobileProfileMenu();
   document.getElementById("mob-profile-name").textContent = currentUser?.name || "";
   document.getElementById("mob-profile-email").textContent = currentUser?.email || "";
-  if (menu.classList.contains("active")) {
-    setTimeout(() => document.addEventListener("click", closeMobileProfileMenu, { once: true }), 0);
-  }
+  document.getElementById("mob-profile-role").textContent = currentUser?.role || "";
+  const av = document.getElementById("mob-profile-avatar");
+  av.textContent = "";
+  if (currentUser?.photoURL) { const im = document.createElement("img"); im.alt = ""; im.src = currentUser.photoURL; im.onerror = () => { av.textContent = (currentUser?.name || currentUser?.email || "?").slice(0, 2).toUpperCase(); }; av.appendChild(im); }
+  else av.textContent = (currentUser?.name || currentUser?.email || "?").slice(0, 2).toUpperCase();
+  menu.classList.add("active");
+  document.getElementById("mobile-avatar-btn")?.setAttribute("aria-expanded", "true");
+  setTimeout(() => { document.addEventListener("click", closeMobileProfileMenu, { once: true }); document.addEventListener("keydown", profileMenuKey); }, 0);
 };
+
+const profileMenuKey = (e) => { if (e.key === "Escape") { closeMobileProfileMenu(); document.getElementById("mobile-avatar-btn")?.focus(); } };
 
 window.closeMobileProfileMenu = () => {
   document.getElementById("mobile-profile-menu").classList.remove("active");
+  document.getElementById("mobile-avatar-btn")?.setAttribute("aria-expanded", "false");
+  document.removeEventListener("keydown", profileMenuKey);
+  document.removeEventListener("click", closeMobileProfileMenu);
 };
 
 // SWIPE TO DISMISS bottom sheet
@@ -5273,18 +5329,30 @@ async function pdfGetBytes(fileId, onProgress) {
     const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(fileId)}`, { headers: { "Authorization": `Bearer ${token}` } });
     if (!res.ok) throw new Error("Server vrátil " + res.status);
     const total = parseInt(res.headers.get("Content-Length") || "0", 10);
+    // do úložiště v zařízení se soubor zapisuje přímo ze streamu (klon odpovědi), bez další kopie v paměti
+    let putP = null;
+    if (cache && res.body) { try { putP = cache.put(key, new Response(res.clone().body, { headers: { "Content-Type": "application/pdf" } })); putP.catch(() => {}); } catch (e) { putP = null; } }
     const rd = res.body?.getReader();
     let buf;
-    if (rd) {
+    if (rd && total > 0) { // známá velikost: jediný buffer, bloky se hned zkopírují a zahodí
+      const all = new Uint8Array(total); let got = 0;
+      for (;;) {
+        const { done, value } = await rd.read(); if (done) break;
+        if (got + value.length > total) throw new Error("Odpověď je větší, než server oznámil");
+        all.set(value, got); got += value.length; onProgress?.(Math.min(got / total, 0.99));
+      }
+      if (got !== total) throw new Error("Soubor se nestáhl celý");
+      buf = all.buffer;
+    } else if (rd) {
       const chunks = []; let got = 0;
-      for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; if (total) onProgress?.(Math.min(got / total, 0.99)); }
+      for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; }
       const all = new Uint8Array(got); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
       buf = all.buffer;
     } else buf = await res.arrayBuffer();
-    if (cache) {
+    if (cache && putP) {
       try {
+        await putP;
         for (const k of await cache.keys()) if (k.url.startsWith(prefix) && k.url !== key) await cache.delete(k); // starší verze téhož souboru
-        await cache.put(key, new Response(buf.slice(0), { headers: { "Content-Type": "application/pdf" } }));
         const idx = (await pdfCacheKeyIndex()).filter(k => k !== key); idx.push(key);
         while (idx.length > PDF_CACHE_MAX) await cache.delete(idx.shift());
         localStorage.setItem("pdf2.cacheIdx", JSON.stringify(idx));
@@ -5470,7 +5538,7 @@ function renderMobileDetailContent(fileId, isFolder) {
 window.deleteDriveItem = async (fileId) => {
   const isFolder = !!window.driveFolders?.[fileId];
   const name = isFolder ? window.driveFolders[fileId]?.name : window.driveFiles[fileId]?.name;
-  if (!confirm(`Smazat "${name}"?`)) return;
+  if (!(await window.tenDialog.confirm(`Smazat "${name}"?`, { ok: "Smazat" }))) return;
   
   const token = await auth.currentUser.getIdToken();
   const res = await fetch(FUNCTIONS.deleteFile, {
@@ -5489,7 +5557,7 @@ window.deleteDriveItem = async (fileId) => {
 };
 
 window.smazatProjekt = async (projektId) => {
-  if (!confirm("Smazat tento projekt? Složky na Drive zůstanou.")) return;
+  if (!(await window.tenDialog.confirm("Smazat tento projekt? Složky na Drive zůstanou.", { ok: "Smazat" }))) return;
   await set(ref(db, `/projekty/${projektId}`), null);
   renderProjekty();
 };  
@@ -5631,16 +5699,16 @@ window.setDriveFilter = (type) => {
 
 // Jednorázová reindexace Drive (jen ADMIN/ART — kontroluje funkce). Spuštění z konzole: reindexDrive()
 window.reindexDrive = async () => {
-  if (!confirm("Znovu načíst strukturu Drive (může trvat několik minut)?")) return;
+  if (!(await window.tenDialog.confirm("Znovu načíst strukturu Drive (může trvat několik minut)?", { ok: "Načíst znovu" }))) return;
   showSpinner();
   try {
     const r = await callFn(FUNCTIONS.indexDrive, {});
-    alert(`Hotovo: ${r.folders} složek, ${r.files} souborů`);
+    await window.tenDialog.alert(`Hotovo: ${r.folders} složek, ${r.files} souborů`);
     location.reload();
   } catch (err) {
     if (err instanceof TypeError) {
       // Spojení vypadne po ~2 min, ale funkce na serveru běží dál a obvykle doběhne
-      alert("Spojení s prohlížečem vypadlo, ale reindexace na serveru pravděpodobně doběhla. Stránka se obnoví.");
+      await window.tenDialog.alert("Spojení s prohlížečem vypadlo, ale reindexace na serveru pravděpodobně doběhla. Stránka se obnoví.");
       location.reload();
     } else {
       alert("Chyba reindexace: " + err.message);
@@ -5774,12 +5842,14 @@ window.openShareModalMobile = (id) => {
   document.getElementById("share-modal").classList.add("active");
 };
 
-window.openShareManageSheet = async (token) => {
+window.openShareManageSheet = async (token, fresh) => {
   shareManageToken = token;
-  let data;
-  try {
-    data = (await callFn(FUNCTIONS.manageShareToken, { token, action: "get" })).token;
-  } catch (err) { return; }
+  let data = shareCache.v?.tokens?.[token] || null; // stejná data jako vrací funkce, okno se otevře bez čekání
+  if (!data) {
+    try { data = (await callFn(FUNCTIONS.manageShareToken, { token, action: "get" })).token; } catch (err) { return; }
+  } else if (!fresh) {
+    callFn(FUNCTIONS.manageShareToken, { token, action: "get" }).then((r) => { if (r.token && shareManageToken === token) { shareCache.v.tokens[token] = r.token; window.openShareManageSheet(token, true); } }).catch(() => {});
+  }
   if (!data) return;
 
   function getFileTypeLabel(mimeType) {
@@ -5831,22 +5901,25 @@ window.closeShareManageModal = () => {
 window.extendShareTokenFromModal = async () => {
   const days = parseInt(document.getElementById("extend-days-select").value);
   await callFn(FUNCTIONS.manageShareToken, { token: shareManageToken, action: "extend", days });
+  shareCache.t = 0; window.tenCache?.del("shares");
   closeShareManageModal();
   renderDashboard();
 };
 
 window.deactivateShareToken = async () => {
   if (!shareManageToken) return;
-  if (!confirm("Deaktivovat tento sdílený odkaz?")) return;
+  if (!(await window.tenDialog.confirm("Deaktivovat tento sdílený odkaz?", { ok: "Deaktivovat" }))) return;
   await callFn(FUNCTIONS.manageShareToken, { token: shareManageToken, action: "deactivate" });
+  shareCache.t = 0; window.tenCache?.del("shares");
   closeShareManageModal();
   renderDashboard();
 };
 
 window.deleteShareToken = async () => {
   if (!shareManageToken) return;
-  if (!confirm("Trvale smazat tento sdílený odkaz?")) return;
+  if (!(await window.tenDialog.confirm("Trvale smazat tento sdílený odkaz?", { ok: "OK" }))) return;
   await callFn(FUNCTIONS.manageShareToken, { token: shareManageToken, action: "delete" });
+  shareCache.t = 0; window.tenCache?.del("shares");
   closeShareManageModal();
   renderDashboard();
 };
@@ -6164,11 +6237,11 @@ async function processFilesWithEvid(fileResults) {
       </span>
       <small>Projekty</small>
     </button>
-    <button id="mob-favorites" onclick="mobileSwitchTab('favorites')">
+    <button id="mob-decks" onclick="mobileSwitchTab('decks')">
       <span class="icon">
-        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-2 2V6a2 2 0 0 1 2-2z"/><path d="M8 9h6M8 13h4"/></svg>
       </span>
-      <small>Oblíbené</small>
+      <small>Osobní desky</small>
     </button>
   </div>
 </div>

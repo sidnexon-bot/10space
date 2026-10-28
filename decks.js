@@ -59,17 +59,14 @@ function songOf(entry) { return (window.repertoar || {})[entry.song_id] || null;
 function computeNext() {
   if (!S.akce || !S.program) return null;
   const today = ymd(new Date());
-  const events = Object.entries(S.akce).map(([id, a]) => ({ id, ...a }))
+  const ev = Object.entries(S.akce).map(([id, a]) => ({ id, ...a }))
     .filter((a) => a.date && a.date >= today && !["Zrušená", "Nápad", "Proběhlá"].includes(a.status) && !a.is_template)
-    .sort((a, b) => (a.date + (a.start || "")).localeCompare(b.date + (b.start || "")));
-  const entries = Object.values(S.program), skipped = [];
-  for (const ev of events) {
-    const mine = entries.filter((p) => p.id_akce === ev.id).sort((a, b) => (a.order || 0) - (b.order || 0));
-    if (!mine.length) { skipped.push({ name: ev.name || "Akce", date: ev.date }); continue; }
-    const items = mine.map((p, i) => { const s = songOf(p), fid = s?.driveFileId || null; return { fileId: fid, title: s?.name || (window.driveFiles?.[fid]?.name) || "Skladba", code: s?.code || "", order: i + 1 }; });
-    return { event: { id: ev.id, name: ev.name || "Akce", date: ev.date, start: ev.start || "", place: ev.place || "" }, items, skipped };
-  }
-  return { event: null, items: [] };
+    .sort((a, b) => (a.date + (a.start || "")).localeCompare(b.date + (b.start || "")))[0];
+  if (!ev) return { event: null, items: [] };
+  // doslova nejbližší akce; nemá-li program, noty se nestahují, dokud se nevyplní
+  const mine = Object.values(S.program).filter((p) => p.id_akce === ev.id).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const items = mine.map((p, i) => { const s = songOf(p), fid = s?.driveFileId || null; return { fileId: fid, title: s?.name || (window.driveFiles?.[fid]?.name) || "Skladba", code: s?.code || "", order: i + 1 }; });
+  return { event: { id: ev.id, name: ev.name || "Akce", date: ev.date, start: ev.start || "", place: ev.place || "" }, items };
 }
 const refreshNext = () => { const n = computeNext(); if (n) S.next = n; };
 
@@ -121,10 +118,19 @@ async function annotInfo(id) { // zobrazí se jen při vykreslení, bez dotazu d
 async function downloadPin(id, w) {
   const { auth, FUNCTIONS } = ctx(), token = await auth.currentUser.getIdToken();
   const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new Error(res.status === 403 ? "Přístup odepřen" : "Server vrátil " + res.status);
-  const buf = await res.arrayBuffer(), modified = modifiedOf(id);
-  const cache = await openCache(); await cache.put(cacheUrl(id), new Response(buf.slice(0), { headers: { "Content-Type": "application/pdf", "X-Modified": modified } }));
-  S.pins[id] = { title: w.title, modified, size: buf.byteLength, savedAt: Date.now() };
+  if (!res.ok || !res.body) throw new Error(res.status === 403 ? "Přístup odepřen" : "Server vrátil " + res.status);
+  const total = parseInt(res.headers.get("Content-Length") || "0", 10), modified = modifiedOf(id), cache = await openCache(), url = cacheUrl(id);
+  // soubor teče ze sítě rovnou do úložiště, v paměti se nedrží (velké PDF jinak stránku zbytečně zatěžuje)
+  await cache.put(url, new Response(res.body, { headers: { "Content-Type": "application/pdf", "X-Modified": modified } }));
+  const hit = await cache.match(url); if (!hit) throw new Error("Soubor se nepodařilo uložit");
+  let size = total;
+  try { // kontrola, že je to skutečně PDF a že se stáhlo celé (první bloky se přečtou a stream se zruší)
+    const rd = hit.body.getReader(), { value } = await rd.read(); rd.cancel();
+    if (!value || String.fromCharCode(...value.slice(0, 5)) !== "%PDF-") throw new Error("Server nevrátil PDF");
+    if (!size) size = (await (await cache.match(url)).blob()).size;
+    if (total && (await (await cache.match(url)).blob()).size !== total) throw new Error("Soubor se nestáhl celý");
+  } catch (e) { await cache.delete(url); throw e; }
+  S.pins[id] = { title: w.title, modified, size, savedAt: Date.now() };
   await kv.set("pin:" + id, S.pins[id]);
 }
 const waitFor = async (fn, ms) => { const t = Date.now(); while (!fn() && Date.now() - t < ms) await sleep(150); return fn(); };
@@ -242,7 +248,7 @@ async function pick(fileId) {
 function rerender() { if (S.area && document.contains(S.area) && $("#tab-decks")?.classList.contains("active")) draw(); }
 function render(area) {
   S.area = area; S.view = S.view.type === "folder" && !S.data.folders[S.view.id] ? { type: "home" } : S.view;
-  document.querySelectorAll(".bottom button").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".bottom button").forEach((b) => b.classList.toggle("active", b.id === "mob-decks"));
   draw();
 }
 function pinChip(id) {
@@ -269,17 +275,14 @@ function syncLine() {
 }
 function drawNext() {
   const n = S.next, ev = n?.event;
-  if (!ev) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div><div class="dk-empty">${ICON.star}<p><b>Program zatím není vyplněn.</b></p><p>Noty z programu nejbližší akce se sem uloží automaticky a stáhnou se do zařízení, jakmile je program vyplněn v 10base.</p></div></div>`;
+  if (!n) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div><div class="dk-empty"><p>${online() ? "Načítám…" : "Bez připojení a zatím bez uložených dat."}</p></div></div>`;
+  if (!ev) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div><div class="dk-empty">${ICON.star}<p><b>Žádná nadcházející akce.</b></p><p>Až se v 10base objeví další akce, uvidíte tu její noty.</p></div></div>`;
+  const head = `<div class="dk-ev"><b>${esc(ev.name)}</b><small>${esc(fmtDate(ev.date))}${ev.start ? ", " + esc(ev.start) : ""}${ev.place ? " · " + esc(ev.place) : ""}</small></div>`;
+  if (!n.items.length) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div>${head}<div class="dk-empty">${ICON.star}<p><b>Program zatím není vyplněn.</b></p><p>Noty z programu se sem uloží a stáhnou do zařízení, jakmile ho vyplníte v 10base.</p></div></div>`;
   return `<div class="dashboard-card dk-card">
-    <div class="dashboard-card-title"><span>${n.skipped?.length ? "Nejbližší akce s programem" : "Příští akce"}</span>${syncLine()}</div>
-    <div class="dk-ev"><b>${esc(ev.name)}</b><small>${esc(fmtDate(ev.date))}${ev.start ? ", " + esc(ev.start) : ""}${ev.place ? " · " + esc(ev.place) : ""}</small></div>
-    <div class="dk-rows">${n.items.map((it) => itemRow(it)).join("")}</div>${skippedNote(n)}</div>`;
-}
-function skippedNote(n) {
-  const k = n.skipped || []; if (!k.length) return "";
-  const short = (d) => { try { return new Date(d + "T12:00:00").toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" }); } catch (e) { return d; } };
-  const list = k.slice(0, 3).map((x) => `${esc(x.name)} ${esc(short(x.date))}`).join(", ") + (k.length > 3 ? ` a ${k.length - 3} dalších` : "");
-  return `<div class="dk-note">Dřívější akce zatím nemají vyplněný program: ${list}. Jakmile ho vyplníte, stáhnou se i jejich noty.</div>`;
+    <div class="dashboard-card-title"><span>Příští akce</span>${syncLine()}</div>
+    ${head}
+    <div class="dk-rows">${n.items.map((it) => itemRow(it)).join("")}</div></div>`;
 }
 function usage() { const p = Object.values(S.pins); return p.length ? `Offline v zařízení: ${p.length} ${p.length === 1 ? "soubor" : p.length < 5 ? "soubory" : "souborů"} · ${fmtMB(p.reduce((a, b) => a + (b.size || 0), 0))}` : ""; }
 function drawHome() {
@@ -347,10 +350,11 @@ async function start() {
   S.uid = auth.currentUser?.uid || localStorage.getItem("10space.uid"); if (!S.uid) return;
   try { localStorage.setItem("10space.uid", S.uid); } catch (e) { /* bez úložiště */ }
   await loadSnapshot();
+  if (S.pendingView && S.data.folders[S.pendingView.id]) { S.view = S.pendingView; S.pendingView = null; } // bez připojení žádná živá data nedorazí, pohled se obnoví z uložených
   navigator.storage?.persist?.().catch(() => {});
   const listen = () => {
     if (S.listening || !online()) return; S.listening = true;
-    onValue(ref(db, `/userDecks/${S.uid}`), (s) => { S.data = norm(s.val()); S.dataLive = true; S.dataErr = null; rerender(); scheduleSync(); }, (err) => { S.dataErr = err?.code || err?.message || "chyba"; rerender(); });
+    onValue(ref(db, `/userDecks/${S.uid}`), (s) => { S.data = norm(s.val()); S.dataLive = true; S.dataErr = null; if (S.pendingView) { if (S.data.folders[S.pendingView.id]) S.view = S.pendingView; S.pendingView = null; } rerender(); scheduleSync(); }, (err) => { S.dataErr = err?.code || err?.message || "chyba"; rerender(); });
     onValue(ref(db, "/akce"), (s) => { S.akce = s.val() || {}; refreshNext(); rerender(); scheduleSync(); });
     onValue(ref(db, "/program"), (s) => { S.program = s.val() || {}; refreshNext(); rerender(); scheduleSync(); });
   };
@@ -364,6 +368,7 @@ async function start() {
 /* Služby pro zbytek aplikace (PDF viewer čte offline noty a anotace přes ně) */
 window.tenDecks = {
   start, render, pick, sync: () => scheduleSync(0), _state: S, _kv: kv,
+  getView: () => ({ ...S.view }), setView: (v) => { if (!v) return; if (v.type === "home" || (v.type === "folder" && S.data.folders[v.id])) { S.view = v; rerender(); } else if (v.type === "folder") S.pendingView = v; }, // data složek ještě nedorazila: pohled se obnoví, až budou
   async pinnedBytes(fileId, modified) { // verze uložená v zařízení; online jen pokud je aktuální
     try {
       const hit = await (await openCache()).match(cacheUrl(fileId)); if (!hit) return null;

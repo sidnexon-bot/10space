@@ -72,7 +72,7 @@ const MEDIA_MIME = { mp3: "audio/mpeg", m4a: "audio/mp4", aac: "audio/aac", wav:
 
 /* ── Stahování souborů z backendu ────────────────────────────────── */
 const cache = new Map(); // id → Blob, posledních pár souborů, ať se nestahuje dvakrát
-function remember(id, blob) { cache.set(id, blob); while (cache.size > 4) cache.delete(cache.keys().next().value); }
+function remember(id, blob) { if (blob.size > 12 * 1048576) return; /* velké soubory se v paměti nedrží */ cache.set(id, blob); while (cache.size > 4) cache.delete(cache.keys().next().value); }
 async function fetchFile(id, { onProgress, signal } = {}) {
   if (cache.has(id)) { const b = cache.get(id); onProgress?.(1, b.size); return b; }
   const { auth, FUNCTIONS } = window.__tenCtx;
@@ -264,6 +264,7 @@ async function loadTrack(i, autoplay) {
     eng.onEnd(() => { if (my !== mp.token) return; if (mp.loop === "one") { eng.t = 0; eng.play(); } else if (mp.queue.length > 1 && (mp.loop === "all" || mp.idx < mp.queue.length - 1)) step(1); else paint(); });
     applyVolume(); setSpeed(parseFloat($("#mp-speed").dataset.v || "1"));
     setMediaSession(c);
+    if (mp.startAt) { try { eng.t = mp.startAt; } catch (e) { /* nelze přetočit */ } mp.startAt = 0; }
     if (autoplay) { try { await eng.play(); } catch (e) { /* prohlížeč vyžaduje klepnutí */ } }
   } catch (err) {
     if (my !== mp.token || err.name === "AbortError") return;
@@ -294,13 +295,13 @@ function onKey(e) {
   else if (e.key.toLowerCase() === "n") step(1); else if (e.key.toLowerCase() === "p") step(-1);
 }
 
-function openPlayer(id) {
-  ensurePlayerDom();
+function openPlayer(id, opt) {
+  ensurePlayerDom(); mp.startAt = (opt && opt.startAt) || 0; mp.autoplayFirst = !(opt && opt.autoplay === false);
   mp.queue = mediaQueueFor(id); mp.loop = "off"; $("#mp-loop span").textContent = "Vyp."; $("#mp-loop").classList.remove("on");
   $("#mp-speed").dataset.v = "1"; $("#mp-speed").textContent = "1×";
   $("#mp-overlay").classList.add("open"); document.body.classList.add("mp-lock");
   document.addEventListener("keydown", onKey); cancelAnimationFrame(mp.raf); tick();
-  loadTrack(mp.queue.findIndex((x) => x.id === id), true);
+  loadTrack(mp.queue.findIndex((x) => x.id === id), mp.autoplayFirst);
 }
 function closePlayer() {
   mp.token++; mp.abort?.abort(); cancelAnimationFrame(mp.raf);
@@ -351,7 +352,7 @@ function openChooser(file, kind) {
   });
 }
 
-const dv = { token: 0, abort: null };
+const dv = { token: 0, abort: null, file: null, kind: null };
 function ensureDocDom() {
   if ($("#dv-overlay")) return;
   const d = document.createElement("div");
@@ -369,7 +370,7 @@ function closeDocViewer() { dv.token++; dv.abort?.abort(); const o = $("#dv-over
 
 async function openDocViewer(file, kind) {
   ensureDocDom(); const my = ++dv.token; dv.abort?.abort(); dv.abort = new AbortController();
-  const o = $("#dv-overlay"), body = $("#dv-body");
+  const o = $("#dv-overlay"), body = $("#dv-body"); dv.file = file; dv.kind = kind;
   o.classList.add("open"); document.body.classList.add("mp-lock"); $("#dv-title").textContent = file.name;
   $("#dv-dl").onclick = () => kind === "text" ? downloadBlobOf(file) : downloadDoc(file, kind);
   $("#dv-g").onclick = () => openInGoogle(file); $("#dv-g").style.display = kind === "text" ? "none" : "";
@@ -542,6 +543,18 @@ async function renderText(blob, body) {
 }
 
 /* ── Veřejné rozhraní ────────────────────────────────────────────── */
+/* Stav pro navázání po výpadku (ui.js ho čte každou vteřinu a po znovuotevření ho obnoví) */
+function viewerState() {
+  if ($("#mp-overlay")?.classList.contains("open") && mp.eng && cur()) return { type: "media", id: cur().id, t: Math.floor(mp.eng.t || 0) };
+  if ($("#dv-overlay")?.classList.contains("open") && dv.file) return { type: "doc", file: dv.file, kind: dv.kind };
+  return null;
+}
+function viewerRestore(s) {
+  if (!s) return;
+  if (s.type === "media" && (window.driveFiles || {})[s.id]) { openPlayer(s.id, { startAt: s.t || 0, autoplay: false }); }
+  else if (s.type === "doc" && s.file) openDocViewer(s.file, s.kind);
+}
+
 window.tenViewers = {
   /* Vrací true, když soubor obslouží přehrávač nebo prohlížeč; PDF a ostatní nechává původnímu kódu. */
   open(id, mime, name) {
@@ -552,5 +565,14 @@ window.tenViewers = {
     if (kind === "text") { openDocViewer(file, "text"); return true; }
     return false;
   },
-  kindOf
+  kindOf, getState: viewerState, restore: viewerRestore,
+  async download(id, name) { // velké PDF se nestahuje po blocích do paměti, ale jako jeden proud do souboru
+    try {
+      window.showSpinner?.("Stahování…");
+      const { auth, FUNCTIONS } = window.__tenCtx, token = await auth.currentUser.getIdToken();
+      const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Server vrátil " + res.status);
+      saveBlob(await res.blob(), name);
+    } catch (e) { toast("Chyba: " + e.message); } finally { try { window.hideSpinner?.(); } catch (e) { /* bez spinneru */ } }
+  }
 };

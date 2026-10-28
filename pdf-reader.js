@@ -503,8 +503,9 @@ class Reader {
     this.store.onStatus = () => this.updateStatus();
     this.showLoading("Načítám PDF…", true);
     try {
-      this.bytes = await this.env.getPdfBytes(this.fileId, (f) => { const b = this.loadingEl?.querySelector(".pdf2-bar>i"); if (b) b.style.width = Math.round(f * 100) + "%"; });
-      this.doc = await this.env.pdfjsLib.getDocument({ data: new Uint8Array(this.bytes.slice(0)) }).promise;
+      const buf = await this.env.getPdfBytes(this.fileId, (f) => { const b = this.loadingEl?.querySelector(".pdf2-bar>i"); if (b) b.style.width = Math.round(f * 100) + "%"; });
+      this.doc = await this.env.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise; // buffer se předá čtecímu vláknu bez kopie, v paměti zůstává jediná
+      this.bytes = null;
     } catch (e) {
       if (this.closed) return;
       const pw = e?.name === "PasswordException";
@@ -1311,7 +1312,7 @@ class Reader {
   }
   async clearLegacy() {
     const vs = this.visibleViews().filter(v => this.store.layer(v.n, this.layer)?.legacy?.json);
-    if (!vs.length || !confirm("Smazat poznámky vytvořené ve starém prohlížeči na zobrazených stránkách? (Nové poznámky zůstanou.)")) return;
+    if (!vs.length || !(window.tenDialog ? await window.tenDialog.confirm("Smazat poznámky vytvořené ve starém prohlížeči na zobrazených stránkách? (Nové poznámky zůstanou.)", { ok: "Smazat" }) : confirm("Smazat poznámky vytvořené ve starém prohlížeči na zobrazených stránkách? (Nové poznámky zůstanou.)"))) return;
     for (const v of vs) {
       try { await this.env.deleteLegacyPage(this.fileId, this.store.layerKey(this.layer), v.n); this.store.layer(v.n, this.layer).legacy = null; await v.paintLegacy(this.store.pages[v.n]); v.refreshRegion(); }
       catch { this.toast("Smazání se nepodařilo"); }
@@ -1338,11 +1339,12 @@ class Reader {
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
   }
   baseName() { return this.title.replace(/\.pdf$/i, ""); }
-  async downloadOriginal() { this.saveBlob(this.bytes, this.baseName() + ".pdf"); }
+  async getBytes() { return this.bytes || await this.env.getPdfBytes(this.fileId, () => {}); } // originál se čte znovu z úložiště, nedrží se v paměti
+  async downloadOriginal() { this.saveBlob(await this.getBytes(), this.baseName() + ".pdf"); }
   async downloadAnnotated() {
     const PDFLib = this.env.PDFLib; if (!PDFLib) throw new Error("chybí knihovna PDF");
     await this.store.flushAll();
-    const out = await PDFLib.PDFDocument.load(this.bytes.slice(0));
+    const out = await PDFLib.PDFDocument.load(await this.getBytes());
     const pages = out.getPages();
     const keys = [["public", "public"], ["personal", this.env.user.uid]];
     const data = {};

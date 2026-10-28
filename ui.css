@@ -1,0 +1,115 @@
+/* 10space – dialogy, kontextová menu, profilové menu, indikátor připojení (ui.js).
+   Používá proměnné aplikace s pojistkou, funguje ve světlém i tmavém režimu a s redesign.css i bez něj. */
+
+/* ── Modální dialogy ─────────────────────────────────────────────── */
+.tn-ov { position: fixed; inset: 0; z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0); -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); transition: background 0.2s ease, backdrop-filter 0.2s ease; }
+.tn-ov.tn-in-open { background: rgba(0, 0, 0, 0.45); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.tn-ov.tn-out { background: rgba(0, 0, 0, 0); -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); }
+.tn-dlg { width: 100%; max-width: 400px; box-sizing: border-box; padding: 22px 22px 18px; border-radius: 24px; background: var(--raised, var(--surface, #fff)); color: var(--text, #1c1c1e); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32); opacity: 0; transform: translateY(8px) scale(0.94); transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.2, 1.25, 0.3, 1); }
+.tn-in-open .tn-dlg { opacity: 1; transform: none; }
+.tn-out .tn-dlg { opacity: 0; transform: translateY(4px) scale(0.96); transition: opacity 0.14s ease, transform 0.14s ease; }
+.tn-dlg h2 { margin: 0 0 8px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.tn-dlg p { margin: 0 0 14px; font-size: 14.5px; line-height: 1.5; color: var(--muted-2, var(--muted, #6e6e73)); white-space: pre-line; overflow-wrap: anywhere; }
+.tn-in { display: block; width: 100%; box-sizing: border-box; height: 44px; margin: 6px 0 14px; padding: 0 14px; border: 1px solid var(--input-border, transparent); border-radius: 14px; background: var(--surface-2, #f2f2f7); color: var(--text, #1c1c1e); font: inherit; font-size: 15px; outline: none; }
+.tn-in:focus { border-color: var(--accent, #EE220C); }
+.tn-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+.tn-btn { min-height: 44px; padding: 0 20px; border: none; border-radius: 14px; background: var(--btn-bg, var(--surface-2, #ebebf0)); color: var(--text, #1c1c1e); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.12s ease, filter 0.15s ease; }
+.tn-btn:hover { filter: brightness(0.96); }
+.tn-btn:active { transform: scale(0.97); }
+.tn-btn:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: 2px; }
+.tn-btn.tn-primary { background: var(--accent, #EE220C); color: #fff; }
+.tn-btn.tn-danger { background: var(--accent, #EE220C); color: #fff; }
+body.dark .tn-btn:not(.tn-primary):not(.tn-danger) { background: #2a2a2e; }
+@media (max-width: 480px) {
+  .tn-ov { align-items: flex-end; padding: 0; }
+  .tn-dlg { max-width: none; border-radius: 24px 24px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateY(30px); }
+  .tn-actions .tn-btn { flex: 1; }
+}
+
+/* ── Kontextové menu (tři tečky) ─────────────────────────────────── */
+.tn-menu { position: fixed; z-index: 4500; min-width: 220px; max-width: calc(100vw - 16px); padding: 6px; border-radius: 18px; background: var(--raised, var(--surface, #fff)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.5); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px) scale(0.9); transition: opacity 0.14s ease, transform 0.16s cubic-bezier(0.4, 0, 1, 1), visibility 0s linear 0.16s; }
+.tn-menu.open { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition: opacity 0.18s ease, transform 0.34s cubic-bezier(0.2, 1.25, 0.3, 1), visibility 0s; }
+body.dark .tn-menu { background: #18181b; box-shadow: 0 20px 54px rgba(0, 0, 0, 0.7), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
+.tn-mi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px 0 8px; border: none; border-radius: 13px; background: transparent; color: var(--text, #1c1c1e); font: inherit; font-size: 15px; font-weight: 500; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tn-menu.open .tn-mi { animation: tnIn 0.34s cubic-bezier(0.2, 0.9, 0.3, 1) both; animation-delay: calc(40ms + var(--i, 0) * 32ms); }
+.tn-mi:hover, .tn-mi:focus-visible { background: color-mix(in srgb, var(--text, #1c1c1e) 7%, transparent); outline: none; }
+.tn-mi:active { background: color-mix(in srgb, var(--text, #1c1c1e) 12%, transparent); }
+.tn-mi:disabled { opacity: 0.4; cursor: default; }
+.tn-mi-ic { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--muted, #6e6e73); background: color-mix(in srgb, currentColor 12%, transparent); }
+.tn-mi-ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tn-mi-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-mi-danger { color: #ff3b30; }
+.tn-mi-danger .tn-mi-ic { color: #ff3b30; }
+@keyframes tnIn { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: none; } }
+
+/* ── Profilové menu: stejný vzhled a animace jako v 10base ───────────
+   Zavřené menu zůstává v dokumentu (průhledné), aby se dalo animovat; původní pravidlo ho skrývalo hned. */
+/* jen mobil: na desktopu zůstává menu skryté (display: none z původního CSS), jinak by zabíralo místo v hlavičce */
+@media (max-width: 768px) {
+  .mobile-profile-menu {
+    display: block !important; box-sizing: border-box; width: min(304px, calc(100vw - 32px)); min-width: 0; padding: 8px; overflow: hidden;
+    top: calc(100% + 10px); right: 0; border-radius: 22px; border: none; z-index: 2000;
+    background: var(--raised, var(--surface, #fff));
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.55);
+    transform-origin: calc(100% - 22px) 0;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-10px) scale(0.88);
+    transition: opacity 0.14s ease, transform 0.18s cubic-bezier(0.4, 0, 1, 1), visibility 0s linear 0.18s;
+  }
+  .mobile-profile-menu.active {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: none;
+    transition: opacity 0.2s ease, transform 0.36s cubic-bezier(0.2, 1.25, 0.3, 1), visibility 0s;
+  }
+  body.dark .mobile-profile-menu { background: #18181b; box-shadow: 0 20px 54px rgba(0, 0, 0, 0.7), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
+}
+.pm-info { display: flex; align-items: center; gap: 14px; padding: 12px 12px 14px; }
+.pm-avatar { flex: none; width: 54px; height: 54px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: linear-gradient(135deg, #ff6a57, #EE220C); color: #fff; font-size: 19px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 0 0 0 3px color-mix(in srgb, #EE220C 22%, transparent); }
+.pm-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pm-id { min-width: 0; display: grid; gap: 2px; }
+.pm-name { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; color: var(--text, #1c1c1e); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-email { font-size: 12.5px; color: var(--muted, #8e8e93); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.pm-role { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1; padding: 4px 8px; border-radius: 999px; color: #EE220C; background: color-mix(in srgb, #EE220C 13%, transparent); }
+body.dark .pm-role { color: #ff6a57; }
+.pm-role:empty { display: none; }
+.pm-group { display: flex; flex-direction: column; gap: 2px; }
+.pm-group + .pm-group { margin-top: 6px; }
+.pm-item { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 10px 0 8px; border-radius: 14px; font-size: 15px; font-weight: 500; color: var(--text, #1c1c1e); cursor: pointer; transition: background 0.15s ease, transform 0.12s ease; -webkit-tap-highlight-color: transparent; }
+.pm-item:hover { background: color-mix(in srgb, var(--text, #1c1c1e) 6%, transparent); }
+.pm-item:active { background: color-mix(in srgb, var(--text, #1c1c1e) 11%, transparent); transform: scale(0.98); }
+.pm-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-icon { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--muted, #6e6e73); background: color-mix(in srgb, currentColor 12%, transparent); }
+.pm-icon svg { width: 18px; height: 18px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pm-icon.pm-red { color: #ff3b30; }
+.pm-logout { color: #ff3b30; }
+.mobile-profile-menu.active .pm-info { animation: tnIn 0.38s cubic-bezier(0.2, 0.9, 0.3, 1) 0.03s both; }
+.mobile-profile-menu.active .pm-item { animation: tnIn 0.36s cubic-bezier(0.2, 0.9, 0.3, 1) both; animation-delay: calc(70ms + var(--i, 0) * 34ms); }
+.mobile-avatar-btn { transition: transform 0.15s ease, box-shadow 0.2s ease; }
+.mobile-avatar-btn:active { transform: scale(0.94); }
+
+/* ── Karta projektu: akce v menu s tečkami ───────────────────────── */
+.projekt-card { position: relative; }
+.projekt-card-header { padding-right: 34px; }
+.pc-more { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; border: none; border-radius: 50%; background: transparent; color: var(--muted, #8e8e93); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s ease, color 0.15s ease; }
+.pc-more:hover, .pc-more:focus-visible { background: var(--surface-2, rgba(120, 120, 128, 0.14)); color: var(--text, #1c1c1e); outline: none; }
+.pc-more svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* ── Indikátor připojení ─────────────────────────────────────────── */
+.tn-net { position: fixed; left: 50%; top: calc(8px + env(safe-area-inset-top)); z-index: 6000; max-width: calc(100vw - 24px); transform: translate(-50%, -140%); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #1c1c1e; color: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; transition: transform 0.3s cubic-bezier(0.2, 1.1, 0.3, 1), opacity 0.2s ease; }
+.tn-net.show { transform: translate(-50%, 0); opacity: 1; }
+.tn-net.off { background: #b3261e; }
+.tn-net.on { background: #1f9d46; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-ov, .tn-dlg, .tn-menu, .tn-menu.open, .mobile-profile-menu, .mobile-profile-menu.active { transition: opacity 0.1s ease, visibility 0s; transform: none; }
+  .tn-net { transition: opacity 0.1s ease; }
+  .tn-menu.open .tn-mi, .mobile-profile-menu.active .pm-info, .mobile-profile-menu.active .pm-item { animation: none; }
+}
+
+/* ── Krátké oznámení ─────────────────────────────────────────────── */
+.tn-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 5500; max-width: min(420px, calc(100vw - 32px)); transform: translate(-50%, 16px); padding: 11px 18px; border-radius: 16px; font-size: 14px; font-weight: 600; text-align: center; background: #1c1c1e; color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.2, 1.1, 0.3, 1); }
+.tn-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 768px) { .tn-toast { bottom: calc(100px + env(safe-area-inset-bottom)); } }
+body.dark .tn-toast { background: #2a2a2e; }
+
+.tn-actions.tn-stack { flex-direction: column; }
+.tn-actions.tn-stack .tn-btn { width: 100%; }
