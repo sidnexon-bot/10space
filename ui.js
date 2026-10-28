@@ -136,7 +136,7 @@
   /* ── Záloha čtení z databáze (IndexedDB) ─────────────────────────────
      Jen nedůvěrná data, která aplikace čte často a která se mění zřídka (soubory, složky, projekty, akce, program,
      repertoár). Nikdy členové (jsou v nich PINy a telefony) ani anotace. */
-  var CACHEABLE = [/^\/driveCache\/(files|folders)$/, /^\/slozky$/, /^\/repertoar$/, /^\/projekty(\/[^/]+)?$/, /^\/akce(\/[^/]+)?$/, /^\/program$/];
+  var CACHEABLE = [/^\/driveCache\/(files|folders)$/, /^\/slozky$/, /^\/repertoar$/, /^\/projekty(\/[^/]+)?$/, /^\/projektKody$/, /^\/akce(\/[^/]+)?$/, /^\/program$/];
   var MAX_AGE = 14 * 24 * 3600 * 1000;
   var dbp;
   function idb() { return dbp || (dbp = new Promise(function (res, rej) { var r = indexedDB.open("10space-data", 1); r.onupgradeneeded = function () { r.result.createObjectStore("kv"); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; })); }

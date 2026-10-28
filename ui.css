@@ -121,3 +121,6 @@ body.dark .tn-toast { background: #2a2a2e; }
 .tn-sheetdlg h2 { padding: 0 12px; margin-bottom: 10px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tn-sheetdlg .tn-list { display: flex; flex-direction: column; gap: 2px; max-height: min(60vh, 460px); overflow-y: auto; }
 .tn-sheetdlg .tn-mi[data-noicon] { padding-left: 12px; }
+/* Bottom sheet musí ležet nad detailem projektu, PDF čtečkou, přehrávačem i náhledem dokumentu (3000–3600), ale pod modálními okny (5000) */
+body .bottom-sheet-overlay { z-index: 4000; }
+body .bottom-sheet { z-index: 4001; }

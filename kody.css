@@ -1,0 +1,27 @@
+/* 10space – kódy projektů (kody.js) */
+.pc-kod { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 999px; font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: var(--accent, #EE220C); background: color-mix(in srgb, var(--accent, #EE220C) 12%, transparent); }
+.pc-kod:empty { display: none; }
+.kd-hint { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--muted, #8e8e93); }
+.kd-num { padding: 4px 0 2px; }
+.kd-num + .kd-num { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--hair, rgba(128, 128, 128, 0.2)); }
+.kd-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.kd-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kd-code { display: inline-flex; align-items: center; gap: 7px; border: none; border-radius: 12px; padding: 7px 12px; font: 700 17px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: var(--accent, #EE220C); background: color-mix(in srgb, var(--accent, #EE220C) 11%, transparent); cursor: pointer; flex: none; }
+.kd-code.sm { font-size: 13px; padding: 5px 10px; border-radius: 10px; }
+.kd-code svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.kd-code:active { transform: scale(0.97); }
+.kd-list { list-style: none; margin: 10px 0 4px; padding: 0; }
+.kd-it { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--hair, rgba(128, 128, 128, 0.15)); font-size: 14px; }
+.kd-it:first-child { border-top: none; }
+.kd-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.kd-it.closed .kd-t { color: var(--muted, #8e8e93); text-decoration: line-through; }
+.kd-st { flex: none; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: var(--muted, #8e8e93); background: color-mix(in srgb, currentColor 12%, transparent); }
+.kd-more { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: none; border-radius: 50%; background: transparent; color: var(--muted, #8e8e93); cursor: pointer; }
+.kd-more:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.kd-more svg { width: 18px; height: 18px; fill: currentColor; }
+.kd-add { margin-top: 8px; border: none; border-radius: 999px; padding: 8px 14px; font: 600 13px inherit; font-family: inherit; color: var(--text, #1c1c1e); background: color-mix(in srgb, currentColor 8%, transparent); cursor: pointer; }
+.kd-add:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+.kd-general { margin: 8px 16px 24px; padding: 16px; border-radius: 20px; background: var(--raised, var(--surface, #fff)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); }
+.kd-gtitle { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+body.dark .kd-general { background: var(--raised, #1c1c1e); }
+@media (min-width: 769px) { .kd-general { margin: 8px 24px 28px; } }

@@ -12,6 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="platform.js"></script>
   <script src="ui.js"></script>
+  <script src="kody.js"></script>
   <title>10space</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1431,6 +1432,7 @@
   <link rel="stylesheet" href="viewers.css">
   <link rel="stylesheet" href="decks.css">
   <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="kody.css">
 </head>
 <body class="login-page" id="body">
 
@@ -2145,6 +2147,7 @@ async function loadData() {
 
   if (window.tenDecks) window.tenDecks.start(); else window.__tenStartRequested = true;
   // po výpadku, zavření nebo znovunačtení naváže tam, kde uživatel skončil (do 2 minut); jinak Dashboard, bez připojení osobní desky
+  window.tenKody?.start();
   window.tenResume?.init(auth.currentUser?.uid);
   const resumed = window.tenResume ? await window.tenResume.restore() : false;
   if (!resumed) switchTab(window.location.hash === "#/osobni" || navigator.onLine === false ? "decks" : "recent");
@@ -3758,6 +3761,7 @@ async function renderProjekty() {
           <div class="projekt-card-name">${p.nazev || "—"}</div>
           <div class="projekt-card-datum">${datum}</div>
         </div>
+        ${window.tenKody ? window.tenKody.badge(p.id) : ""}
         ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
         ${p.wikiText ? `
           <div class="projekt-card-wiki">${p.wikiText}</div>
@@ -3786,7 +3790,9 @@ async function renderProjekty() {
     `;
   }
 
+  html += `<div id="kody-general"></div>`;
   area.innerHTML = html;
+  window.tenKody?.refresh();
 }
 
 window.toggleArchiv = () => {
@@ -4014,6 +4020,9 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
         </div>
       `).join("")}
     </div>
+
+    <!-- KÓD PROJEKTU (kody.js) -->
+    <div id="kody-sekce" data-akce="${projektId}"></div>
   
     <!-- WIKI -->
     <div class="projekt-sekce">
