@@ -26,11 +26,15 @@
 body.dark .kd-general { background: var(--raised, #1c1c1e); }
 @media (min-width: 769px) { .kd-general { margin: 8px 24px 28px; } }
 
-/* řádek „Interní kód“ v informacích o akci */
-.projekt-info-value:has(> .kd-row), .kd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.kd-row .kd-code { font-size: 15px; padding: 5px 10px; }
-.kd-row .kd-code.sm { font-size: 12px; padding: 4px 8px; }
+/* řádek „Interní kód“ v informacích o akci: stejné písmo, velikost a barva jako ostatní hodnoty; klepnutím se kopíruje (tečkované podtržení), ⋮ na konci řádku */
+.projekt-info-value:has(> .kd-row) { min-width: 0; }
+.kd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.kd-row .kd-code, .kd-row .kd-code.sm { display: inline; border: none; background: none; padding: 0; margin: 0; border-radius: 0; font: inherit; letter-spacing: normal; color: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted; text-decoration-color: var(--muted, #8e8e93); text-underline-offset: 4px; }
+.kd-row .kd-code svg { display: none; }
+.kd-row .kd-code.sm::before { content: "·"; display: inline-block; margin-right: 8px; color: var(--muted, #8e8e93); text-decoration: none; }
+.kd-row .kd-code.closed { opacity: 1; color: var(--muted, #8e8e93); text-decoration: line-through; }
+.kd-row .kd-code:active { transform: none; opacity: 0.6; }
+.kd-row .kd-add { margin: 0; padding: 4px 10px; font-size: 13px; }
+.kd-row .kd-more { width: 28px; height: 20px; margin: -4px 0 -4px auto; }   /* nesmí zvětšit výšku řádku, aby štítek a hodnota seděly na stejné lince */
+.kd-row .kd-more svg { width: 16px; height: 16px; }
 .kd-code.closed { opacity: 0.55; text-decoration: line-through; }
-
-/* štítek na řádku s datem karty projektu: drží původní rytmus karty (název, datum, místo, popis) a nikdy se nezalomí */
-.projekt-card-datum .pc-kod { margin: 0 0 0 8px; padding: 2px 8px; font-size: 11px; vertical-align: 1px; white-space: nowrap; }
