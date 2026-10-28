@@ -566,6 +566,18 @@ window.tenViewers = {
     return false;
   },
   kindOf, getState: viewerState, restore: viewerRestore,
+  async openNative(id, name, win) { // soubor se otevře v prohlížeči PDF v zařízení (u iPhonu systémový náhled), ne v naší čtečce
+    try {
+      window.showSpinner?.("Načítání…");
+      const { auth, FUNCTIONS } = window.__tenCtx, token = await auth.currentUser.getIdToken();
+      const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Server vrátil " + res.status);
+      const url = URL.createObjectURL(new Blob([await res.blob()], { type: "application/pdf" }));
+      setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);
+      if (win && !win.closed) { win.location.href = url; return; }
+      const w = window.open(url, "_blank"); if (!w) { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); toast("Prohlížeč nepovolil nové okno, soubor se stáhl."); }
+    } catch (e) { try { win?.close(); } catch (e2) { /* nic */ } toast("Chyba: " + e.message); } finally { try { window.hideSpinner?.(); } catch (e) { /* bez spinneru */ } }
+  },
   async download(id, name) { // velké PDF se nestahuje po blocích do paměti, ale jako jeden proud do souboru
     try {
       window.showSpinner?.("Stahování…");

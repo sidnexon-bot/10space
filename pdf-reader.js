@@ -504,6 +504,7 @@ class Reader {
     this.showLoading("Načítám PDF…", true);
     try {
       const buf = await this.env.getPdfBytes(this.fileId, (f) => { const b = this.loadingEl?.querySelector(".pdf2-bar>i"); if (b) b.style.width = Math.round(f * 100) + "%"; });
+      if (await window.tenPdfGuard?.check(buf, this.fileId, this.title)) { this.bytes = null; this.close(); return; } // sken s obřími obrázky by zařízení pamětí zahltil
       this.doc = await this.env.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise; // buffer se předá čtecímu vláknu bez kopie, v paměti zůstává jediná
       this.bytes = null;
     } catch (e) {

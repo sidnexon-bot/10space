@@ -260,14 +260,38 @@
   var OPENKEY = "10space.pdfOpen", HEAVYKEY = "10space.heavyPdf", HEAVYTTL = 30 * 24 * 3600 * 1000;
   function heavyMap() { try { return JSON.parse(ls.get(HEAVYKEY) || "{}") || {}; } catch (e) { return {}; } }
   function sizeMB(id) { var f = (window.driveFiles || {})[id]; return f && f.size ? (+f.size / 1048576) : 0; }
-  // označení platí jen pro větší soubory (pád z nedostatku paměti u malého PDF nedává smysl); neznámá velikost se bere jako velký
-  function isHeavy(id) { var t = heavyMap()[id]; if (!t || Date.now() - t > HEAVYTTL) return false; var mb = sizeMB(id); return !mb || mb >= 4; }
+  function isHeavy(id) { var t = heavyMap()[id]; return !!t && Date.now() - t < HEAVYTTL; }
   function setHeavy(id, on) { var h = heavyMap(); if (on) h[id] = Date.now(); else delete h[id]; var k = Object.keys(h); if (k.length > 60) k.sort(function (a, b) { return h[a] - h[b]; }).slice(0, k.length - 60).forEach(function (x) { delete h[x]; }); ls.set(HEAVYKEY, JSON.stringify(h)); }
   try {
     var pend = JSON.parse(ls.get(OPENKEY) || "null");
-    if (pend && pend.id && Date.now() - pend.t < 180000) { setHeavy(pend.id, true); window.tenCrashedPdf = pend.id; }
-    ls.del(OPENKEY);
+    if (pend && pend.id && Date.now() - pend.t < 180000) {
+      setHeavy(pend.id, true); window.tenCrashedPdf = pend.id;
+      try { var tr = JSON.parse(ls.get("10space.pdfTrace") || "null"); if (tr && tr.id === pend.id) window.tenCrashTrace = tr.lines; } catch (e2) { /* bez stopy */ }
+    }
+    ls.del(OPENKEY); ls.del("10space.pdfTrace");
   } catch (e) { /* poškozený záznam */ }
+  // při běžném zavření nebo obnovení stránky přijde pagehide a značka se smaže; při pádu nebo ukončení procesu ne
+  window.addEventListener("pagehide", function () { ls.del(OPENKEY); ls.del("10space.pdfTrace"); });
+  // Stopa otevírání: pár posledních kroků a stav pláten se průběžně zapisuje do zařízení. Při pádu zůstane a po restartu se
+  // ukáže ve volbě, takže je vidět, kde se otevírání zaseklo (načítání, rozbor souboru, vykreslování).
+  var TRACEKEY = "10space.pdfTrace", traceBuf = [];
+  function trace(step, extra) {
+    var t0 = R.opening ? R.opening.t : Date.now();
+    traceBuf.push(Math.round((Date.now() - t0) / 100) / 10 + " s: " + step + (extra ? " " + extra : ""));
+    if (traceBuf.length > 14) traceBuf.shift();
+    ls.set(TRACEKEY, JSON.stringify({ id: R.opening && R.opening.id, lines: traceBuf }));
+  }
+  function sampleCanvases() {
+    var cs = [].slice.call(document.querySelectorAll(".pdf2-root canvas, #pdf-stage canvas")), px = 0;
+    cs.forEach(function (c) { px += c.width * c.height; });
+    var info = document.querySelector('.pdf2-root [data-role="pageinfo"]'), bar = document.querySelector(".pdf2-root .pdf2-bar>i");
+    var heap = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) + " MB heap" : "";
+    return "plátna " + cs.length + " (" + (px / 1e6).toFixed(1) + " Mpx)" + (info ? ", " + info.textContent : "") + (bar && !cs.length ? ", načteno " + bar.style.width : "") + (heap ? ", " + heap : "");
+  }
+  var lastSample = "";
+  function traceTick() {
+    try { if (!R.opening) return; var smp = sampleCanvases(); if (smp !== lastSample) { lastSample = smp; trace("stav", smp); } } catch (e) { /* diagnostika je jen pomůcka */ }
+  }
   function pdfLoaded() { return !!(document.querySelector(".pdf2-root canvas") || document.querySelector("#pdf-stage canvas")); }
   function checkOpening() {
     if (!R.opening) return;
@@ -276,12 +300,48 @@
   }
   async function heavyChoice(id, title, orig) {
     var mb = sizeMB(id), what = mb ? " (" + (mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)) + " MB)" : "";
-    var c = await tenDialog.choose("Velký soubor", "Při otevírání not „" + (title || "soubor") + "“" + what + " se aplikace dříve restartovala, nejspíš kvůli nedostatku paměti zařízení. Jak je chcete otevřít?", [
-      { label: "Úsporné zobrazení (bez poznámek)", primary: true }, { label: "Stáhnout soubor" }, { label: "Zkusit znovu normálně" }, { label: "Zrušit" }]);
-    if (c === 0 && window.openPdfViewerLegacy) { R.opening = { id: id, t: Date.now() }; ls.set(OPENKEY, JSON.stringify({ id: id, t: Date.now() })); R.pdf = null; return window.openPdfViewerLegacy(id, title); }
-    if (c === 1 && window.tenViewers && window.tenViewers.download) return window.tenViewers.download(id, (title || "noty").replace(/\.pdf$/i, "") + ".pdf");
-    if (c === 2) { setHeavy(id, false); return window.openPdfViewer(id, title); }
+    var detail = window.tenCrashTrace && window.tenCrashedPdf === id ? "\n\nPodrobnosti pro opravu:\n" + window.tenCrashTrace.slice(-6).join("\n") : "";
+    var c = await tenDialog.choose("Tyto noty se nepodařilo otevřít", "Při otevírání not „" + (title || "soubor") + "“" + what + " se aplikace restartovala, nejspíš kvůli nedostatku paměti zařízení. Jak je chcete otevřít?" + detail, [
+      { label: "Otevřít v prohlížeči PDF v zařízení", primary: true }, { label: "Úsporné zobrazení (bez poznámek)" }, { label: "Stáhnout soubor" }, { label: "Zkusit znovu normálně" }, { label: "Zrušit" }]);
+    if (c === 0) { var w = null; try { w = window.open("", "_blank"); } catch (e) { /* zablokováno */ } if (window.tenViewers && window.tenViewers.openNative) return window.tenViewers.openNative(id, (title || "noty").replace(/\.pdf$/i, "") + ".pdf", w); }
+    if (c === 1 && window.openPdfViewerLegacy) { R.opening = { id: id, t: Date.now() }; ls.set(OPENKEY, JSON.stringify({ id: id, t: Date.now() })); R.pdf = null; return window.openPdfViewerLegacy(id, title); }
+    if (c === 2 && window.tenViewers && window.tenViewers.download) return window.tenViewers.download(id, (title || "noty").replace(/\.pdf$/i, "") + ".pdf");
+    if (c === 3) { setHeavy(id, false); return window.openPdfViewer(id, title); }
   }
+
+  /* Kontrola před otevřením: sken, jehož stránky jsou jediný obří obrázek (stovky megapixelů), čtečka po rozbalení do paměti
+     nemusí unést a na telefonu ukončí stránku. Rozměry obrázků se přečtou přímo z bajtů souboru (bez rozbalování). */
+  var HUGEPX = 50e6;
+  function scanImages(buf) {
+    var u8 = new Uint8Array(buf), dec = new TextDecoder("latin1"), CH = 4 * 1048576, out = [];
+    for (var o = 0; o < u8.length; o += CH) {
+      var txt = dec.decode(u8.subarray(o, Math.min(u8.length, o + CH + 1024))), re = /\/Subtype\s*\/Image/g, m;
+      while ((m = re.exec(txt))) {
+        if (m.index >= CH) break; // přesah patří další části
+        var a = txt.lastIndexOf("obj", m.index), b = txt.indexOf("stream", m.index), d = txt.slice(a < 0 ? 0 : a, b < 0 ? m.index + 600 : b);
+        var w = /\/Width\s+(\d+)/.exec(d), h = /\/Height\s+(\d+)/.exec(d);
+        if (w && h) out.push({ w: +w[1], h: +h[1] });
+      }
+    }
+    return out;
+  }
+  async function hugeCheck(buf, id, title) {
+    var imgs;
+    try { imgs = scanImages(buf); } catch (e) { return false; /* kontrola je jen pojistka */ }
+    var big = imgs.filter(function (i) { return i.w * i.h > HUGEPX; });
+    if (!big.length) return false;
+    var m = big.reduce(function (a, i) { return i.w * i.h > a.w * a.h ? i : a; });
+    try { trace("obří obrázek " + m.w + "×" + m.h + " (" + (m.w * m.h / 1e6).toFixed(0) + " Mpx), stran s ním " + big.length); } catch (e) { /* bez stopy */ }
+    var name = (title || "noty").replace(/\.pdf$/i, "") + ".pdf";
+    var c = await tenDialog.choose("Tyto noty jsou příliš velký sken", "Stránky not „" + (title || "soubor") + "“ jsou obrázky o velikosti asi " + m.w + "×" + m.h + " bodů (" + (m.w * m.h / 1e6).toFixed(0) + " megapixelů). Naše čtečka je do paměti zařízení nemusí unést a aplikace by se mohla restartovat. Poznámky se v prohlížeči PDF v zařízení psát nedají.", [
+      { label: "Otevřít v prohlížeči PDF v zařízení", primary: true }, { label: "Stáhnout soubor" }, { label: "Přesto otevřít v čtečce" }, { label: "Zrušit" }]);
+    if (c === 2) return false;
+    R.opening = null; ls.del(OPENKEY); R.pdf = null;
+    if (c === 0) { var w = null; try { w = window.open("", "_blank"); } catch (e) { /* zablokováno */ } if (window.tenViewers && window.tenViewers.openNative) window.tenViewers.openNative(id, name, w); }
+    else if (c === 1 && window.tenViewers && window.tenViewers.download) window.tenViewers.download(id, name);
+    return true;
+  }
+  window.tenPdfGuard = { check: hugeCheck, scan: scanImages };
 
   var tenResume = {
     init: function (uid) {
@@ -289,13 +349,16 @@
       var o = window.openPdfViewer;
       if (typeof o === "function") window.openPdfViewer = function (id, title) {
         if (isHeavy(id)) return heavyChoice(id, title, o);
-        R.pdf = { id: id, title: title }; R.pdfAt = Date.now(); R.opening = { id: id, t: Date.now() }; ls.set(OPENKEY, JSON.stringify({ id: id, t: Date.now() }));
+        try { R.pdf = { id: id, title: title }; R.pdfAt = Date.now(); R.opening = { id: id, t: Date.now() }; ls.set(OPENKEY, JSON.stringify({ id: id, t: Date.now() })); } catch (e) { /* bez značky se jen vypne pojistka */ }
+        try { traceBuf = []; lastSample = ""; trace("otevírání začalo", (sizeMB(id) ? sizeMB(id).toFixed(1) + " MB" : "velikost neznámá") + ", okno " + innerWidth + "×" + innerHeight + " @" + (window.devicePixelRatio || 1) + "x"); } catch (e) { /* diagnostika nesmí zabránit otevření */ }
         return o.apply(this, arguments);
       };
       R.timer = setInterval(function () { checkOpening(); if (!document.hidden) persist(); }, 1000);
+      R.traceTimer = setInterval(traceTick, 250);
       document.addEventListener("visibilitychange", persist); window.addEventListener("pagehide", persist); window.addEventListener("hashchange", persist);
     },
     restore: restore,
+    flush: persist, // uloží stav hned (pro testy)
     clear: function () { ls.del(RKEY); }
   };
 
