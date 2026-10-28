@@ -3759,9 +3759,8 @@ async function renderProjekty() {
         <button type="button" class="pc-more" aria-label="Akce projektu" aria-haspopup="menu" onclick="event.stopPropagation();openProjektMenu(this,'${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
         <div class="projekt-card-header">
           <div class="projekt-card-name">${p.nazev || "—"}</div>
-          <div class="projekt-card-datum">${datum}</div>
+          <div class="projekt-card-datum">${datum}${window.tenKody ? window.tenKody.badge(p.id) : ""}</div>
         </div>
-        ${window.tenKody ? window.tenKody.badge(p.id) : ""}
         ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
         ${p.wikiText ? `
           <div class="projekt-card-wiki">${p.wikiText}</div>

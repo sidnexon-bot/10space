@@ -1,5 +1,5 @@
 /* 10space – kódy projektů (kody.js) */
-.pc-kod { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 999px; font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: var(--accent, #EE220C); background: color-mix(in srgb, var(--accent, #EE220C) 12%, transparent); }
+.pc-kod { display: inline-block; padding: 2px 9px; border-radius: 999px; font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: var(--accent, #EE220C); background: color-mix(in srgb, var(--accent, #EE220C) 12%, transparent); }
 .pc-kod:empty { display: none; }
 .kd-hint { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--muted, #8e8e93); }
 .kd-num { padding: 4px 0 2px; }
@@ -31,3 +31,6 @@ body.dark .kd-general { background: var(--raised, #1c1c1e); }
 .kd-row .kd-code { font-size: 15px; padding: 5px 10px; }
 .kd-row .kd-code.sm { font-size: 12px; padding: 4px 8px; }
 .kd-code.closed { opacity: 0.55; text-decoration: line-through; }
+
+/* štítek na řádku s datem karty projektu: drží původní rytmus karty (název, datum, místo, popis) a nikdy se nezalomí */
+.projekt-card-datum .pc-kod { margin: 0 0 0 8px; padding: 2px 8px; font-size: 11px; vertical-align: 1px; white-space: nowrap; }
