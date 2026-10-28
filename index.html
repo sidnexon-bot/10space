@@ -4186,13 +4186,17 @@ window.mobileSwitchTab = (tab) => {
 
 // BOTTOM SHEET
 function openBottomSheet(title, items) {
+  items = items.filter(Boolean);
+  if (window.tenSheet && window.tenSheet.open(title, items)) return; // tablet a počítač: modální okno
+  const T = window.tenSheet;
   document.getElementById("bs-title").textContent = title;
   document.getElementById("bs-items").innerHTML = items.map(item => `
-    <div class="bottom-sheet-item ${item.danger ? 'danger' : ''}" onclick="${item.action}">
-      ${item.icon}
-      ${item.label}
+    <div class="bottom-sheet-item ${item.danger ? 'danger' : ''}" onclick="${T ? T.act(item) : item.action}">
+      ${item.icon || ""}
+      ${T ? T.esc(item.label) : item.label}
     </div>
   `).join('<div class="bottom-sheet-sep"></div>');
+  document.getElementById("bottom-sheet").scrollTop = 0;
   document.getElementById("bs-overlay").classList.add("active");
   document.getElementById("bottom-sheet").classList.add("active");
 }
@@ -4202,7 +4206,9 @@ window.closeBottomSheet = () => {
   sheet.style.transform = "";
   document.getElementById("bs-overlay").classList.remove("active");
   document.getElementById("bottom-sheet").classList.remove("active");
+  window.tenSheet?.close();
 };
+window.openBottomSheet = openBottomSheet;
 
 window.openSearchFilterSheet = () => {
   const current = document.getElementById("search-category").value;
@@ -4283,8 +4289,9 @@ window.closeMobileProfileMenu = () => {
   const sheet = document.getElementById("bottom-sheet");
 
   sheet.addEventListener("touchstart", (e) => {
-    startY = e.touches[0].clientY;
-    isDragging = true;
+    startY = currentY = e.touches[0].clientY; // bez vynulování by klepnutí použilo polohu z minulého tahu a zavřelo nabídku
+    isDragging = sheet.scrollTop <= 0; // dlouhý seznam se nejdřív posouvá, zavírá se tahem od jeho začátku
+    if (isDragging) sheet.classList.add("dragging");
   }, { passive: true });
 
   sheet.addEventListener("touchmove", (e) => {
@@ -4299,6 +4306,7 @@ window.closeMobileProfileMenu = () => {
   sheet.addEventListener("touchend", () => {
     if (!isDragging) return;
     isDragging = false;
+    sheet.classList.remove("dragging");
     const diff = currentY - startY;
     if (diff > 80) {
       closeBottomSheet();

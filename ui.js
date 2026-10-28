@@ -373,23 +373,76 @@
   }
   window.showToast = tenToast;
 
+  /* ── Nabídka akcí: na telefonu bottom sheet, na tabletu a počítači modální okno ───────────
+     Položky mají tvar { label, icon, danger, action (text s JS jako dřív) | onClick (funkce) }. */
+  var sheetFns = [], sheetModal = null;
+  function isPhone() {
+    try { return matchMedia("(max-width: 599px)").matches || (matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 600); } catch (e) { return innerWidth < 600; }
+  }
+  function sheetClose() {
+    if (!sheetModal) return;
+    var m = sheetModal; sheetModal = null;
+    document.removeEventListener("keydown", m.onKey, true);
+    m.ov.classList.add("tn-out");
+    setTimeout(function () { m.ov.remove(); try { if (m.prev && m.prev.focus && document.contains(m.prev)) m.prev.focus(); } catch (e) { /* prvek zmizel */ } }, reduced() ? 0 : 150);
+  }
+  function sheetAct(it) { // text pro onclick položky; funkce se uloží a zavolá se po zavření nabídky
+    if (!it.onClick) return it.action || "";
+    sheetFns.push(it.onClick); return "tenSheet.run(" + (sheetFns.length - 1) + ")";
+  }
+  function sheetOpen(title, items) {
+    sheetFns = []; sheetClose();
+    items = (items || []).filter(Boolean);
+    if (isPhone()) return false; // bottom sheet vykreslí hlavní skript stejně jako dřív
+    var prev = document.activeElement, ov = document.createElement("div");
+    ov.className = "tn-ov";
+    ov.innerHTML = '<div class="tn-dlg tn-sheetdlg" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><h2>' + esc(title) + '</h2><div class="tn-list" role="menu">' +
+      items.map(function (it) { return '<button type="button" role="menuitem" class="tn-mi' + (it.danger ? " tn-mi-danger" : "") + '"' + (it.icon ? "" : " data-noicon") + '>' + (it.icon ? '<span class="tn-mi-ic">' + it.icon + "</span>" : "") + '<span class="tn-mi-t">' + esc(it.label) + "</span></button>"; }).join("") +
+      "</div></div>";
+    document.body.appendChild(ov);
+    var btns = [].slice.call(ov.querySelectorAll(".tn-mi"));
+    btns.forEach(function (b, i) {
+      var it = items[i], act = sheetAct(it);
+      b.addEventListener("click", function () {
+        sheetClose();
+        if (it.onClick) setTimeout(function () { it.onClick(); }, 0);
+        else if (act) setTimeout(function () { try { (new Function(act))(); } catch (e) { console.error("Akce nabídky selhala:", e); } }, 0);
+      });
+    });
+    var m = { ov: ov, prev: prev };
+    m.onKey = function (e) {
+      var i = btns.indexOf(document.activeElement);
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); sheetClose(); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); btns[(i + 1) % btns.length].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); btns[(i - 1 + btns.length) % btns.length].focus(); }
+      else if (e.key === "Tab") { e.preventDefault(); btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus(); }
+    };
+    document.addEventListener("keydown", m.onKey, true);
+    ov.addEventListener("mousedown", function (e) { if (e.target === ov) sheetClose(); });
+    sheetModal = m;
+    requestAnimationFrame(function () { ov.classList.add("tn-in-open"); if (btns[0]) btns[0].focus({ preventScroll: true }); });
+    return true;
+  }
+  var tenSheet = { open: sheetOpen, close: sheetClose, act: sheetAct, esc: esc, isPhone: isPhone, run: function (i) { var f = sheetFns[i]; if (typeof window.closeBottomSheet === "function") window.closeBottomSheet(); if (f) setTimeout(f, 0); } };
+
   /* Menu karty projektu (tři tečky vpravo nahoře) */
   var IC = {
-    open: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
-    folder: '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
-    share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
-    trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>'
+    open: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+    folder: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+    share: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
+    trash: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>'
   };
   window.openProjektMenu = function (btn, id) {
     var p = (window.__projektyMap || {})[id]; if (!p) return;
     var c = window.__tenCtx, admin = !!(c && c.user && c.user.role === "ADMIN");
-    tenMenu.open(btn, [
+    var items = [
       { label: "Otevřít projekt", icon: IC.open, onClick: function () { window.otevritProjekt(id); } },
       p.driveFolderId ? { label: "Drive složka", icon: IC.folder, onClick: function () { window.switchTab("folders"); setTimeout(function () { window.navigateToDriveFolder(p.driveFolderId, p.nazev || ""); }, 300); } } : null,
       { label: "Sdílet projekt", icon: IC.share, onClick: function () { window.shareProjekt(id); } },
       admin ? { label: "Smazat projekt", icon: IC.trash, danger: true, onClick: function () { window.smazatProjekt(id); } } : null
-    ]);
+    ].filter(Boolean);
+    window.openBottomSheet(p.nazev || "Projekt", items); // telefon: bottom sheet, tablet a počítač: modální okno
   };
 
-  window.tenCache = tenCache; window.tenDialog = tenDialog; window.tenMenu = tenMenu; window.tenData = tenData; window.tenResume = tenResume;
+  window.tenCache = tenCache; window.tenDialog = tenDialog; window.tenMenu = tenMenu; window.tenSheet = tenSheet; window.tenData = tenData; window.tenResume = tenResume;
 })();

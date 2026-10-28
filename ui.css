@@ -113,3 +113,11 @@ body.dark .tn-toast { background: #2a2a2e; }
 
 .tn-actions.tn-stack { flex-direction: column; }
 .tn-actions.tn-stack .tn-btn { width: 100%; }
+
+/* Nabídka akcí (bottom sheet na telefonu, modální okno jinde) */
+.bottom-sheet { max-height: 85vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.bottom-sheet.dragging { transition: none !important; }
+.tn-sheetdlg { max-width: 380px; padding: 20px 10px 10px; }
+.tn-sheetdlg h2 { padding: 0 12px; margin-bottom: 10px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-sheetdlg .tn-list { display: flex; flex-direction: column; gap: 2px; max-height: min(60vh, 460px); overflow-y: auto; }
+.tn-sheetdlg .tn-mi[data-noicon] { padding-left: 12px; }
