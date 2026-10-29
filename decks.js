@@ -8,6 +8,8 @@
    S aplikací se potkává přes window.__tenCtx a window.tenDecks (viz index.html).
    Vypnutí: odebrat <script src="decks.js"> a <link href="decks.css">. */
 
+import { createRepertoire, fileOf } from "./repertoar.js";
+
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ctx = () => window.__tenCtx;
@@ -65,7 +67,7 @@ function computeNext() {
   if (!ev) return { event: null, items: [] };
   // doslova nejbližší akce; nemá-li program, noty se nestahují, dokud se nevyplní
   const mine = Object.values(S.program).filter((p) => p.id_akce === ev.id).sort((a, b) => (a.order || 0) - (b.order || 0));
-  const items = mine.map((p, i) => { const s = songOf(p), fid = s?.driveFileId || null; return { fileId: fid, title: s?.name || (window.driveFiles?.[fid]?.name) || "Skladba", code: s?.code || "", order: i + 1 }; });
+  const items = mine.map((p, i) => { const s = songOf(p), fid = fileOf(s); return { fileId: fid, title: s?.name || (window.driveFiles?.[fid]?.name) || "Skladba", code: s?.code || "", order: i + 1 }; });
   return { event: { id: ev.id, name: ev.name || "Akce", date: ev.date, start: ev.start || "", place: ev.place || "" }, items };
 }
 const refreshNext = () => { const n = computeNext(); if (n) S.next = n; };
@@ -175,7 +177,7 @@ async function write(updates) {
 }
 const folderList = () => Object.entries(S.data.folders).map(([id, f]) => ({ id, ...f })).sort((a, b) => (a.order || 0) - (b.order || 0));
 const itemList = (fid) => Object.entries(S.data.items[fid] || {}).map(([id, it]) => ({ fileId: id, ...it })).sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
-const titleFor = (id) => { const s = Object.values(window.repertoar || {}).find((x) => x.driveFileId === id); return s?.name || window.driveFiles?.[id]?.name || "Noty"; };
+const titleFor = (id) => { const s = Object.values(window.repertoar || {}).find((x) => fileOf(x) === id); return s?.name || window.driveFiles?.[id]?.name || "Noty"; };
 const createFolder = async (name) => { const id = newId(); return (await write({ [`folders/${id}`]: { name, order: Date.now(), createdAt: Date.now(), offline: false } })) ? id : null; };
 const addItems = (fid, ids) => write(Object.fromEntries(ids.map((id) => [`items/${fid}/${id}`, { title: titleFor(id).slice(0, 200), addedAt: Date.now() }])));
 
@@ -198,7 +200,7 @@ const confirmDlg = (title, text, ok) => dialog({ title, text, ok, danger: true }
 /* Výběr not z Drive (repertoár + ostatní PDF) */
 function pickerCandidates() {
   const files = window.driveFiles || {}, seen = new Set(), out = [];
-  Object.values(window.repertoar || {}).forEach((s) => { const id = s.driveFileId; if (id && files[id]?.mimeType === "application/pdf" && !seen.has(id)) { seen.add(id); out.push({ id, name: s.name || files[id].name, sub: [s.code, s.arranged_by].filter(Boolean).join(" · ") }); } });
+  Object.values(window.repertoar || {}).forEach((s) => { const id = fileOf(s); if (id && files[id]?.mimeType === "application/pdf" && !seen.has(id)) { seen.add(id); out.push({ id, name: s.name || files[id].name, sub: [s.code, s.arranged_by].filter(Boolean).join(" · ") }); } });
   Object.entries(files).forEach(([id, f]) => { if (f.mimeType === "application/pdf" && !seen.has(id)) { seen.add(id); out.push({ id, name: f.name, sub: "" }); } });
   return out.sort((a, b) => String(a.name).localeCompare(String(b.name), "cs", { numeric: true }));
 }
@@ -292,6 +294,7 @@ function drawHome() {
     <div class="dashboard-card-title"><span>Moje složky</span><button class="drive-toolbar-btn primary dk-new" data-act="newFolder" ${ed ? "" : "disabled"}>${ICON.plus}<span>Nová složka</span></button></div>
     ${S.dataErr ? `<div class="dk-empty err"><p>Složky se nepodařilo načíst: ${/permission/i.test(S.dataErr) ? "v databázi zatím chybí pravidla pro osobní desky." : esc(S.dataErr)}</p></div>` : folders.length ? `<div class="dk-rows">${folders.map((f) => { const n = Object.keys(S.data.items[f.id] || {}).length; return `<div class="dk-row dk-folder" data-folder="${esc(f.id)}" role="button" tabindex="0"><span class="dk-ic fold">${ICON.folder}</span><span class="dk-t"><b>${esc(f.name)}</b><small>${n} ${n === 1 ? "nota" : n >= 2 && n <= 4 ? "noty" : "not"}</small></span>${f.offline ? `<span class="dk-chip ok" title="Složka se stahuje do zařízení">${ICON.cloud}<span>Offline</span></span>` : ""}<span class="dk-go">${ICON.chev}</span></div>`; }).join("")}</div>` : `<div class="dk-empty"><p>Zatím nemáte žádné složky.</p><p>Založte si složku, například „Vánoce“ nebo „Na doma“, a ukládejte do ní noty.</p></div>`}
   </div>
+  ${RP.card()}
   ${usage() ? `<div class="dk-foot">${usage()}</div>` : ""}${ed ? "" : `<div class="dk-foot">Bez připojení nejde složky upravovat.</div>`}`;
 }
 function drawFolder() {
@@ -311,7 +314,7 @@ function drawFolder() {
 function draw() {
   const a = S.area; if (!a) return;
   const top = a.scrollTop;
-  a.innerHTML = `<div class="dk-wrap">${S.view.type === "folder" && S.data.folders[S.view.id] ? drawFolder() : drawHome()}</div>`;
+  a.innerHTML = `<div class="dk-wrap">${S.view.type === "repertoar" ? RP.page() : S.view.type === "folder" && S.data.folders[S.view.id] ? drawFolder() : drawHome()}</div>`;
   a.scrollTop = top;
   const all = [...(S.next?.items || []), ...Object.values(S.data.items).flatMap((m) => Object.keys(m).map((fileId) => ({ fileId })))];
   all.slice(0, 60).forEach((it) => { if (it.fileId && !S.annot[it.fileId]) annotInfo(it.fileId).then((r) => { if (r?.own) rerenderSoon(); }); });
@@ -320,6 +323,7 @@ let rrT; const rerenderSoon = () => { clearTimeout(rrT); rrT = setTimeout(rerend
 
 async function onAction(btn) {
   const act = btn.dataset.act, fid = S.view.id;
+  if (act.startsWith("rp")) return RP.handle(act, btn);
   if (act === "newFolder") { const name = await dialog({ title: "Nová složka", input: "Název složky", ok: "Vytvořit" }); if (name) { const id = await createFolder(name); if (id) { S.view = { type: "folder", id }; draw(); } } }
   else if (act === "home") { S.view = { type: "home" }; draw(); }
   else if (act === "addNotes") openPicker(fid);
@@ -339,6 +343,7 @@ function bind() {
     const o = e.target.closest("[data-open]"); if (o) { window.openPdfViewer?.(o.dataset.open, o.dataset.title); return; }
     const f = e.target.closest("[data-folder]"); if (f) { S.view = { type: "folder", id: f.dataset.folder }; draw(); }
   });
+  document.addEventListener("input", (e) => { if (S.area?.contains(e.target)) RP.onInput(e); });
   document.addEventListener("change", (e) => { if (S.area?.contains(e.target) && e.target.dataset?.act === "offline") write({ [`folders/${S.view.id}/offline`]: e.target.checked }); });
   document.addEventListener("keydown", (e) => { if (e.key === "Enter" && S.area?.contains(e.target) && e.target.matches("[data-open],[data-folder]")) e.target.click(); });
 }
@@ -355,6 +360,8 @@ async function start() {
   const listen = () => {
     if (S.listening || !online()) return; S.listening = true;
     onValue(ref(db, `/userDecks/${S.uid}`), (s) => { S.data = norm(s.val()); S.dataLive = true; S.dataErr = null; if (S.pendingView) { if (S.data.folders[S.pendingView.id]) S.view = S.pendingView; S.pendingView = null; } rerender(); scheduleSync(); }, (err) => { S.dataErr = err?.code || err?.message || "chyba"; rerender(); });
+    onValue(ref(db, "/repertoar"), (s) => { window.repertoar = s.val() || {}; refreshNext(); RP.onData(); scheduleSync(); });
+    const fk = ctx().user?.email; if (fk) onValue(ref(db, `/favorites/${fk.replace(/\./g, "_").replace(/@/g, "_at_")}`), (s) => RP.setFavorites(s.val()), () => RP.setFavorites({}));
     onValue(ref(db, "/akce"), (s) => { S.akce = s.val() || {}; refreshNext(); rerender(); scheduleSync(); });
     onValue(ref(db, "/program"), (s) => { S.program = s.val() || {}; refreshNext(); rerender(); scheduleSync(); });
   };
@@ -365,10 +372,12 @@ async function start() {
   bind(); rerender();
 }
 
+const RP = createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, pinChip, rerender, draw });
+
 /* Služby pro zbytek aplikace (PDF viewer čte offline noty a anotace přes ně) */
 window.tenDecks = {
   start, render, pick, sync: () => scheduleSync(0), _state: S, _kv: kv,
-  getView: () => ({ ...S.view }), setView: (v) => { if (!v) return; if (v.type === "home" || (v.type === "folder" && S.data.folders[v.id])) { S.view = v; rerender(); } else if (v.type === "folder") S.pendingView = v; }, // data složek ještě nedorazila: pohled se obnoví, až budou
+  getView: () => ({ ...S.view }), setView: (v) => { if (!v) return; if (v.type === "home" || v.type === "repertoar" || (v.type === "folder" && S.data.folders[v.id])) { S.view = v; rerender(); } else if (v.type === "folder") S.pendingView = v; }, // data složek ještě nedorazila: pohled se obnoví, až budou
   async pinnedBytes(fileId, modified) { // verze uložená v zařízení; online jen pokud je aktuální
     try {
       const hit = await (await openCache()).match(cacheUrl(fileId)); if (!hit) return null;

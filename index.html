@@ -2167,7 +2167,7 @@ function openFileFromDeepLink(fileId) {
     switchTab("folders");
     navigateToDriveFolder(fileId, folder.name);
   } else {
-    alert("Soubor nebyl nalezen — možná ještě není synchronizován.");
+    openPdfViewer(fileId, "Noty"); // soubor ještě není v přehledu Drive (např. noty z repertoáru): viewer si ho stáhne podle ID
   }
 }
 
