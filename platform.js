@@ -7,17 +7,29 @@
   document.documentElement.setAttribute('data-platform', android ? 'android' : 'apple');
 })();
 
-/* Barva lišty prohlížeče (theme-color) sleduje režim aplikace: černá v tmavém režimu (OLED),
-   jinak světlá. Zůstane jediný tag a ručně přepnutý režim se projeví hned. */
-document.addEventListener('DOMContentLoaded', function () {
-  function sync() {
-    var c = document.body.classList.contains('dark') ? '#000000' : '#f2f2f7';
-    var tags = document.querySelectorAll('meta[name="theme-color"]');
-    for (var i = 0; i < tags.length; i++) {
-      if (i > 0) { tags[i].remove(); continue; }
-      tags[i].removeAttribute('media'); tags[i].setAttribute('content', c);
-    }
+/* Barva lišty prohlížeče a stavového řádku (theme-color, color-scheme, pozadí html) sleduje režim aplikace:
+   černá v tmavém režimu (OLED), jinak světlá. Zůstává jediný tag a jen se mění jeho obsah (nemaže se a nevytváří znovu,
+   iOS Safari to jinak nepřebírá). Tagy s media="(prefers-color-scheme…)" se odstraní, protože by přebíjely ruční přepnutí
+   režimu, když se liší od nastavení systému. Volá se i z aplikace: window.tenChrome(true|false). */
+(function () {
+  var LIGHT = '#f2f2f7', DARK = '#000000';
+  function one(name) {
+    var all = document.querySelectorAll('meta[name="' + name + '"]'), keep = null, i;
+    for (i = 0; i < all.length; i++) { if (!keep && !all[i].hasAttribute('media')) keep = all[i]; }
+    for (i = 0; i < all.length; i++) { if (all[i] !== keep) all[i].remove(); }
+    if (!keep) { keep = document.createElement('meta'); keep.setAttribute('name', name); document.head.appendChild(keep); }
+    return keep;
   }
-  sync();
-  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-});
+  window.tenChrome = function (dark) {
+    var bg = dark ? DARK : LIGHT, root = document.documentElement;
+    root.style.colorScheme = dark ? 'dark' : 'light';
+    root.style.backgroundColor = bg;
+    one('theme-color').setAttribute('content', bg);
+    one('color-scheme').setAttribute('content', dark ? 'dark' : 'light');
+  };
+  function sync() { window.tenChrome(document.body.classList.contains('dark')); }
+  document.addEventListener('DOMContentLoaded', function () {
+    sync();
+    new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  });
+})();

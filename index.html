@@ -1888,11 +1888,7 @@ let impersonateUid = null;
 if (localStorage.getItem("darkMode") === "1") {
   document.body.classList.add("dark");
   document.documentElement.classList.add("dark");
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
-  const meta = document.createElement("meta");
-  meta.name = "theme-color";
-  meta.content = "#000000";
-  document.head.appendChild(meta);
+  if (window.tenChrome) window.tenChrome(true);
 }
 
 // SPLASH
@@ -5995,13 +5991,7 @@ window.toggleDarkMode = () => {
   const isDark = document.body.classList.toggle("dark");
   document.documentElement.classList.toggle("dark", isDark);
   localStorage.setItem("darkMode", isDark ? "1" : "0");
-  
-  // Smaž všechny theme-color meta tagy a nahraď jedním dynamickým
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
-  const meta = document.createElement("meta");
-  meta.name = "theme-color";
-  meta.content = isDark ? "#000000" : "#f2f2f7";
-  document.head.appendChild(meta);
+  if (window.tenChrome) window.tenChrome(isDark); // barva horní lišty a stavového řádku telefonu
 };
 
 // GOOGLE DOCS VIEWER
