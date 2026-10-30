@@ -45,47 +45,61 @@ body.dark .kd-general { background: var(--raised, #1c1c1e); }
 .pj-seg button.on { background: var(--raised, var(--surface, #fff)); color: var(--text, #1c1c1e); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
 @media (min-width: 769px) { .pj-seg { margin: 16px 24px 4px; } }
 
-/* Sekce Kódy: tabulka (na telefonu jen Kód, Název, Stav) */
+/* Sekce Kódy: obyčejný text, bez barevných štítků (na telefonu jen Kód, Název, Stav) */
 .kl-bar { padding: 8px 16px 0; }
 .kl-empty { padding: 32px 16px; text-align: center; color: var(--muted, #8e8e93); font-size: 14px; }
 .kl-table { margin: 10px 16px 24px; border-radius: 16px; overflow: hidden; background: var(--raised, var(--surface, #fff)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); }
-.kl-h, .kl-row { display: grid; grid-template-columns: 104px minmax(0, 1fr) 108px 108px 92px; align-items: center; gap: 12px; padding: 0 16px; }
+.kl-h, .kl-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 104px 104px 84px; align-items: center; gap: 12px; padding: 0 16px; }
 .kl-h { height: 38px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted, #8e8e93); border-bottom: 1px solid var(--hair, rgba(128, 128, 128, 0.18)); }
 .kl-row { width: 100%; min-height: 52px; border: none; border-bottom: 1px solid var(--hair, rgba(128, 128, 128, 0.18)); background: transparent; font: inherit; font-size: 14px; color: var(--text, #1c1c1e); text-align: left; cursor: pointer; transition: background 0.15s ease; }
 .kl-row:last-child { border-bottom: none; }
 .kl-row:hover { background: var(--surface-2, rgba(120, 120, 128, 0.1)); }
 .kl-row:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: -2px; }
 .kl-row.is-closed { color: var(--muted, #8e8e93); }
-.kl-code { font: 700 14px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: var(--accent, #EE220C); }
-.kl-row.is-closed .kl-code { color: inherit; }
-.kl-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.kl-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; font: 600 11px inherit; font-family: inherit; font-style: normal; color: var(--muted, #8e8e93); background: color-mix(in srgb, currentColor 12%, transparent); vertical-align: 1px; }
-.kl-d { font-size: 13px; color: var(--muted, #8e8e93); }
-.kl-st { display: inline-block; padding: 2px 9px; border-radius: 999px; font: 600 12px inherit; font-family: inherit; }
-.kl-st.open { color: #1e7e34; background: rgba(52, 199, 89, 0.16); }
-.kl-st.closed { color: var(--muted, #8e8e93); background: color-mix(in srgb, currentColor 12%, transparent); }
-body.dark .kl-st.open { color: #4cd964; }
+.kl-code, .kt-code, .ko-code { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.kl-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kl-tag { color: var(--muted, #8e8e93); font-size: 13px; }
+.kl-d, .kl-st { font-size: 13px; color: var(--muted, #8e8e93); }
+.kl-st:not(.closed) { color: var(--text, #1c1c1e); }
 @media (max-width: 768px) {
-  .kl-h, .kl-row { grid-template-columns: 86px minmax(0, 1fr) auto; gap: 10px; padding: 0 14px; }
+  .kl-bar, .kl-table { margin-left: 12px; margin-right: 12px; }
+  .kl-bar { padding-left: 0; padding-right: 0; }
+  .kl-h, .kl-row { grid-template-columns: 72px minmax(0, 1fr) auto; gap: 10px; padding: 0 14px; }
   .kl-d { display: none; }
+  .kl-row { min-height: 56px; }
 }
 
-/* Okno s kódem */
-.kl-modal { width: 480px; max-width: 94vw; }
-.kl-mhead { display: flex; align-items: center; gap: 10px; }
-.kl-x { margin-left: auto; width: 34px; height: 34px; display: grid; place-items: center; border: none; border-radius: 50%; background: transparent; color: var(--muted, #8e8e93); cursor: pointer; }
-.kl-x:hover { background: var(--surface-2, rgba(120, 120, 128, 0.14)); color: var(--text, #1c1c1e); }
-.kl-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-.kl-mtitle { margin: 12px 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.kl-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted, #8e8e93); margin-bottom: 10px; }
-.kl-go { margin: 2px 0 6px; }
-.kl-sub { margin: 14px 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted, #8e8e93); }
+/* Okno s kódem: položky jako řádky tabulky */
+.kl-modal { width: 560px; max-width: 94vw; }
+.kl-mtitle { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.kl-meta { font-size: 13px; color: var(--muted, #8e8e93); margin-bottom: 14px; }
+.kt-copy { border: none; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-color: var(--muted, #8e8e93); }
+.kt-copy:active { opacity: 0.6; }
+.kt-table { border-radius: 12px; overflow: hidden; border: 1px solid var(--hair, rgba(128, 128, 128, 0.2)); }
+.kt-h, .kt-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 84px; align-items: center; gap: 10px; padding: 0 12px; }
+.kt-table.kt-admin .kt-h, .kt-table.kt-admin .kt-row { grid-template-columns: 112px minmax(0, 1fr) 84px 72px; }
+.kt-h { height: 34px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted, #8e8e93); border-bottom: 1px solid var(--hair, rgba(128, 128, 128, 0.2)); background: var(--surface-2, rgba(120, 120, 128, 0.06)); }
+.kt-row { min-height: 46px; font-size: 14px; border-bottom: 1px solid var(--hair, rgba(128, 128, 128, 0.2)); }
+.kt-row:last-child { border-bottom: none; }
+.kt-row.is-closed .kt-n, .kt-row.is-closed .kt-code { color: var(--muted, #8e8e93); }
+.kt-n { min-width: 0; overflow-wrap: anywhere; }
+.kt-acts { display: flex; justify-content: flex-end; gap: 0; }
+.kt-acts .kd-more { width: 32px; }
+.kt-empty { padding: 16px 12px; font-size: 14px; color: var(--muted, #8e8e93); }
 .kl-modal .kd-more svg { fill: none; stroke: currentColor; stroke-width: 2; }
 .kl-modal .kd-more[data-more] svg { fill: currentColor; stroke: none; }
+.kl-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+@media (max-width: 768px) {
+  .kt-h, .kt-row { grid-template-columns: 92px minmax(0, 1fr) 66px; gap: 8px; padding: 0 10px; }
+  .kt-table.kt-admin .kt-h, .kt-table.kt-admin .kt-row { grid-template-columns: 92px minmax(0, 1fr) 64px; } /* správce: stav je vidět z ikony zámku, sloupec Stav se skryje */
+  .kt-table.kt-admin .kt-h > span:nth-child(3), .kt-table.kt-admin .kt-row > .kl-st { display: none; }
+  .kt-row { font-size: 13px; }
+  .kl-foot .modal-btn { flex: 1 1 auto; }
+}
 
 /* Přehled: karta Otevřené kódy */
 .ko-row { display: flex; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 14px; border-bottom: 1px solid var(--hair, rgba(128, 128, 128, 0.15)); }
 .ko-row:last-of-type { border-bottom: none; }
-.ko-code { flex: none; width: 66px; font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent, #EE220C); }
+.ko-code { flex: none; width: 66px; }
 .ko-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ko-more { padding-top: 6px; font-size: 12px; color: var(--muted, #8e8e93); }

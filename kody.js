@@ -75,18 +75,18 @@
     var e = all.filter(function (x) { return x.r.typ !== "G"; }).sort(function (a, b) { return (b.r.vytvoreno || 0) - (a.r.vytvoreno || 0); });
     return g.concat(e);
   }
-  var stChip = function (open) { return '<span class="kl-st ' + (open ? "open" : "closed") + '">' + (open ? "otevřený" : "zavřený") + "</span>"; };
+  var stText = function (open) { return '<span class="kl-st' + (open ? "" : " closed") + '">' + (open ? "otevřený" : "zavřený") + "</span>"; };
 
   function listHtml() {
     if (!S.loaded) return '<div class="kl-empty">Načítám kódy…</div>';
     var rows = rowsOf();
-    var add = isAdmin() ? '<div class="kl-bar"><button type="button" class="kd-add" data-gnew="1">+ Nový režijní kód</button></div>' : "";
+    var add = isAdmin() ? '<div class="kl-bar"><button type="button" class="drive-toolbar-btn" data-gnew="1">' + ICON.plus + "<span>Nový režijní kód</span></button></div>" : "";
     if (!rows.length) return add + '<div class="kl-empty">Zatím žádné kódy.</div>';
     return add + '<div class="kl-table" role="table"><div class="kl-h" role="row"><span>Kód</span><span>Název</span><span class="kl-d">Otevřeno</span><span class="kl-d">Uzavřeno</span><span>Stav</span></div>' +
       rows.map(function (x) {
         var g = x.r.typ === "G";
         return '<button type="button" class="kl-row' + (x.st.open ? "" : " is-closed") + '" role="row" data-open-code="' + esc(x.c) + '"><span class="kl-code">' + esc(x.c) + "</span>" +
-          '<span class="kl-n">' + esc(x.r.nazev || "—") + (g ? '<em class="kl-tag">režie</em>' : "") + '</span><span class="kl-d">' + fmtD(x.r.vytvoreno) + '</span><span class="kl-d">' + (x.st.open ? "—" : fmtD(x.st.closedAt)) + "</span><span>" + stChip(x.st.open) + "</span></button>";
+          '<span class="kl-n">' + esc(x.r.nazev || "—") + (g ? ' <span class="kl-tag">(režie)</span>' : "") + '</span><span class="kl-d">' + fmtD(x.r.vytvoreno) + '</span><span class="kl-d">' + (x.st.open ? "—" : fmtD(x.st.closedAt)) + "</span>" + stText(x.st.open) + "</button>";
       }).join("") + "</div>";
   }
 
@@ -100,24 +100,26 @@
       (rows.length > MAX ? '<div class="ko-more">a dalších ' + (rows.length - MAX) + "</div>" : "");
   }
 
-  // Okno s kompletním kódem: číslo, položky -001 …, přidání a uzavření (správce); ostatní jen čtou
+  // Okno s kompletním kódem: položky jako řádky tabulky; administrátor přidává a uzavírá, ostatní jen čtou
   var M = { cislo: null, el: null };
   function modalHtml(c) {
     var rec = S.cisla[c] || {}, st = stavOf(c), admin = isAdmin(), g = rec.typ === "G";
     var items = sorted(c).map(function (k) {
       var p = S.polozky[c][k], closed = p.stav === "uzavrena";
-      return '<li class="kd-it' + (closed ? " closed" : "") + '"><button type="button" class="kd-code sm" data-copy="' + esc(p.kod) + '" title="Kopírovat kód">' + esc(p.kod) + COPY + '</button><span class="kd-t">' + esc(p.nazev) + "</span>" +
-        (closed ? '<span class="kd-st">uzavřená</span>' : "") +
-        (admin ? '<button type="button" class="kd-more" data-toggle="' + esc(c) + "|" + k + '" aria-label="' + (closed ? "Znovu otevřít položku" : "Uzavřít položku") + '" title="' + (closed ? "Znovu otevřít" : "Uzavřít") + '">' + (closed ? ICON.unlock : ICON.lock) + "</button>" +
-          '<button type="button" class="kd-more" data-more="' + esc(c) + "|" + k + '" aria-label="Další akce položky" aria-haspopup="menu">' + MORE + "</button>" : "") + "</li>";
+      return '<div class="kt-row' + (closed ? " is-closed" : "") + '" role="row"><button type="button" class="kt-copy kt-code" data-copy="' + esc(p.kod) + '" title="Kopírovat kód">' + esc(p.kod) + "</button>" +
+        '<span class="kt-n">' + esc(p.nazev) + "</span>" + stText(!closed) +
+        (admin ? '<span class="kt-acts"><button type="button" class="kd-more" data-toggle="' + esc(c) + "|" + k + '" aria-label="' + (closed ? "Znovu otevřít položku" : "Uzavřít položku") + '" title="' + (closed ? "Znovu otevřít" : "Uzavřít") + '">' + (closed ? ICON.unlock : ICON.lock) + "</button>" +
+          '<button type="button" class="kd-more" data-more="' + esc(c) + "|" + k + '" aria-label="Další akce položky" aria-haspopup="menu">' + MORE + "</button></span>" : "") + "</div>";
     }).join("");
-    return '<div class="kl-mhead"><button type="button" class="kd-code" data-copy="' + esc(c) + '" title="Kopírovat číslo">' + esc(c) + COPY + '</button>' + stChip(st.open) + '<button type="button" class="kl-x" data-close-code="1" aria-label="Zavřít">' +
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
-      '<div class="kl-mtitle">' + esc(rec.nazev || "—") + (g ? '<em class="kl-tag">režie</em>' : "") + "</div>" +
-      '<div class="kl-meta"><span>Otevřeno ' + fmtD(rec.vytvoreno) + "</span>" + (st.open ? "" : "<span>Uzavřeno " + fmtD(st.closedAt) + "</span>") + "</div>" +
-      (rec.akceId ? '<button type="button" class="kd-add kl-go" data-go-projekt="' + esc(rec.akceId) + '">Otevřít projekt</button>' : "") +
-      '<div class="kl-sub">Položky kódu</div><ul class="kd-list">' + (items || '<li class="kd-it"><span class="kd-t">Žádné položky.</span></li>') + "</ul>" +
-      (admin ? '<button type="button" class="kd-add" data-add="' + esc(c) + '">+ Přidat položku</button>' : '<p class="kd-hint">Položky a jejich uzavírání spravuje administrátor.</p>');
+    var cols = admin ? " kt-admin" : "";
+    return '<h2 class="kl-mtitle"><button type="button" class="kt-copy" data-copy="' + esc(c) + '" title="Kopírovat číslo">' + esc(c) + "</button> " + esc(rec.nazev || "—") + (g ? ' <span class="kl-tag">(režie)</span>' : "") + "</h2>" +
+      '<div class="kl-meta">Stav: ' + (st.open ? "otevřený" : "zavřený") + " · otevřeno " + fmtD(rec.vytvoreno) + (st.open ? "" : " · uzavřeno " + fmtD(st.closedAt)) + "</div>" +
+      '<div class="kt-table' + cols + '" role="table"><div class="kt-h" role="row"><span>Kód</span><span>Název</span><span>Stav</span>' + (admin ? "<span></span>" : "") + "</div>" +
+      (items || '<div class="kt-empty">Žádné položky.</div>') + "</div>" +
+      (admin ? "" : '<p class="kd-hint" style="margin-top:12px">Položky a jejich uzavírání spravuje administrátor.</p>') +
+      '<div class="modal-footer kl-foot">' + (rec.akceId ? '<button type="button" class="modal-btn modal-btn-secondary" data-go-projekt="' + esc(rec.akceId) + '">Otevřít projekt</button>' : "") +
+      (admin ? '<button type="button" class="modal-btn modal-btn-secondary" data-add="' + esc(c) + '">+ Přidat položku</button>' : "") +
+      '<button type="button" class="modal-btn modal-btn-primary" data-close-code="1">Zavřít</button></div>';
   }
   function closeCode() {
     var el = M.el; if (!el) return; M.el = null; M.cislo = null;
