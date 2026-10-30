@@ -1415,6 +1415,80 @@
     body.dark [style*="background:#f2f2f7"] { background: var(--surface-2) !important; }
     body.dark [style*="background:#f9f9fb"] { background: var(--surface-hover) !important; }
 
+    /* ── DROBEČKOVÁ NAVIGACE ──────────────────────────────────────────── */
+    .breadcrumb { margin-top: 0; flex-wrap: nowrap; gap: 2px; min-height: 36px; overflow: hidden; font-size: 14px; }
+    .bc-back { flex: none; width: 34px; height: 34px; margin-right: 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; transition: background .15s, border-color .15s, color .15s, transform .1s; }
+    .bc-back svg { width: 18px; height: 18px; }
+    .bc-back:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
+    .bc-back:active:not(:disabled) { transform: scale(.94); }
+    .bc-back:disabled { opacity: .35; cursor: default; }
+    .bc-back:focus-visible, .bc-crumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .bc-crumb { flex: 0 1 auto; min-width: 0; max-width: 220px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 0; border-radius: var(--radius-md); background: none; font: inherit; color: var(--muted); cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
+    .bc-crumb > span { overflow: hidden; text-overflow: ellipsis; }
+    .breadcrumb .bc-crumb span, .breadcrumb .bc-sep { cursor: inherit; }
+    .breadcrumb .bc-crumb span:hover { color: inherit; }
+    .bc-crumb:hover { background: var(--surface-2); color: var(--text); }
+    .bc-crumb.current { color: var(--text); font-weight: 600; cursor: default; max-width: 360px; }
+    .bc-crumb.current:hover { background: none; }
+    .bc-crumb svg { flex: none; width: 15px; height: 15px; }
+    .bc-sep { flex: none; display: inline-flex; color: var(--muted); opacity: .6; }
+    .bc-sep svg { width: 14px; height: 14px; }
+
+    /* ── PŘEPÍNAČ ZOBRAZENÍ (seznam / dlaždice) ────────────────────────── */
+    .view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+    .view-toggle-btn { width: 36px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
+    .view-toggle-btn + .view-toggle-btn { border-left: 1px solid var(--border); }
+    .view-toggle-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .view-toggle-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); }
+    .view-toggle-btn svg { width: 17px; height: 17px; }
+    .view-toggle-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* ── DLAŽDICOVÉ ZOBRAZENÍ ─────────────────────────────────────────── */
+    body.drive-grid-view #list-header { grid-template-columns: 32px 1fr !important; }
+    body.drive-grid-view #list-header > div:nth-child(n+3) { display: none !important; }
+    body.drive-grid-view #list-header > div:nth-child(2) { font-size: 0; }
+    body.drive-grid-view #list-header > div:nth-child(2)::after { content: "Vybrat vše"; font-size: 12px; font-weight: 600; }
+    .drive-grid-wrap { padding: 6px 24px 28px; }
+    .grid-section { font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 8px; }
+    .drive-grid { display: grid; gap: 12px; }
+    .drive-grid.folders { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+    .drive-grid.files { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); }
+    .grid-card { position: relative; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; overflow: hidden; outline: none; transition: box-shadow .15s, border-color .15s, background .15s; }
+    .grid-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); background: var(--surface-hover); }
+    .grid-card:focus-visible, .grid-card.active-detail { box-shadow: 0 0 0 2px var(--accent); }
+    .grid-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .grid-card.folder { display: flex; align-items: center; gap: 10px; padding: 12px 42px 12px 14px; }
+    .grid-ic { flex: none; display: inline-flex; }
+    .grid-thumb { position: relative; height: 112px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+    .grid-card.selected .grid-thumb { background: transparent; }
+    .grid-meta { padding: 10px 12px 12px; min-width: 0; }
+    .grid-name { font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--text); word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .grid-card.folder .grid-name { flex: 1; min-width: 0; font-size: 14px; -webkit-line-clamp: 1; }
+    .grid-name:hover { color: var(--accent-text); text-decoration: underline; }
+    .grid-sub { margin-top: 4px; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grid-code { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .02em; background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .grid-check { position: absolute; top: 8px; left: 8px; z-index: 2; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); opacity: 0; transition: opacity .12s; cursor: pointer; }
+    .grid-card.folder .grid-check { top: 50%; transform: translateY(-50%); left: 11px; }
+    .grid-check input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    .grid-dots { position: absolute; top: 6px; right: 6px; z-index: 2; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 0; background: transparent; color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s, background .12s; }
+    .grid-card.folder .grid-dots { top: 50%; transform: translateY(-50%); }
+    .grid-card:hover .grid-check, .grid-card.selected .grid-check, .grid-check:focus-within,
+    .grid-card:hover .grid-dots, .grid-card.selected .grid-dots, .grid-dots:focus-visible { opacity: 1; }
+    .grid-dots:hover { background: var(--surface-2); color: var(--text); }
+    @media (hover: none) { .grid-check, .grid-dots { opacity: 1; } }
+    @media (max-width: 480px) {
+      /* úzký displej: jen jedno tlačítko, které přepne na druhé zobrazení */
+      .view-toggle-btn[aria-pressed="true"] { display: none; }
+      .view-toggle-btn[aria-pressed="false"] { background: var(--surface); color: var(--text); }
+    }
+    @media (max-width: 768px) {
+      .drive-grid-wrap { padding: 4px 12px 24px; }
+      .drive-grid.folders { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      .drive-grid.files { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-thumb { height: 92px; }
+      .bc-crumb { max-width: 140px; }
+    }
+
     /* ── MOBIL ────────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       /* prázdná lišta pod hlavičkou: drobečky v kořeni Drive jen opakují název */
@@ -1617,6 +1691,15 @@
         </button>
       
         <div class="drive-toolbar-spacer"></div>
+      
+        <div class="view-toggle" role="group" aria-label="Zobrazení položek">
+          <button type="button" class="view-toggle-btn" id="view-list-btn" onclick="setDriveView('list')" aria-pressed="true" aria-label="Seznam" title="Seznam">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+          </button>
+          <button type="button" class="view-toggle-btn" id="view-grid-btn" onclick="setDriveView('grid')" aria-pressed="false" aria-label="Dlaždice" title="Dlaždice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+        </div>
       
         <button class="drive-toolbar-btn" onclick="openSortSheet()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
@@ -2019,13 +2102,12 @@ function getDriveFileIcon(mimeType, size) {
     label = "DOC"; color = "#2b5eb8";
   }
 
-  // Papír se štítkem
-  const fontSize = Math.max(Math.round(s * 0.28), 6);
-  const badgeH = Math.round(s * 0.38);
-  const badgeY = Math.round(s * 0.22);
-  const badgeX = Math.round(s * 0.08);
-  const badgeW = s - badgeX * 2;
-  const cornerSize = Math.round(s * 0.25);
+  // Papír se štítkem; rozměry jsou v souřadnicích viewBox (24×24), takže se štítek škáluje s ikonou
+  const fontSize = 6;
+  const badgeH = 8;
+  const badgeY = 11.5;
+  const badgeX = 2;
+  const badgeW = 20;
 
   return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <!-- Papír -->
@@ -2034,7 +2116,7 @@ function getDriveFileIcon(mimeType, size) {
     ${label ? `
     <!-- Štítek -->
     <rect x="${badgeX}" y="${badgeY}" width="${badgeW}" height="${badgeH}" rx="1.5" fill="${color}"/>
-    <text x="12" y="${badgeY + badgeH * 0.72}" text-anchor="middle" fill="white" font-size="${fontSize}" font-family="system-ui, -apple-system, sans-serif" font-weight="700">${label}</text>
+    <text x="12" y="${badgeY + badgeH * 0.74}" text-anchor="middle" fill="white" font-size="${fontSize}" font-family="system-ui, -apple-system, sans-serif" font-weight="700">${label}</text>
     ` : ""}
   </svg>`;
 }
@@ -2598,29 +2680,57 @@ async function renderDashboard() {
 }
   
 // DRIVE ITEMS RENDER
+const driveEsc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Zobrazení položek: seznam, nebo dlaždice (volba se pamatuje v tomto prohlížeči)
+let driveView = (() => { try { return localStorage.getItem("10space.driveView") === "grid" ? "grid" : "list"; } catch (e) { return "list"; } })();
+let lastDriveItems = null; // naposledy vykreslené (už seřazené) položky, ať se při přepnutí zobrazení nenačítá znovu
+
+function syncViewToggle() {
+  document.body.classList.toggle("drive-grid-view", driveView === "grid");
+  [["list", "view-list-btn"], ["grid", "view-grid-btn"]].forEach(([v, id]) => document.getElementById(id)?.setAttribute("aria-pressed", String(driveView === v)));
+}
+
+window.setDriveView = (v) => {
+  const next = v === "grid" ? "grid" : "list";
+  if (next === driveView) return;
+  driveView = next;
+  try { localStorage.setItem("10space.driveView", driveView); } catch (e) { /* bez uložení volby */ }
+  syncViewToggle();
+  if (lastDriveItems && currentTab === "folders") renderDriveItems(lastDriveItems, true);
+};
+syncViewToggle();
+
 function renderDriveItems(files, skipSort) {
   const area = document.getElementById("content-area");
   if (files.length === 0) {
+    lastDriveItems = [];
     area.innerHTML = `<div class="empty-state"><p>${driveFilterType !== "all" ? "Žádné položky odpovídající filtru" : "Žádné položky"}</p></div>`;
     return;
   }
 
   if (!skipSort) files = sortDriveItems(files);
+  lastDriveItems = files;
+
+  if (driveView === "grid") {
+    area.innerHTML = renderDriveGrid(files);
+    return;
+  }
 
   area.innerHTML = files.map(f => `
-    <div class="list-item" id="item-${f.id}" onclick="handleDriveItemClick(event, '${f.id}', ${f.isFolder})">
+    <div class="list-item${selectedItems.has(f.id) ? " selected" : ""}" id="item-${f.id}" onclick="handleDriveItemClick(event, '${f.id}', ${f.isFolder})">
       <div class="list-item-checkbox" onclick="event.stopPropagation()">
-        <input type="checkbox" onchange="toggleSelect('${f.id}', this.checked)">
+        <input type="checkbox" ${selectedItems.has(f.id) ? "checked" : ""} onchange="toggleSelect('${f.id}', this.checked)">
       </div>
       <div class="list-item-name">
         ${getDriveFileIcon(f.mimeType, 18)}
-        <span class="list-item-name-text" onclick="event.stopPropagation();${f.isFolder ? `navigateToDriveFolder('${f.id}', '${f.name.replace(/'/g, "\\\\'")}')` : `handleDriveNameClick('${f.id}', '${f.mimeType}', false)`}">${f.name}</span>
+        <span class="list-item-name-text" onclick="event.stopPropagation();${f.isFolder ? `navigateToDriveFolder('${f.id}')` : `handleDriveNameClick('${f.id}', '${f.mimeType}', false)`}">${driveEsc(f.name)}</span>
       </div>
-      <div class="list-item-code">${getEvidCode(f.id)}</div>
+      <div class="list-item-code">${driveEsc(getEvidCode(f.id))}</div>
       <div class="list-item-date">${driveItemDate(f) ? new Date(driveItemDate(f)).toLocaleDateString("cs-CZ") : "—"}</div>
       <div class="list-item-date">${formatFileSize(f.size)}</div>
       <div class="list-item-dots">
-        <button class="dots-btn" onclick="event.stopPropagation();openDriveContextMenu(event, '${f.id}', '${f.name}', ${f.isFolder})">
+        <button class="dots-btn" onclick="event.stopPropagation();openDriveContextMenu(event, '${f.id}', '', ${f.isFolder})">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
       </div>
@@ -2628,89 +2738,136 @@ function renderDriveItems(files, skipSort) {
   `).join("");
 }
 
+// Otevření položky (dvojklik, Enter, klik na název): složka → dovnitř, soubor → náhled
+window.openDriveItem = (id, isFolder) => {
+  if (isFolder) return navigateToDriveFolder(id);
+  handleDriveNameClick(id, window.driveFiles?.[id]?.mimeType || "", false);
+};
+
+window.driveCardKey = (e, id, isFolder) => {
+  if (e.target !== e.currentTarget) return;
+  if (e.key === "Enter") { e.preventDefault(); openDriveItem(id, isFolder); }
+  else if (e.key === " ") {
+    e.preventDefault();
+    const cb = e.currentTarget.querySelector("input[type='checkbox']");
+    if (cb) { cb.checked = !cb.checked; toggleSelect(id, cb.checked); }
+  }
+};
+
+window.openDriveCardMenu = (e, id, isFolder) => {
+  e.stopPropagation();
+  openDriveContextMenu(e, id, "", isFolder);
+};
+
+function renderDriveGrid(files) {
+  const dotsIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`;
+  const sub = (f) => {
+    const d = driveItemDate(f);
+    return [d ? new Date(d).toLocaleDateString("cs-CZ") : "", f.isFolder || !f.size ? "" : formatFileSize(f.size)].filter(Boolean).join(" · ");
+  };
+  const attrs = (f) => `class="grid-card ${f.isFolder ? "folder" : "file"}${selectedItems.has(f.id) ? " selected" : ""}" id="item-${f.id}" tabindex="0" role="button" onclick="handleDriveItemClick(event, '${f.id}', ${f.isFolder})" ondblclick="openDriveItem('${f.id}', ${f.isFolder})" onkeydown="driveCardKey(event, '${f.id}', ${f.isFolder})"`;
+  const check = (f) => `<label class="grid-check" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><input type="checkbox" aria-label="Vybrat ${driveEsc(f.name)}" ${selectedItems.has(f.id) ? "checked" : ""} onchange="toggleSelect('${f.id}', this.checked)"></label>`;
+  const dots = (f) => `<button type="button" class="grid-dots" aria-label="Další akce" onclick="openDriveCardMenu(event, '${f.id}', ${f.isFolder})">${dotsIcon}</button>`;
+  const name = (f) => `<span class="grid-name" title="${driveEsc(f.name)}" onclick="event.stopPropagation();openDriveItem('${f.id}', ${f.isFolder})">${driveEsc(f.name)}</span>`;
+
+  const folderCard = (f) => `<div ${attrs(f)}>${check(f)}<span class="grid-ic">${getDriveFileIcon(f.mimeType, 22)}</span>${name(f)}${dots(f)}</div>`;
+  const fileCard = (f) => {
+    const code = getEvidCode(f.id);
+    return `<div ${attrs(f)}>${check(f)}${dots(f)}
+      <div class="grid-thumb">${getDriveFileIcon(f.mimeType, 46)}${code ? `<span class="grid-code">${driveEsc(code)}</span>` : ""}</div>
+      <div class="grid-meta">${name(f)}<div class="grid-sub">${driveEsc(sub(f))}</div></div>
+    </div>`;
+  };
+
+  const folders = files.filter((f) => f.isFolder), docs = files.filter((f) => !f.isFolder);
+  return `<div class="drive-grid-wrap">`
+    + (folders.length ? `<div class="grid-section">Složky</div><div class="drive-grid folders">${folders.map(folderCard).join("")}</div>` : "")
+    + (docs.length ? `<div class="grid-section">Soubory</div><div class="drive-grid files">${docs.map(fileCard).join("")}</div>` : "")
+    + `</div>`;
+}
+
 function renderDriveFolderContent(folderId) {
   const area = document.getElementById("content-area");
+  renderDriveBreadcrumb(folderId);
   area.innerHTML = `<div class="empty-state"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
-  
+
   loadDriveFiles(folderId).then(driveFiles => {
+    // mezitím se mohlo přejít jinam; starší odpověď nepřepisuje novější
+    if ((window.currentFolder || null) !== (folderId || null)) return;
     const filtered = filterDriveItems(driveFiles);
     const sorted = sortDriveItems(filtered);
     renderDriveItems(sorted, true); // true = neřaď znovu uvnitř renderDriveItems
   }).catch(err => {
-    area.innerHTML = `<div class="empty-state"><p>Chyba: ${err.message}</p></div>`;
+    area.innerHTML = `<div class="empty-state"><p>Chyba: ${driveEsc(err.message)}</p></div>`;
   });
 }
 
 // DRIVE NAVIGACE
-let driveBreadcrumb = []; // [{id, name}]
+// Jediný zdroj pravdy je window.currentFolder; cesta se skládá ze skutečných rodičů složky, ne podle toho,
+// kudy uživatel přišel (vyhledávání, odkaz z detailu, přepnutí záložky).
+const BC_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+const BC_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+const BC_HOME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>';
 
-window.navigateToDriveFolder = (folderId, folderName) => {
-  if (window.currentFolder === folderId) return;
-  window.currentFolder = folderId;
-  
-  const existingIdx = driveBreadcrumb.findIndex(c => c.id === folderId);
-  if (existingIdx >= 0) {
-    driveBreadcrumb = driveBreadcrumb.slice(0, existingIdx + 1);
-  } else {
-    driveBreadcrumb.push({ id: folderId, name: folderName });
+function driveTrail(folderId) {
+  const trail = [];
+  for (let id = folderId, i = 0; id && i < 30; i++) {
+    const f = window.driveFolders?.[id];
+    if (!f) break;
+    trail.unshift({ id, name: f.name });
+    id = f.parentId;
   }
-  
-  renderDriveBreadcrumb();
-  
-  // Aktivní filtr i řazení se aplikují v renderDriveFolderContent
-  renderDriveFolderContent(folderId);
-};
-
-function renderDriveBreadcrumb() {
-  const crumbs = [{ id: null, name: "10space" }, { id: "root", name: "Drive" }, ...driveBreadcrumb];
-  const currentName = crumbs[crumbs.length - 1].name;
-  document.getElementById("content-header")?.classList.toggle("at-root", driveBreadcrumb.length === 0);
-  const backHtml = crumbs.length > 1 ? `
-    <button onclick="driveGoBack()" style="background:none;border:none;cursor:pointer;color:#6e6e73;display:flex;align-items:center;padding:0;margin-right:4px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-  ` : "";
-  document.getElementById("breadcrumb").innerHTML = backHtml + crumbs.slice(0, -1).map(c =>
-    `<span onclick="navigateToDriveFolderById('${c.id}')">${c.name}</span><span class="sep">›</span>`
-  ).join("") + `<span style="color:#1c1c1e;font-weight:500">${currentName}</span>`;
+  return trail;
 }
 
+function setDriveFolder(folderId) {
+  window.currentFolder = folderId && window.driveFolders?.[folderId] ? folderId : null;
+  // výběr patří k předchozí složce; v nové by hromadné akce zasáhly položky, které nejsou vidět
+  selectedItems.clear();
+  const all = document.getElementById("select-all");
+  if (all) all.checked = false;
+  updateMultiToolbar();
+  renderDriveFolderContent(window.currentFolder);
+}
+
+window.navigateToDriveFolder = (folderId) => setDriveFolder(folderId);
+
+window.navigateToDriveFolderById = (id) => setDriveFolder(!id || id === "null" || id === "root" ? null : id);
+
 window.driveGoBack = () => {
-  if (driveBreadcrumb.length === 0) return;
-  driveBreadcrumb.pop();
-  if (driveBreadcrumb.length === 0) {
-    window.currentFolder = null;
-    renderDriveFolderContent(null);
-  } else {
-    const prev = driveBreadcrumb[driveBreadcrumb.length - 1];
-    window.currentFolder = prev.id;
-    renderDriveFolderContent(prev.id);
-  }
-  renderDriveBreadcrumb();
+  const cur = window.driveFolders?.[window.currentFolder];
+  if (cur) setDriveFolder(cur.parentId);
 };
 
-window.navigateToDriveFolderById = (id) => {
-  if (!id || id === "null") {
-    driveBreadcrumb = [];
-    window.currentFolder = null;
-    renderTab();
-    return;
-  }
-  if (id === "root") {
-    driveBreadcrumb = [];
-    window.currentFolder = null;
-    renderDriveFolderContent(null);
-    renderDriveBreadcrumb();
-    return;
-  }
-  const idx = driveBreadcrumb.findIndex(c => c.id === id);
-  if (idx >= 0) {
-    driveBreadcrumb = driveBreadcrumb.slice(0, idx + 1);
-    window.currentFolder = id;
-    renderDriveFolderContent(id);
-    renderDriveBreadcrumb();
-  }
+// dlouhá cesta: prostřední složky se schovají do nabídky „…“
+window.openBreadcrumbMenu = (e) => {
+  const hidden = driveTrail(window.currentFolder).slice(0, -2);
+  window.tenMenu?.open(e.currentTarget, hidden.map((c) => ({ label: c.name, onClick: () => navigateToDriveFolderById(c.id) })));
 };
+
+function renderDriveBreadcrumb(folderId = window.currentFolder) {
+  const el = document.getElementById("breadcrumb");
+  if (!el) return;
+  const trail = driveTrail(folderId);
+  document.getElementById("content-header")?.classList.toggle("at-root", trail.length === 0);
+
+  const link = (c) => `<button type="button" class="bc-crumb" title="${driveEsc(c.name)}" onclick="navigateToDriveFolderById('${c.id}')"><span>${driveEsc(c.name)}</span></button>`;
+  const here = (c) => `<span class="bc-crumb current" aria-current="page" title="${driveEsc(c.name)}"><span>${driveEsc(c.name)}</span></span>`;
+  const home = trail.length === 0
+    ? `<span class="bc-crumb current" aria-current="page">${BC_HOME}<span>Drive</span></span>`
+    : `<button type="button" class="bc-crumb" onclick="navigateToDriveFolderById('root')">${BC_HOME}<span>Drive</span></button>`;
+
+  let parts = [home];
+  if (trail.length > 3) {
+    parts.push(`<button type="button" class="bc-crumb" aria-label="Skryté složky" aria-haspopup="menu" title="Skryté složky" onclick="openBreadcrumbMenu(event)"><span>…</span></button>`);
+    parts.push(...trail.slice(-2).map((c, i, a) => (i === a.length - 1 ? here(c) : link(c))));
+  } else {
+    parts.push(...trail.map((c, i) => (i === trail.length - 1 ? here(c) : link(c))));
+  }
+
+  const back = `<button type="button" class="bc-back" onclick="driveGoBack()" ${trail.length ? "" : "disabled"} aria-label="Zpět o úroveň výš" title="Zpět o úroveň výš">${BC_BACK}</button>`;
+  el.innerHTML = back + parts.join(`<span class="bc-sep" aria-hidden="true">${BC_CHEVRON}</span>`);
+}
 
 // DRIVE KLIKNUTÍ
 window.handleDriveItemClick = (e, id, isFolder) => {
@@ -2775,7 +2932,7 @@ window.openDriveFile = async (fileId) => {
 
 function showDriveDetail(fileId, isFolder) {
   selectedDetailId = fileId;
-  document.querySelectorAll(".list-item").forEach(el => el.classList.remove("active-detail"));
+  document.querySelectorAll(".list-item, .grid-card").forEach(el => el.classList.remove("active-detail"));
   document.getElementById(`item-${fileId}`)?.classList.add("active-detail");
   const rightSidebar = document.getElementById("right-sidebar");
   if (selectedItems.size <= 1) rightSidebar.classList.remove("hidden-sidebar");
@@ -2787,6 +2944,7 @@ function showDriveDetail(fileId, isFolder) {
 
 window.openDriveContextMenu = (e, id, name, isFolder) => {
   contextItemId = id;
+  name = name || window.driveFiles?.[id]?.name || window.driveFolders?.[id]?.name || "";
   e.stopPropagation();
 
   if (window.innerWidth <= 768) {
@@ -2950,9 +3108,9 @@ window.toggleSelect = (id, checked) => {
 };
 
 window.toggleSelectAll = (checked) => {
-  document.querySelectorAll(".list-item input[type='checkbox']").forEach(cb => {
+  document.querySelectorAll(".list-item input[type='checkbox'], .grid-card input[type='checkbox']").forEach(cb => {
     cb.checked = checked;
-    const id = cb.closest(".list-item")?.id?.replace("item-", "");
+    const id = cb.closest(".list-item, .grid-card")?.id?.replace("item-", "");
     if (id) toggleSelect(id, checked);
   });
 };
