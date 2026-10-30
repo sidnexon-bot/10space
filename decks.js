@@ -104,7 +104,8 @@ function applyOutbox(rec, fileId) {
 }
 async function refreshAnnot(id) {
   const { db, ref, get } = ctx();
-  const [pub, own] = await Promise.all([get(ref(db, `/annotations/${id}/public`)), get(ref(db, `/annotations/${id}/${S.uid}`))]);
+  const ab = window.tenRev ? window.tenRev.annBase(id) : `/annotations/${id}`; // poznámky k aktuální revizi souboru
+  const [pub, own] = await Promise.all([get(ref(db, `${ab}/public`)), get(ref(db, `${ab}/${S.uid}`))]);
   const rec = { public: pub.val(), own: own.val(), savedAt: Date.now() };
   applyOutbox(rec, id);
   await kv.set(`annot:${S.uid}:${id}`, rec); S.annot[id] = { own: countAnn(rec.own), pub: countAnn(rec.public) };
@@ -113,12 +114,13 @@ async function annotInfo(id) { // zobrazí se jen při vykreslení, bez dotazu d
   if (S.annot[id]) return S.annot[id];
   const rec = await kv.get(`annot:${S.uid}:${id}`); if (rec) return (S.annot[id] = { own: countAnn(rec.own), pub: countAnn(rec.public) });
   if (!online() || !ctx()) return null;
-  try { const { db, ref, get } = ctx(); const own = (await get(ref(db, `/annotations/${id}/${S.uid}`))).val(); return (S.annot[id] = { own: countAnn(own), pub: 0 }); } catch (e) { return null; }
+  try { const { db, ref, get } = ctx(); const own = (await get(ref(db, `${window.tenRev ? window.tenRev.annBase(id) : "/annotations/" + id}/${S.uid}`))).val(); return (S.annot[id] = { own: countAnn(own), pub: 0 }); } catch (e) { return null; }
 }
 
 /* ── Stahování ───────────────────────────────────────────────────── */
 async function downloadPin(id, w) {
   const { auth, FUNCTIONS } = ctx(), token = await auth.currentUser.getIdToken();
+  await window.tenRev?.ensureHead(id); // aktuální revize se zapamatuje, ať jdou poznámky k souboru číst i bez připojení
   const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok || !res.body) throw new Error(res.status === 403 ? "Přístup odepřen" : "Server vrátil " + res.status);
   const total = parseInt(res.headers.get("Content-Length") || "0", 10), modified = modifiedOf(id), cache = await openCache(), url = cacheUrl(id);

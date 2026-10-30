@@ -166,3 +166,16 @@ body .bottom-sheet { z-index: 4001; }
 @media (max-width: 900px) {
   .modal-overlay .modal > .modal-footer { position: sticky; bottom: -20px; margin: 12px -20px -20px; padding: 12px 20px 20px; background: var(--surface, var(--raised, #fff)); border-radius: 0 0 16px 16px; z-index: 1; }
 }
+
+/* Karta Verze v podrobnostech souboru */
+.ver-wrap { padding: 4px 0 12px; }
+.ver-hint { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: var(--muted, #8e8e93); }
+.ver-row { padding: 12px 0; border-top: 1px solid var(--hair, rgba(128, 128, 128, 0.18)); }
+.ver-hint + .ver-row { border-top: none; }
+.ver-t { font-size: 14px; font-weight: 600; }
+.ver-cur { font-weight: 500; color: var(--muted, #8e8e93); }
+.ver-m { margin-top: 2px; font-size: 13px; color: var(--muted, #8e8e93); }
+.ver-a { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ver-a .drive-toolbar-btn { padding: 5px 10px; font-size: 12px; }
+.ver-up { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair, rgba(128, 128, 128, 0.18)); }
+.ver-row.is-current .ver-t { color: var(--text, inherit); }
