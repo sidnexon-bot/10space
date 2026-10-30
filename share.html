@@ -2,8 +2,10 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+  <script>if (window.top !== window.self) document.documentElement.style.display = "none"; /* nenechat se vložit do cizí stránky (clickjacking) */</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
   <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <title>10space — Sdílený obsah</title>
@@ -437,6 +439,7 @@
     };
 
     const shareToken = new URLSearchParams(window.location.search).get("token");
+    let shareSid = null; // klíč relace po správném PINu (verifyShareToken); bez něj ostatní funkce nic nevrátí
 
     let rootData = null; // co bylo nasdíleno (soubor nebo složka)
     let explorerPath = []; // [{id, name}] — historie navigace ve složce
@@ -466,6 +469,7 @@
         const data = await res.json();
 
         if (data.success) {
+            shareSid = data.sid || null;
             rootData = data;
           
             if (data.type === "projekt") {
@@ -587,7 +591,7 @@
         const res = await fetch(FUNCTIONS.listSharedFolder, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ shareToken, folderId })
+          body: JSON.stringify({ shareToken, folderId, sid: shareSid })
         });
         const data = await res.json();
 
@@ -685,7 +689,7 @@
     window.downloadFile = async () => {
       if (!fileData) return;
       try {
-        const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileData.driveFileId}&shareToken=${shareToken}`;
+        const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileData.driveFileId}&shareToken=${shareToken}&sid=${shareSid}`;
         const response = await fetch(url);
         const blob = await response.blob();
         const a = document.createElement("a");
@@ -710,7 +714,7 @@
       document.getElementById("pdf-canvas-wrap").innerHTML = `<div style="color:#fff;text-align:center;padding:40px">Načítám...</div>`;
 
       try {
-        const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileData.driveFileId}&shareToken=${shareToken}`;
+        const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileData.driveFileId}&shareToken=${shareToken}&sid=${shareSid}`;
         const loadingTask = pdfjsLib.getDocument({ url });
         pdfDoc = await loadingTask.promise;
 
@@ -770,7 +774,7 @@
         const res = await fetch(FUNCTIONS.getSharedProjekt, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ shareToken })
+          body: JSON.stringify({ shareToken, sid: shareSid })
         });
         const data = await res.json();
     

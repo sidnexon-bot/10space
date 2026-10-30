@@ -67,3 +67,15 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Lokální servisní účty Firebase — nikdy necommitovat
+serviceAccount.json
+sa.json
+
+# Zálohy dat RTDB (obsahují citlivé údaje) — nikdy necommitovat
+rules-backup/DATA-*
+
+# Interní podklady a systémové soubory
+ROADMAP*.md
+.DS_Store
+**/.DS_Store

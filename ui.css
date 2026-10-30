@@ -24,6 +24,13 @@ body.dark .tn-btn:not(.tn-primary):not(.tn-danger) { background: #2a2a2e; }
   .tn-ov { align-items: flex-end; padding: 0; }
   .tn-dlg { max-width: none; border-radius: 24px 24px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateY(30px); }
   .tn-actions .tn-btn { flex: 1; }
+  /* okna s polem pro psaní: nahoře, aby je nezakryla klávesnice (u spodní lišty by pole zmizelo pod ní) */
+  .tn-ov:has(.tn-in) { align-items: flex-start; padding: calc(env(safe-area-inset-top) + 9vh) 12px 0; }
+  .tn-ov:has(.tn-in) .tn-dlg { border-radius: 24px; padding-bottom: 18px; transform: translateY(-20px); }
+}
+@media (max-width: 768px) {
+  .modal-overlay:has(input:not([type="radio"]):not([type="checkbox"]), textarea) { align-items: flex-start; padding-top: calc(env(safe-area-inset-top) + 8vh); }
+  .modal-overlay:has(input:not([type="radio"]):not([type="checkbox"]), textarea) .modal { max-height: calc(100dvh - env(safe-area-inset-top) - 10vh); }
 }
 
 /* ── Kontextové menu (tři tečky) ─────────────────────────────────── */
@@ -153,4 +160,9 @@ body .bottom-sheet { z-index: 4001; }
 @supports (height: 100dvh) {
   .projekt-detail, .pdf-container { height: 100dvh; }
   .modal { max-height: calc(100dvh - 32px); }
+}
+
+/* Dlouhá okna (např. evidenční číslo) na malém displeji: tlačítka zůstanou vidět dole, i když se obsah posouvá */
+@media (max-width: 900px) {
+  .modal-overlay .modal > .modal-footer { position: sticky; bottom: -20px; margin: 12px -20px -20px; padding: 12px 20px 20px; background: var(--surface, var(--raised, #fff)); border-radius: 0 0 16px 16px; z-index: 1; }
 }

@@ -2,14 +2,16 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+  <script>if (window.top !== window.self) document.documentElement.style.display = "none"; /* nenechat se vložit do cizí stránky (clickjacking) */</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" integrity="sha384-K2R7AzsJQPCDnhTlIEZr5pifaODgyx7XqbqkZMtLKzGJNo/Irtg9yU85F+1YwL8X" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
   <script src="platform.js"></script>
   <script src="ui.js"></script>
   <script src="kody.js"></script>
@@ -2633,7 +2635,7 @@ async function renderDashboard() {
   const projektyHtml = nadchazejici.length > 0
     ? nadchazejici.map(p => `
         <div class="dashboard-projekt-row" onclick="otevritProjekt('${p.id}')">
-          <span class="dashboard-projekt-name">${p.nazev || "—"}</span>
+          <span class="dashboard-projekt-name">${driveEsc(p.nazev || "—")}</span>
           <span class="dashboard-projekt-days">${dnyDo(p.datum)}</span>
         </div>
       `).join("")
@@ -2663,8 +2665,8 @@ async function renderDashboard() {
     ? todoItems.map(t => `
         <div class="dashboard-todo-item">
           <input type="checkbox" disabled>
-          <span>${t.co}</span>
-          <span class="dashboard-todo-project">${t.projekt}</span>
+          <span>${driveEsc(t.co)}</span>
+          <span class="dashboard-todo-project">${driveEsc(t.projekt)}</span>
         </div>
       `).join("")
     : `<div class="dashboard-empty">Žádné úkoly k řešení</div>`;
@@ -3478,11 +3480,11 @@ function renderDriveLocationTree(folderId) {
 
   return trail.map((c, i, arr) =>
     i < arr.length - 1
-      ? `<div class="location-item" style="padding-left:${i * 12}px" onclick="navigateToDriveFolder('${c.id}', '${(c.name || "").replace(/'/g, "\\'")}')">
-           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}›</span>${c.name}
+      ? `<div class="location-item" style="padding-left:${i * 12}px" onclick="navigateToDriveFolder(${driveEsc(JSON.stringify(c.id))}, ${driveEsc(JSON.stringify(c.name || ""))})">
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}›</span>${driveEsc(c.name)}
          </div>`
       : `<div class="location-item current" style="padding-left:${i * 12}px">
-           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}›</span>${c.name}
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}›</span>${driveEsc(c.name)}
          </div>`
   ).join("");
 }
@@ -3499,11 +3501,11 @@ function renderLocationTree(slozkaId) {
   }
   return [{ id: null, name: "10space" }, ...trail].map((c, i, arr) =>
     i < arr.length - 1
-      ? `<div class="location-item" style="padding-left:${i * 12}px" onclick="navigateToFolder('${c.id}')">
-           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}${"›"}</span>${c.name}
+      ? `<div class="location-item" style="padding-left:${i * 12}px" onclick="navigateToFolder(${driveEsc(JSON.stringify(c.id))})">
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}${"›"}</span>${driveEsc(c.name)}
          </div>`
       : `<div class="location-item current" style="padding-left:${i * 12}px">
-           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}${"›"}</span>${c.name}
+           <span style="color:#c7c7cc;margin-right:4px">${"—".repeat(i)}${"›"}</span>${driveEsc(c.name)}
          </div>`
   ).join("");
 }
@@ -3617,7 +3619,7 @@ async function renderPreview(fileId, item, content) {
       const data = await response.json();
       if (data.thumbnailLink) {
         content.innerHTML = `
-          <div style="cursor:pointer" onclick="openGdocsViewer('${fileId}', '${item.name.replace(/'/g, "\\'")}')">
+          <div style="cursor:pointer" onclick="openGdocsViewer(${driveEsc(JSON.stringify(fileId))}, ${driveEsc(JSON.stringify(item.name || ""))})">
             <img src="${data.thumbnailLink}" style="width:100%;border-radius:8px;display:block;border:1px solid #e5e5ea" alt="${item.name}">
             <p style="font-size:12px;color:#8e8e93;text-align:center;margin-top:8px">Kliknutím otevřeš dokument</p>
           </div>`;
@@ -4159,12 +4161,12 @@ async function renderProjekty() {
       <div class="projekt-card ${archiv ? "archiv" : ""}" onclick="otevritProjekt('${p.id}')">
         <button type="button" class="pc-more" aria-label="Akce projektu" aria-haspopup="menu" onclick="event.stopPropagation();openProjektMenu(this,'${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
         <div class="projekt-card-header">
-          <div class="projekt-card-name">${p.nazev || "—"}</div>
+          <div class="projekt-card-name">${driveEsc(p.nazev || "—")}</div>
           <div class="projekt-card-datum">${datum}</div>
         </div>
-        ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
+        ${p.misto ? `<div class="projekt-card-misto">📍 ${driveEsc(p.misto)}</div>` : ""}
         ${p.wikiText ? `
-          <div class="projekt-card-wiki">${p.wikiText}</div>
+          <div class="projekt-card-wiki">${driveEsc(p.wikiText)}</div>
           <div style="display:flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;color:#8e8e93">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#EE220C" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             Shrnuto pomocí Marek AI
@@ -4277,7 +4279,7 @@ if (rider?.garant) {
 
 // Info řádky
 const infoRows = [
-  { label: "Interní kód", value: `<span class="kd-row" data-kod-row="${projektId}"></span>` }, // vyplní kody.js
+  { label: "Interní kód", html: true, value: `<span class="kd-row" data-kod-row="${driveEsc(projektId)}"></span>` }, // vyplní kody.js
   { label: "Datum", value: datum },
   { label: "Místo", value: akce?.place || projekt.misto || null },
   { label: "Sraz", value: akce?.sraz || null },
@@ -4332,9 +4334,9 @@ try {
         <div class="projekt-timeline">
           ${items.map((item, i) => `
             <div class="projekt-timeline-item">
-              <div class="projekt-timeline-time">${item.cas || "—"}</div>
+              <div class="projekt-timeline-time">${driveEsc(item.cas || "—")}</div>
               <div class="projekt-timeline-dot"></div>
-              <div class="projekt-timeline-label">${item.popis || ""}</div>
+              <div class="projekt-timeline-label">${driveEsc(item.popis || "")}</div>
             </div>
           `).join("")}
         </div>
@@ -4351,9 +4353,9 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
     return `
       <div class="rider-table-wrap">
         <table class="rider-table">
-          <thead><tr>${cols.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+          <thead><tr>${cols.map(c => `<th>${driveEsc(c.label)}</th>`).join("")}</tr></thead>
           <tbody>
-            ${rows.map(r => `<tr>${cols.map(c => `<td>${r[c.key] || "—"}</td>`).join("")}</tr>`).join("")}
+            ${rows.map(r => `<tr>${cols.map(c => `<td>${driveEsc(r[c.key] || "—")}</td>`).join("")}</tr>`).join("")}
           </tbody>
         </table>
       </div>`;
@@ -4386,20 +4388,20 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
             if (r.typ === "blok" && r.skladby?.length > 0) {
               return r.skladby.map((s, i) => `
                 <tr>
-                  ${i === 0 ? `<td rowspan="${r.skladby.length}" style="font-weight:600;vertical-align:middle">${r.nazev || "Blok"}</td>` : ""}
-                  <td>${s.name || "—"}</td>
-                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>` : ""}
-                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${r.poznamka || "—"}</td>` : ""}
+                  ${i === 0 ? `<td rowspan="${r.skladby.length}" style="font-weight:600;vertical-align:middle">${driveEsc(r.nazev || "Blok")}</td>` : ""}
+                  <td>${driveEsc(s.name || "—")}</td>
+                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${r.stopaz_min ? driveEsc(r.stopaz_min) + " min" : "—"}</td>` : ""}
+                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${driveEsc(r.poznamka || "—")}</td>` : ""}
                 </tr>
               `).join("");
             } else {
               const detail = r.moderator ? getMemberName(r.moderator) : "";
               return `
                 <tr>
-                  <td>${r.nazev || "—"}</td>
-                  <td>${detail}</td>
-                  <td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td>
-                  <td>${r.poznamka || "—"}</td>
+                  <td>${driveEsc(r.nazev || "—")}</td>
+                  <td>${driveEsc(detail)}</td>
+                  <td>${r.stopaz_min ? driveEsc(r.stopaz_min) + " min" : "—"}</td>
+                  <td>${driveEsc(r.poznamka || "—")}</td>
                 </tr>
               `;
             }
@@ -4426,12 +4428,12 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
       ${garantJmeno ? `
         <div class="projekt-info-row">
           <div class="projekt-info-label">Garant</div>
-          <div class="projekt-info-value" style="font-weight:600">${garantJmeno}</div>
+          <div class="projekt-info-value" style="font-weight:600">${driveEsc(garantJmeno)}</div>
         </div>` : ""}
       ${infoRows.map(r => `
         <div class="projekt-info-row">
-          <div class="projekt-info-label">${r.label}</div>
-          <div class="projekt-info-value">${r.value}</div>
+          <div class="projekt-info-label">${driveEsc(r.label)}</div>
+          <div class="projekt-info-value">${r.html ? r.value : driveEsc(r.value)}</div>
         </div>
       `).join("")}
     </div>
@@ -4439,7 +4441,7 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
     <!-- WIKI -->
     <div class="projekt-sekce">
       <div class="projekt-sekce-title">Popis (AI)</div>
-      <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === "ADMIN" ? "true" : "false"}">${projekt.wikiText || "Zatím žádný popis."}</div>
+      <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === "ADMIN" ? "true" : "false"}">${driveEsc(projekt.wikiText || "Zatím žádný popis.")}</div>
       ${currentUser?.role === "ADMIN" ? `
         <div class="projekt-wiki-actions">
           <button class="projekt-wiki-btn" onclick="ulozitWiki('${projektId}')">
@@ -4570,7 +4572,7 @@ window.handleSearch = (query) => {
     panel.innerHTML = `<div class="search-empty">Nic nenalezeno pro „${query}"</div>`;
   } else {
     panel.innerHTML = results.map(r => `
-      <div class="search-result-item" onclick="handleSearchResultClick('${r.id}', ${r.isFolder}, '${r.name.replace(/'/g, "\\'")}', '${r.mimeType || ""}')">
+      <div class="search-result-item" onclick="handleSearchResultClick(${driveEsc(JSON.stringify(r.id))}, ${r.isFolder ? "true" : "false"}, ${driveEsc(JSON.stringify(r.name || ""))}, ${driveEsc(JSON.stringify(r.mimeType || ""))})">
         ${getDriveFileIcon(r.mimeType, 16)}
         <span class="search-result-name">${highlightMatch(r.name, query)}</span>
         ${r.code ? `<span class="search-result-code">${r.code}</span>` : ""}
@@ -6198,9 +6200,9 @@ let shareContextId = null;
 let shareContextIsProjekt = false;
 
 window.confirmShare = async () => {
-  const pin = document.getElementById("share-pin-input").value;
-  if (!pin || pin.length < 4) {
-    alert("Zadej PIN alespoň 4 číslice");
+  const pin = document.getElementById("share-pin-input").value.trim();
+  if (!/^\d{4,8}$/.test(pin)) {
+    alert("PIN musí mít 4 až 8 číslic");
     return;
   }
   const expiryDays = document.getElementById("share-expiry-select").value;
@@ -6370,9 +6372,9 @@ window.closeRegeneratePinModal = () => {
 };
 
 window.confirmRegeneratePin = async () => {
-  const newPin = document.getElementById("regenerate-pin-input").value;
-  if (!newPin || newPin.length < 4) {
-    alert("Zadej PIN alespoň 4 číslice");
+  const newPin = document.getElementById("regenerate-pin-input").value.trim();
+  if (!/^\d{4,8}$/.test(newPin)) {
+    alert("PIN musí mít 4 až 8 číslic");
     return;
   }
 
@@ -6458,7 +6460,7 @@ window.openImpersonateSheet = async () => {
   const members = Object.values(membersSnap.val() || {});
   openBottomSheet("Zobrazit jako", members.map(m => ({
     label: m.name || m.email,
-    action: `startImpersonate('${m.uid || m.id}', '${(m.name || m.email).replace(/'/g, "\\'")}');closeBottomSheet()`,
+    onClick: () => { startImpersonate(m.uid || m.id, m.name || m.email); closeBottomSheet(); },
     icon: ""
   })));
 };
