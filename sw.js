@@ -3,8 +3,8 @@
    • Nikdy se neukládá nic z backendu (Cloud Functions, Firebase, Google API): přihlášení, data a soubory
      chodí vždy živě, offline kopie not řeší aplikace sama (decks.js).
    Nová verze aplikace se projeví při příštím otevření (nejdřív síť, úložiště je záloha). */
-const VERSION = "10space-shell-v5";
-const SHELL = ["./", "index.html", "redesign.css", "viewers.css", "decks.css", "ui.css", "kody.css", "motion.css", "platform.js", "ui.js", "kody.js", "viewers.js", "decks.js", "repertoar.js", "pdf-reader.js?v=1", "manifest.json", "icon-192.png", "icon-512.png"];
+const VERSION = "10space-shell-v6";
+const SHELL = ["./", "index.html", "redesign.css", "viewers.css", "decks.css", "ui.css", "kody.css", "motion.css", "settings.css", "settings.js", "platform.js", "ui.js", "kody.js", "viewers.js", "decks.js", "repertoar.js", "pdf-reader.js?v=1", "manifest.json", "icon-192.png", "icon-512.png"];
 const CDN = /^https:\/\/(www\.gstatic\.com\/firebasejs|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//;
 
 self.addEventListener("install", (e) => {

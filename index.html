@@ -13,6 +13,7 @@
   <script src="platform.js"></script>
   <script src="ui.js"></script>
   <script src="kody.js"></script>
+  <script src="settings.js"></script>
   <title>10space</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1555,6 +1556,7 @@
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="kody.css">
   <link rel="stylesheet" href="motion.css">
+  <link rel="stylesheet" href="settings.css">
 </head>
 <body class="login-page" id="body">
 
@@ -1602,6 +1604,9 @@
       </div>
       <div class="pm-group">
         <div class="pm-item" role="menuitem" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="--i:0" onclick="toggleDarkMode();closeMobileProfileMenu()"><span class="pm-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span><span class="pm-label dark-mode-toggle-label"></span></div>
+      </div>
+      <div class="pm-group">
+        <div class="pm-item" role="menuitem" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="--i:1" onclick="openSettings()"><span class="pm-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="pm-label">Nastavení</span></div>
       </div>
       <div class="pm-group">
         <div class="pm-item pm-logout" role="menuitem" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="--i:1" onclick="handleLogout();closeMobileProfileMenu()"><span class="pm-icon pm-red"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span><span class="pm-label">Odhlásit se</span></div>
@@ -1678,6 +1683,10 @@
         <button class="sidebar-action" id="impersonate-btn" onclick="openImpersonateSheet()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Zobrazit jako
+        </button>
+        <button class="sidebar-action" id="settings-btn" onclick="openSettings()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Nastavení
         </button>
         <button class="sidebar-action" onclick="handleLogout()" style="color:#EE220C">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1841,7 +1850,7 @@ const FUNCTIONS = {
   setEvidCislo: "https://setevidcislo-etp6s2ynnq-uc.a.run.app"
 };
 
-window.__tenCtx = { get auth() { return auth; }, get FUNCTIONS() { return FUNCTIONS; }, get db() { return db; }, get user() { return currentUser; }, ref: ref, get: get, update: update, onValue: onValue }; // pro viewers.js, decks.js a ui.js
+window.__tenCtx = { get auth() { return auth; }, get FUNCTIONS() { return FUNCTIONS; }, get db() { return db; }, get user() { return currentUser; }, ref: ref, get: get, set: set, update: update, onValue: onValue }; // pro viewers.js, decks.js a ui.js
 // čtení z databáze, které bez připojení (nebo při velmi pomalé síti) nezablokuje start aplikace
 const offlineGet = (path) => navigator.onLine === false ? Promise.resolve({ val: () => null }) : Promise.race([get(ref(db, path)), new Promise((r) => setTimeout(() => r({ val: () => null }), 8000))]);
 
@@ -1885,7 +1894,8 @@ let shareManageToken = null;
 let impersonateUid = null;
 
 // Načti uložený režim při startu
-if (localStorage.getItem("darkMode") === "1") {
+if (window.tenSettings) window.tenSettings.boot(); // světlý / tmavý / podle systému (settings.js)
+else if (localStorage.getItem("darkMode") === "1") {
   document.body.classList.add("dark");
   document.documentElement.classList.add("dark");
   if (window.tenChrome) window.tenChrome(true);
@@ -2229,6 +2239,8 @@ async function loadData() {
   if (window.tenDecks) window.tenDecks.start(); else window.__tenStartRequested = true;
   // po výpadku, zavření nebo znovunačtení naváže tam, kde uživatel skončil (do 2 minut); jinak Přehled, bez připojení osobní desky
   window.tenKody?.start();
+  window.tenSettings?.start();
+  window.__tenSettingsChanged = () => { if (currentTab === "recent") renderDashboard(); };
   window.tenResume?.init(auth.currentUser?.uid);
   const resumed = window.tenResume ? await window.tenResume.restore() : false;
   if (!resumed) switchTab(window.location.hash === "#/osobni" || navigator.onLine === false ? "decks" : "recent");
@@ -2439,7 +2451,8 @@ window.switchTab = (tab) => {
     media: "Multimédia",
     projects: "Projekty",
     favorites: "Oblíbené",
-    decks: "Osobní desky"
+    decks: "Osobní desky",
+    settings: "Nastavení"
   };
   
   const title = titles[tab] || tab;
@@ -2480,6 +2493,11 @@ function renderTab() {
 
   if (currentTab === "projects") {
     safeRender("projects", renderProjekty);
+    return;
+  }
+
+  if (currentTab === "settings") {
+    window.tenSettings?.render(area);
     return;
   }
 
@@ -2679,36 +2697,53 @@ async function renderDashboard() {
   }
   const shareHtml = shareSnap.loading ? `<div class="dashboard-empty">Načítám…</div>` : buildShareHtml(shareSnap.tokens);
 
+  const DASH = {
+    projekty: `
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Nadcházející projekty</div>
+        ${projektyHtml}
+      </div>
+    `,
+    recent: `
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Nedávno otevřeno</div>
+        ${souboryHtml}
+      </div>
+    `,
+    notes: `
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Mé poznámky</div>
+        <textarea class="dashboard-note-textarea" id="dashboard-notes" ${poznamkySnap ? "" : "disabled"} placeholder="${poznamkySnap ? "Napiš si poznámku..." : "Poznámky jsou dostupné po připojení"}">${poznamky}</textarea>
+      </div>
+    `,
+    todo: `
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">To-do z projektů</div>
+        ${todoHtml}
+      </div>
+    `,
+    kody: `
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Otevřené kódy</div>
+        <div id="kody-open"></div>
+      </div>
+    `,
+    shares: `
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Sdílené odkazy</div>
+        <div id="dashboard-share-list">${shareHtml}</div>
+      </div>
+    `
+  };
+  const dashIds = window.tenSettings ? window.tenSettings.dashboardCards() : ["projekty", "recent", "notes", "todo", "kody", "shares"];
+
   area.innerHTML = `
     <div class="dashboard-header">
       <div class="dashboard-greeting">${pozdrav}${jmenoVokativ ? ", " + jmenoVokativ : ""} 👋</div>
       <div class="dashboard-date">${datum}</div>
     </div>
     <div class="dashboard-grid">
-      <div class="dashboard-card">
-        <div class="dashboard-card-title">Nadcházející projekty</div>
-        ${projektyHtml}
-      </div>
-      <div class="dashboard-card">
-        <div class="dashboard-card-title">Nedávno otevřeno</div>
-        ${souboryHtml}
-      </div>
-      <div class="dashboard-card">
-        <div class="dashboard-card-title">Mé poznámky</div>
-        <textarea class="dashboard-note-textarea" id="dashboard-notes" ${poznamkySnap ? "" : "disabled"} placeholder="${poznamkySnap ? "Napiš si poznámku..." : "Poznámky jsou dostupné po připojení"}">${poznamky}</textarea>
-      </div>
-      <div class="dashboard-card">
-        <div class="dashboard-card-title">To-do z projektů</div>
-        ${todoHtml}
-      </div>
-      <div class="dashboard-card">
-        <div class="dashboard-card-title">Otevřené kódy</div>
-        <div id="kody-open"></div>
-      </div>
-      <div class="dashboard-card">
-        <div class="dashboard-card-title">Sdílené odkazy</div>
-        <div id="dashboard-share-list">${shareHtml}</div>
-      </div>
+      ${dashIds.map((id) => DASH[id] || "").join("") || `<div class="dashboard-empty" style="grid-column:1/-1;padding:32px 0">Přehled je prázdný. Karty přidáš v <a href="#" onclick="openSettings();return false">Nastavení</a>.</div>`}
     </div>
   `;
 
@@ -2717,7 +2752,7 @@ async function renderDashboard() {
 
   // Autosave poznámek
   let saveTimeout;
-  document.getElementById("dashboard-notes").addEventListener("input", (e) => {
+  document.getElementById("dashboard-notes")?.addEventListener("input", (e) => {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {
       const emailSafe = (currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_");
@@ -4579,6 +4614,12 @@ window.mobileSwitchTab = (tab) => {
   switchTab(tab);
 };
 
+window.openSettings = () => {
+  document.querySelectorAll(".bottom button").forEach(b => b.classList.remove("active"));
+  closeMobileProfileMenu?.();
+  switchTab("settings");
+};
+
 // BOTTOM SHEET
 function openBottomSheet(title, items) {
   items = items.filter(Boolean);
@@ -6005,6 +6046,7 @@ window.zavritProjektSlozku = () => {
 };
 
 window.toggleDarkMode = () => {
+  if (window.tenSettings) return window.tenSettings.setTheme(document.body.classList.contains("dark") ? "light" : "dark");
   const isDark = document.body.classList.toggle("dark");
   document.documentElement.classList.toggle("dark", isDark);
   localStorage.setItem("darkMode", isDark ? "1" : "0");
