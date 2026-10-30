@@ -14,7 +14,13 @@ export const fileOf = (s) => s?.driveFileId || driveIdOf(s?.pdf) || null;
 const STATUSES = ["Aktivní", "Neaktuální", "Mimo repertoár"];
 const VERSIONS = ["", "TTBB", "SATB"];
 const EDIT_ROLES = ["ADMIN", "ART", "Owner"];
-const HEART = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+const DOTS = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>';
+const FILTER_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>';
+/* ikony položek nabídky u skladby (20 px, jako ve zbytku aplikace) */
+const sheetIc = (paths, fill) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="${fill ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const IC_HEART = '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>';
+const IC_FOLDER_PLUS = '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>';
+const IC_EDIT = '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>';
 const MUSIC = '<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
 const fold = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const plural = (n) => (n === 1 ? "skladba" : n >= 2 && n <= 4 ? "skladby" : "skladeb");
@@ -45,13 +51,11 @@ export function createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, 
   }
 
   function row(s) {
-    const fid = fileOf(s), ed = online(), canE = canEdit();
+    const fid = fileOf(s);
     const meta = [s.author, s.arranged_by && `aranž. ${s.arranged_by}`, s.text_by && s.text_by !== "---" && `text ${s.text_by}`].filter(Boolean).join(" · ");
     const sub = [s.code, s.length].filter(Boolean).join(" · ");
     const chip = s.status === "Aktivní" ? "ok" : s.status === "Mimo repertoár" ? "err" : "pen";
-    const acts = `<button class="mp-icon dk-mini rp-fav${R.fav[s.id] ? " on" : ""}" data-act="rpFav" data-id="${esc(s.id)}" aria-label="Oblíbené" aria-pressed="${!!R.fav[s.id]}" ${R.favKey ? "" : "disabled"}>${HEART}</button>`
-      + (fid ? `<button class="mp-icon dk-mini" data-act="rpFolder" data-file="${esc(fid)}" aria-label="Přidat do složky" title="Přidat do mé složky" ${ed ? "" : "disabled"}>${ICON.move}</button>` : "")
-      + (canE ? `<button class="mp-icon dk-mini" data-act="rpEdit" data-id="${esc(s.id)}" aria-label="Upravit skladbu" title="Upravit" ${ed ? "" : "disabled"}>${ICON.edit}</button>` : "");
+    const acts = `<button class="mp-icon dk-mini rp-more" data-act="rpMenu" data-id="${esc(s.id)}" aria-label="Akce skladby" aria-haspopup="menu" title="Akce">${DOTS}</button>`;
     return `<div class="dk-row has-acts${fid ? "" : " off"}" ${fid ? `data-open="${esc(fid)}" data-title="${esc(s.name || "Noty")}" role="button" tabindex="0"` : ""}>
     <span class="dk-ic">${ICON.pdf}</span>
     <span class="dk-t"><b>${esc(s.name || "Bez názvu")}${s.version ? ` <em class="rp-ver">${esc(s.version)}</em>` : ""}</b>${meta ? `<small>${esc(meta)}</small>` : ""}${sub ? `<small>${esc(sub)}</small>` : ""}</span>
@@ -64,17 +68,19 @@ export function createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, 
     if (!list.length) return `<div class="dk-empty"><p><b>Nic nenalezeno.</b></p><p>Zkuste upravit hledání nebo filtr.</p></div>`;
     return `<div class="dk-rows">${list.slice(0, 300).map(row).join("")}</div>${list.length > 300 ? `<div class="dk-foot">Zobrazeno 300 z ${list.length}, zpřesněte hledání.</div>` : ""}`;
   }
-  const countText = () => { const n = visible().length; return `${n} ${plural(n)}`; };
+  const activeFilters = () => [R.status !== "Vše" ? R.status : null, R.version !== "Vše" ? R.version : null].filter(Boolean);
+  const countText = () => { const n = visible().length; return [`${n} ${plural(n)}`, ...activeFilters()].join(" · "); };
 
   /* stránka s celým repertoárem */
   function page() {
-    const chips = (key, vals) => vals.map((v) => `<button class="rp-pill${R[key] === v ? " on" : ""}" data-act="rpFilter" data-key="${key}" data-val="${esc(v)}">${esc(v)}</button>`).join("");
+    const n = activeFilters().length;
     return `<div class="dk-bar"><button class="mp-icon dk-back" data-act="home" aria-label="Zpět">${ICON.back}</button><h2>Repertoár</h2>
       ${canEdit() ? `<button class="drive-toolbar-btn primary" data-act="rpAdd" ${online() ? "" : "disabled"}>${ICON.plus}<span>Přidat skladbu</span></button>` : ""}</div>
     <div class="dashboard-card dk-card">
-      <input class="field" id="rp-q" type="search" placeholder="Hledat skladbu, skladatele, kód…" autocomplete="off" value="${esc(R.q)}">
-      <div class="rp-pills">${chips("status", ["Vše", "Aktivní", "Neaktuální", "Mimo repertoár", "Oblíbené"])}</div>
-      <div class="rp-pills">${chips("version", ["Vše", "TTBB", "SATB"])}</div>
+      <div class="rp-bar">
+        <input class="field" id="rp-q" type="search" placeholder="Hledat skladbu, skladatele, kód…" autocomplete="off" value="${esc(R.q)}">
+        <button type="button" class="rp-filter-btn${n ? " on" : ""}" data-act="rpFilterOpen" aria-haspopup="dialog" aria-label="Filtr${n ? `, aktivních ${n}` : ""}">${FILTER_IC}<span>Filtr</span>${n ? `<b>${n}</b>` : ""}</button>
+      </div>
       <div class="rp-count" id="rp-count">${countText()}</div>
       <div id="rp-list">${listHtml()}</div>
     </div>`;
@@ -147,14 +153,46 @@ export function createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, 
     await writeRoot(`/favorites/${key}`, { [id]: on ? true : null });
   }
 
+  /* filtr: jedno okno se stavem i verzí */
+  async function openFilter() {
+    const chips = (key, vals, cur) => vals.map((v) => `<button type="button" class="rp-pill${cur === v ? " on" : ""}" data-key="${key}" data-val="${esc(v)}">${esc(v)}</button>`).join("");
+    const body = `<div class="rp-fgroup"><div class="rp-flabel">Stav</div><div class="rp-pills">${chips("status", ["Vše", ...STATUSES, "Oblíbené"], R.status)}</div></div>
+      <div class="rp-fgroup"><div class="rp-flabel">Verze</div><div class="rp-pills">${chips("version", VERSIONS.filter(Boolean).reduce((a, v) => [...a, v], ["Vše"]), R.version)}</div></div>
+      <button type="button" class="dk-link" data-reset>Zrušit filtr</button>`;
+    const sel = { status: R.status, version: R.version };
+    const mark = (o) => o.querySelectorAll(".rp-pill").forEach((b) => b.classList.toggle("on", sel[b.dataset.key] === b.dataset.val));
+    const res = await dialog({
+      title: "Filtrovat repertoár", ok: "Použít", body,
+      onMount: Object.assign((o) => {
+        o.addEventListener("click", (e) => {
+          if (e.target.closest("[data-reset]")) { sel.status = "Vše"; sel.version = "Vše"; return mark(o); }
+          const b = e.target.closest(".rp-pill"); if (!b) return;
+          sel[b.dataset.key] = b.dataset.val; mark(o);
+        });
+      }, { result: () => ({ ...sel }) })
+    });
+    if (res) { R.status = res.status; R.version = res.version; draw(); }
+  }
+
+  /* tři tečky u skladby: oblíbené, přidání do složky, úprava (na telefonu spodní lišta, jinde modální okno) */
+  function openRowMenu(id) {
+    const s = (window.repertoar || {})[id]; if (!s) return;
+    const fid = fileOf(s), ed = online(), fav = !!R.fav[id];
+    const items = [
+      R.favKey ? { label: fav ? "Odebrat z oblíbených" : "Přidat do oblíbených", icon: sheetIc(IC_HEART, fav), onClick: () => toggleFav(id) } : null,
+      fid && ed ? { label: "Přidat do mé složky", icon: sheetIc(IC_FOLDER_PLUS), onClick: () => window.tenDecks?.pick(fid) } : null,
+      canEdit() && ed ? { label: "Upravit skladbu", icon: sheetIc(IC_EDIT), onClick: () => edit(id) } : null
+    ].filter(Boolean);
+    if (!items.length) return toast(ed ? "U této skladby teď nejsou žádné akce." : "Bez připojení nejde skladbu upravovat.");
+    window.openBottomSheet(s.name || "Skladba", items);
+  }
+
   /* akce z decks.js */
   async function handle(act, btn) {
     if (act === "rpOpen") { S.view = { type: "repertoar" }; draw(); }
-    else if (act === "rpFilter") { R[btn.dataset.key] = btn.dataset.val; draw(); }
-    else if (act === "rpFav") toggleFav(btn.dataset.id);
-    else if (act === "rpFolder") window.tenDecks?.pick(btn.dataset.file);
+    else if (act === "rpFilterOpen") openFilter();
+    else if (act === "rpMenu") openRowMenu(btn.dataset.id);
     else if (act === "rpAdd") edit(null);
-    else if (act === "rpEdit") edit(btn.dataset.id);
   }
   function onInput(e) { if (e.target.id === "rp-q") { R.q = e.target.value; refreshList(); } }
 

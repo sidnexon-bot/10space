@@ -1528,6 +1528,10 @@
       .multi-toolbar-btn svg { width: 18px; height: 18px; }
     }
 
+    /* kontextové menu: položky se nezalamují, takže jeho velikost nezávisí na poloze u okraje */
+    .context-menu { max-width: calc(100vw - 16px); }
+    .context-menu-item { white-space: nowrap; }
+
     /* ── MOBIL ────────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       /* prázdná lišta pod hlavičkou: drobečky v kořeni Drive jen opakují název */
@@ -1779,58 +1783,7 @@
 </div>
 
 <!-- CONTEXT MENU -->
-<div class="context-menu hidden" id="context-menu">
-  <div class="context-menu-item" id="ctx-add-deck" onclick="contextAction('addToDeck')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-2 2V6a2 2 0 0 1 2-2z"/><path d="M8 9h6M8 13h4"/></svg>
-    Přidat do osobních desek
-  </div>
-  <div class="context-menu-item" onclick="contextAction('download')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Stáhnout
-  </div>
-  <div class="context-menu-item" onclick="contextAction('rename')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    Přejmenovat
-  </div>
-  <div class="context-menu-item" onclick="contextAction('move')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
-    Přesunout
-  </div>
-  <div class="context-menu-item" onclick="contextAction('duplicate')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    Duplikovat
-  </div>
-  <div class="context-menu-item" onclick="contextAction('copylink10space')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-    Odkaz 10space
-  </div>
-  <div class="context-menu-item" onclick="contextAction('copylinkdrive')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-    Odkaz Google Drive
-  </div>
-  <div class="context-menu-item" onclick="contextAction('shareWithPin')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-    Sdílet mimo 10men s PIN kódem
-  </div>
-  <div class="context-menu-item" onclick="contextAction('info')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    Informace
-  </div>
-  <div class="context-menu-item" id="ctx-assign-evid" onclick="contextAction('assignEvid')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-    Přiřadit evidenční číslo
-  </div>
-    <div class="context-menu-item" onclick="contextAction('manageAcl')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-    Oprávnění
-  </div>
-  <div class="context-menu-sep"></div>
-  <div class="context-menu-item danger" onclick="contextAction('delete')">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-    Smazat
-  </div>
-
-</div>
+<div class="context-menu hidden" id="context-menu" role="menu"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -2533,6 +2486,64 @@ function getEvidCode(fileId) {
   return window.driveFiles?.[fileId]?.evidCislo || "";
 }
   
+// NEDÁVNO OTEVŘENÉ SOUBORY
+// Ukládá se do /userActivity/{e-mail}/recent/{id souboru} = čas otevření (ms). Zapisuje jen přihlášený uživatel sám sobě.
+const recentSeen = new Map();
+const recentKey = () => (currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_");
+
+window.recordRecentOpen = (id) => {
+  if (!id || !window.driveFiles?.[id]) return;
+  const now = Date.now();
+  if (now - (recentSeen.get(id) || 0) < 15000) return; // dvojklik / opětovné otevření během chvilky se nepočítá znovu
+  recentSeen.set(id, now);
+  (window.__recentLocal ||= {})[id] = now; // i bez připojení se dashboard v téhle relaci opraví
+  const key = recentKey();
+  if (!key) return;
+  try { Promise.resolve(set(ref(db, `/userActivity/${key}/recent/${id}`), now)).catch(() => {}); } catch (e) { /* bez zápisu */ }
+};
+
+function mergeRecent(a, b) {
+  const out = {};
+  for (const src of [a, b]) for (const [id, t] of Object.entries(src || {})) if (+t > (out[id] || 0)) out[id] = +t;
+  return out;
+}
+
+// historie nemá narůstat donekonečna: nad 40 záznamů se nejstarší smažou
+function pruneRecent(map) {
+  const ids = Object.entries(map).sort((x, y) => y[1] - x[1]);
+  if (ids.length <= 40) return;
+  const drop = Object.fromEntries(ids.slice(30).map(([id]) => [id, null]));
+  ids.slice(30).forEach(([id]) => delete map[id]);
+  const key = recentKey();
+  if (key) Promise.resolve(update(ref(db, `/userActivity/${key}/recent`), drop)).catch(() => {});
+}
+
+function formatAgo(ms) {
+  const diff = Date.now() - ms;
+  const hod = Math.floor(diff / 3600000);
+  if (hod < 1) return "před chvílí";
+  if (hod < 24) return `před ${hod} hod`;
+  const dny = Math.floor(hod / 24);
+  if (dny === 1) return "včera";
+  return `před ${dny} dny`;
+}
+
+function recentFilesHtml(map) {
+  const rows = Object.entries(map || {})
+    .map(([id, t]) => [id, +t, window.driveFiles?.[id]])
+    .filter(([id, t, f]) => f && t > 0 && getUserAccess(id) !== "none") // smazané i nepřístupné soubory se nezobrazí
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+  if (!rows.length) return `<div class="dashboard-empty" id="dashboard-recent-empty">Zatím jste žádný soubor neotevřeli</div>`;
+  return rows.map(([id, t, f]) => `
+        <div class="dashboard-file-row clickable" role="button" tabindex="0" onclick="handleDriveNameClick('${id}', '${driveEsc(f.mimeType)}', false)" onkeydown="if(event.key==='Enter')this.click()">
+          ${getDriveFileIcon(f.mimeType, 16)}
+          <span class="dashboard-file-name">${driveEsc(f.name)}</span>
+          <span class="dashboard-file-time">${formatAgo(t)}</span>
+        </div>
+      `).join("");
+}
+
 // DASHBOARD
 async function renderDashboard() {
   const area = document.getElementById("content-area");
@@ -2551,10 +2562,11 @@ async function renderDashboard() {
   const datum = new Date().toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const sharesP = loadShares(!shareFresh()); // pomalá Cloud Function dashboard nezdržuje, karta se doplní, až dorazí
-  const [projektSnap, akceSnap, poznamkySnap] = await Promise.all([
+  const [projektSnap, akceSnap, poznamkySnap, recentSnap] = await Promise.all([
     get(ref(db, "/projekty")),
     get(ref(db, "/akce")),
-    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`)).catch(() => null) // bez připojení se poznámky nenačtou
+    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/poznamky`)).catch(() => null), // bez připojení se poznámky nenačtou
+    get(ref(db, `/userActivity/${(currentUser?.email || "").replace(/\./g, "_").replace(/@/g, "_")}/recent`)).catch(() => null)
   ]);
   const shareSnap = shareCache.v || { loading: true };
 
@@ -2589,31 +2601,10 @@ async function renderDashboard() {
       `).join("")
     : `<div class="dashboard-empty">Zatím žádné nadcházející projekty</div>`;
 
-  // Nedávno nahráno
-  const nedavneSoubory = Object.entries(window.driveFiles || {})
-    .filter(([id, f]) => f.modifiedTime)
-    .sort(([,a],[,b]) => new Date(b.modifiedTime) - new Date(a.modifiedTime))
-    .slice(0, 5);
-
-  function formatCas(iso) {
-    const diff = Date.now() - new Date(iso).getTime();
-    const hod = Math.floor(diff / 3600000);
-    if (hod < 1) return "před chvílí";
-    if (hod < 24) return `před ${hod} hod`;
-    const dny = Math.floor(hod / 24);
-    if (dny === 1) return "včera";
-    return `před ${dny} dny`;
-  }
-
-  const souboryHtml = nedavneSoubory.length > 0
-    ? nedavneSoubory.map(([id, f]) => `
-        <div class="dashboard-file-row clickable" role="button" tabindex="0" onclick="handleDriveNameClick('${id}', '${f.mimeType}', false)" onkeydown="if(event.key==='Enter')this.click()">
-          ${getDriveFileIcon(f.mimeType, 16)}
-          <span class="dashboard-file-name">${f.name}</span>
-          <span class="dashboard-file-time">${formatCas(f.modifiedTime)}</span>
-        </div>
-      `).join("")
-    : `<div class="dashboard-empty" id="dashboard-recent-empty">Zatím žádná nedávná aktivita</div>`;
+  // Nedávno otevřeno: skutečně otevřené soubory tohoto uživatele, nejnovější nahoře
+  const recentMap = mergeRecent(recentSnap?.val(), window.__recentLocal);
+  pruneRecent(recentMap);
+  const souboryHtml = recentFilesHtml(recentMap);
 
   // To-do z projektů (rider)
   let todoItems = [];
@@ -2995,6 +2986,7 @@ window.handleDriveItemClick = (e, id, isFolder) => {
 
 window.handleDriveNameClick = (id, mimeType, isFolder) => {
   if (isFolder) return;
+  recordRecentOpen(id);
   const mime = (mimeType || "").toLowerCase();
   const file = window.driveFiles?.[id];
   if (window.tenViewers?.open(id, mimeType, file?.name)) return;
@@ -3049,36 +3041,80 @@ function showDriveDetail(fileId, isFolder) {
   renderDriveDetailContent(fileId, isFolder);
 }
 
+// KONTEXTOVÁ MENU
+// Jedna definice položek pro počítač (rozbalovací menu u kurzoru) i telefon (spodní lišta), takže se nemůžou rozejít.
+// `drive` = položka Drive (soubor / složka), `docs` = starší záložka Dokumenty.
+const ctxIcon = (paths, s = 15) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const CTX_PATHS = {
+  open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  addToDeck: '<path d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-2 2V6a2 2 0 0 1 2-2z"/><path d="M8 9h6M8 13h4"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  rename: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  move: '<polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>',
+  info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+  assignEvid: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+  manageAcl: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  delete: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  pin: '<path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>'
+};
+
+const CTX_ITEMS = [
+  { key: "open", label: "Otevřít", when: (c) => c.drive },
+  { key: "addToDeck", label: "Přidat do osobních desek", when: (c) => c.drive && !c.isFolder && c.mime === "application/pdf" },
+  { key: "download", label: "Stáhnout" },
+  { key: "share", label: "Sdílet" },
+  { key: "rename", label: "Přejmenovat" },
+  { key: "move", label: "Přesunout" },
+  { key: "info", label: "Podrobnosti" },
+  { key: "assignEvid", label: "Přiřadit evidenční číslo", when: (c) => c.docs && c.isAdmin && c.noEvid && !c.isFolder },
+  { key: "manageAcl", label: "Oprávnění", when: (c) => c.isAdmin }, // nastavovat oprávnění smí jen ADMIN / Owner (jinak by funkce vrátila chybu)
+  { sep: true },
+  { key: "delete", label: "Smazat", danger: true }
+];
+
+const isAclAdmin = () => ["ADMIN", "Owner"].includes(currentUser?.role);
+const ctxVisible = (c) => CTX_ITEMS.filter((it) => it.sep || !it.when || it.when(c));
+
+function renderContextMenuEl(c) {
+  const menu = document.getElementById("context-menu");
+  menu.innerHTML = ctxVisible(c).map((it) => it.sep
+    ? `<div class="context-menu-sep"></div>`
+    : `<div class="context-menu-item${it.danger ? " danger" : ""}" role="menuitem" onclick="contextAction('${it.key}')">${ctxIcon(CTX_PATHS[it.key])}${it.label}</div>`).join("");
+  return menu;
+}
+
+function placeContextMenu(menu, e) {
+  menu.classList.remove("hidden");
+  const w = menu.offsetWidth || 220, h = menu.offsetHeight || 320;
+  menu.style.left = Math.max(8, Math.min(e.clientX, window.innerWidth - w - 8)) + "px";
+  menu.style.top = Math.max(8, Math.min(e.clientY, window.innerHeight - h - 8)) + "px";
+}
+
 window.openDriveContextMenu = (e, id, name, isFolder) => {
   contextItemId = id;
   name = name || window.driveFiles?.[id]?.name || window.driveFolders?.[id]?.name || "";
   e.stopPropagation();
+  const c = { drive: true, isFolder, mime: window.driveFiles?.[id]?.mimeType || "", isAdmin: isAclAdmin() };
 
   if (window.innerWidth <= 768) {
-    openBottomSheet(name, [
-      { label: "Otevřít", action: (isFolder ? `openDriveFile('${id}')` : `handleDriveNameClick('${id}', window.driveFiles?.['${id}']?.mimeType || '', false)`) + `;closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>` },
-      { label: "Stáhnout", action: `contextAction('download');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>` },
-      { label: "Odkaz 10space", action: `contextAction('copylink10space');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
-      { label: "Odkaz Google Drive", action: `contextAction('copylinkdrive');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
-      { label: "Sdílet mimo 10men s PIN kódem", action: `openShareModalMobile('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>` },
-      { label: "Přejmenovat", action: `contextAction('rename');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>` },
-      { label: "Přesunout", action: `openMoveModal(['${id}']);closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>` },
-      { label: "Smazat", action: `deleteDriveItem('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`, danger: true },
-      ...(!isFolder && window.driveFiles?.[id]?.mimeType === "application/pdf" ? [{ label: "Přidat do osobních desek", action: `contextAction('addToDeck');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-2 2V6a2 2 0 0 1 2-2z"/><path d="M8 9h6M8 13h4"/></svg>` }] : []),
-      { label: "Podrobnosti", action: `openMobileDetail('${id}');closeBottomSheet()`, icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` }
-    ]);
+    openBottomSheet(name, ctxVisible(c).filter((it) => !it.sep).map((it) => ({
+      label: it.label, icon: ctxIcon(CTX_PATHS[it.key], 20), danger: !!it.danger, onClick: () => contextAction(it.key)
+    })));
     return;
   }
+  placeContextMenu(renderContextMenuEl(c), e);
+};
 
-  const menu = document.getElementById("context-menu");
-  menu.classList.remove("hidden");
-  const assignBtn = document.getElementById("ctx-assign-evid");
-  if (assignBtn) assignBtn.style.display = "none";
-  const deckBtn = document.getElementById("ctx-add-deck");
-  if (deckBtn) deckBtn.style.display = (!isFolder && window.driveFiles?.[id]?.mimeType === "application/pdf") ? "" : "none";
-  const x = e.clientX, y = e.clientY;
-  menu.style.left = (x + 200 > window.innerWidth ? x - 200 : x) + "px";
-  menu.style.top = (y + 280 > window.innerHeight ? y - 280 : y) + "px";
+// Sdílení: tři způsoby pod jednou položkou „Sdílet“ (na telefonu spodní lišta, jinde modální okno)
+window.openShareMenu = (id) => {
+  const name = window.driveFiles?.[id]?.name || window.driveFolders?.[id]?.name || "";
+  openBottomSheet(name ? `Sdílet: ${name}` : "Sdílet", [
+    { label: "Odkaz 10space", icon: ctxIcon(CTX_PATHS.link, 20), onClick: () => contextAction("copylink10space") },
+    { label: "Odkaz Google Drive", icon: ctxIcon(CTX_PATHS.link, 20), onClick: () => contextAction("copylinkdrive") },
+    { label: "Sdílet mimo 10men s PIN kódem", icon: ctxIcon(CTX_PATHS.pin, 20), onClick: () => contextAction("shareWithPin") }
+  ]);
 };
 
 function renderFolderList() {
@@ -3599,21 +3635,9 @@ window.openDocument = async (docId) => {
 // CONTEXT MENU
 window.openContextMenu = (e, id, isFolder) => {
   contextItemId = id;
-  const menu = document.getElementById("context-menu");
-  menu.classList.remove("hidden");
-
-  // Zobraz/skryj "Přiřadit evidenční číslo"
   const doc = window.allDocs[id];
-  const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "Owner";
-  const noEvid = doc && (!doc.evidCislo || doc.evidCislo === "—");
-  const assignBtn = document.getElementById("ctx-assign-evid");
-  if (assignBtn) {
-    assignBtn.style.display = (isAdmin && noEvid && !isFolder) ? "flex" : "none";
-  }
-
-  const x = e.clientX, y = e.clientY;
-  menu.style.left = (x + 200 > window.innerWidth ? x - 200 : x) + "px";
-  menu.style.top = (y + 280 > window.innerHeight ? y - 280 : y) + "px";
+  const c = { docs: true, isFolder, isAdmin: isAclAdmin(), noEvid: !!doc && (!doc.evidCislo || doc.evidCislo === "—") };
+  placeContextMenu(renderContextMenuEl(c), e);
 };
 
 window.closeContextMenu = () => {
@@ -3627,6 +3651,15 @@ window.contextAction = async (action) => {
   if (!contextItemId) return;
   if (action === "addToDeck") { window.tenDecks?.pick(contextItemId); return; }
   const doc = window.allDocs[contextItemId];
+  const isDriveItem = !!(window.driveFiles?.[contextItemId] || window.driveFolders?.[contextItemId]);
+  if (action === "open" && isDriveItem) { openDriveItem(contextItemId, !!window.driveFolders?.[contextItemId]); return; }
+  if (action === "share") { openShareMenu(contextItemId); return; }
+  if (action === "info" && isDriveItem) {
+    // telefon: okno s podrobnostmi, počítač: pravý panel
+    if (window.innerWidth <= 768) openMobileDetail(contextItemId); else showDriveDetail(contextItemId, !!window.driveFolders?.[contextItemId]);
+    return;
+  }
+  if (action === "delete" && isDriveItem) { await deleteDriveItem(contextItemId); return; } // stejná funkce pro počítač i telefon
 
   if (action === "delete") {
   const isFolder = !!window.driveFolders?.[contextItemId];
@@ -3725,12 +3758,6 @@ window.contextAction = async (action) => {
   document.getElementById("share-modal-step2").classList.add("hidden");
   document.getElementById("share-pin-input").value = "";
   document.getElementById("share-modal").classList.add("active");
-
-  } else if (action === "info") {
-    showDetail(contextItemId, false);
-
-  } else if (action === "duplicate") {
-    alert("Duplikovat — bude implementováno");
 
   } else if (action === "assignEvid") {
     evidPendingFiles = [{ name: doc?.nazev || "dokument" }];
@@ -5740,6 +5767,7 @@ function buildPdfReaderEnv() {
 }
 
 window.openPdfViewer = async (driveFileId, title) => {
+  recordRecentOpen(driveFileId);
   if (localStorage.getItem("pdfViewer") === "legacy") return window.openPdfViewerLegacy(driveFileId, title);
   try {
     if (!pdfReaderApi) {

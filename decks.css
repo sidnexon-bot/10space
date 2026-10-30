@@ -107,9 +107,6 @@ body.dark .dk-chip.pen { color: #ffb340; }
 .rp-pill.on { background: var(--accent, #EE220C); color: #fff; }
 .rp-pill:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: 2px; }
 .rp-count { margin: 12px 2px 4px; font-size: 12px; color: var(--muted, #8e8e93); }
-.rp-fav svg { fill: none; }
-.rp-fav.on { color: #ff3b30; }
-.rp-fav.on svg { fill: currentColor; }
 .rp-form { display: flex; flex-direction: column; gap: 10px; max-height: min(62vh, 520px); overflow-y: auto; margin: 4px -4px 6px; padding: 0 4px; }
 .rp-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .rp-f > span { font-size: 12px; font-weight: 600; color: var(--muted, #8e8e93); }
@@ -117,3 +114,17 @@ body.dark .dk-chip.pen { color: #ffb340; }
 .rp-two { display: flex; gap: 10px; }
 .rp-del { align-self: flex-start; padding: 6px 0; color: var(--accent-text, #EE220C); font-size: 13px; }
 #rp-q { margin: 0; width: 100%; box-sizing: border-box; }
+
+/* repertoár: hledání + jedno tlačítko filtru, tři tečky u skladby */
+.rp-bar { display: flex; align-items: center; gap: 8px; }
+.rp-bar .field { flex: 1; min-width: 0; }
+.rp-filter-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--btn-h, 36px); padding: 0 12px; border: 1px solid var(--border, #e5e5ea); border-radius: var(--radius-md, 8px); background: var(--surface, #fff); color: var(--text, #1c1c1e); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+.rp-filter-btn:hover { background: var(--surface-hover, #f9f9fb); }
+.rp-filter-btn svg { width: 16px; height: 16px; }
+.rp-filter-btn.on { border-color: var(--accent, #EE220C); background: var(--accent-soft, #fff0ee); color: var(--accent-text, #EE220C); }
+.rp-filter-btn b { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent, #EE220C); color: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+.rp-filter-btn:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: 2px; }
+.rp-fgroup { margin: 12px 0 4px; }
+.rp-flabel { font-size: 12px; font-weight: 600; color: var(--muted, #8e8e93); }
+.rp-more svg { width: 20px; height: 20px; fill: currentColor; }
+@media (max-width: 480px) { .rp-filter-btn > span { display: none; } .rp-filter-btn { padding: 0 10px; } }
