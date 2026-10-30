@@ -124,3 +124,21 @@ body.dark .tn-toast { background: #2a2a2e; }
 /* Bottom sheet musí ležet nad detailem projektu, PDF čtečkou, přehrávačem i náhledem dokumentu (3000–3600), ale pod modálními okny (5000) */
 body .bottom-sheet-overlay { z-index: 4000; }
 body .bottom-sheet { z-index: 4001; }
+
+/* Kód projektu v kartě: vlastní řádek vpravo dole, ne nalepený na datum */
+.projekt-card-kod { display: flex; justify-content: flex-end; margin-top: 8px; }
+.projekt-card-kod:has(.pc-kod:empty) { display: none; }
+
+/* Boční panel: zúžení na samé ikony */
+.left-sidebar { position: relative; transition: width var(--m-base, 0.22s) var(--m-ease, ease); }
+.sidebar-collapse { position: absolute; top: 10px; right: 8px; z-index: 2; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: transparent; color: var(--muted, #8e8e93); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+.sidebar-collapse:hover { background: var(--surface-2, rgba(120, 120, 128, 0.14)); color: var(--text, #1c1c1e); }
+.sidebar-collapse svg { transition: transform var(--m-base, 0.22s) var(--m-ease, ease); }
+.left-sidebar.collapsed { width: 68px; overflow-x: hidden; }
+.left-sidebar.collapsed .sidebar-collapse { position: static; margin: 10px auto 0; }
+.left-sidebar.collapsed .sidebar-collapse svg { transform: rotate(180deg); }
+.left-sidebar.collapsed .sidebar-profile { justify-content: center; margin: 10px 10px 6px; padding: 8px 0; background: none; box-shadow: none; }
+.left-sidebar.collapsed .sidebar-profile > div:not(.sidebar-profile-avatar) { display: none; }
+.left-sidebar.collapsed .sidebar-tab, .left-sidebar.collapsed .sidebar-action { font-size: 0; gap: 0; justify-content: center; padding: 11px 0; }
+.left-sidebar.collapsed .sidebar-tab.active { box-shadow: none; }
+.left-sidebar.collapsed .sidebar-divider { margin: 0 14px; height: 10px; }

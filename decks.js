@@ -280,7 +280,7 @@ function drawNext() {
   if (!n) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div><div class="dk-empty"><p>${online() ? "Načítám…" : "Bez připojení a zatím bez uložených dat."}</p></div></div>`;
   if (!ev) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div><div class="dk-empty">${ICON.star}<p><b>Žádná nadcházející akce.</b></p><p>Až se v 10base objeví další akce, uvidíte tu její noty.</p></div></div>`;
   const head = `<div class="dk-ev"><b>${esc(ev.name)}</b><small>${esc(fmtDate(ev.date))}${ev.start ? ", " + esc(ev.start) : ""}${ev.place ? " · " + esc(ev.place) : ""}</small></div>`;
-  if (!n.items.length) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div>${head}<div class="dk-empty"><p><b>Program zatím není vyplněn.</b></p><p>Noty z programu se sem uloží a stáhnou do zařízení, jakmile ho vyplníte v 10base.</p></div></div>`;
+  if (!n.items.length) return `<div class="dashboard-card dk-card"><div class="dashboard-card-title"><span>Příští akce</span></div>${head}<div class="dk-empty"><p><b>Program zatím není vyplněn.</b></p><p>Noty z programu se sem uloží a stáhnou do zařízení, jakmile ho Kája vyplní v 10base.</p></div></div>`;
   return `<div class="dashboard-card dk-card">
     <div class="dashboard-card-title"><span>Příští akce</span>${syncLine()}</div>
     ${head}

@@ -1634,7 +1634,10 @@
   <div class="app-body">
 
     <!-- LEFT SIDEBAR -->
-   <div class="left-sidebar">
+   <div class="left-sidebar" id="left-sidebar">
+      <button type="button" class="sidebar-collapse" id="sidebar-collapse" onclick="toggleSidebar()" aria-label="Skrýt popisky" aria-pressed="false" title="Skrýt popisky">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <!-- Profil -->
       <div class="sidebar-profile">
         <div class="sidebar-profile-avatar" id="sidebar-avatar">
@@ -4117,8 +4120,9 @@ async function renderProjekty() {
         <button type="button" class="pc-more" aria-label="Akce projektu" aria-haspopup="menu" onclick="event.stopPropagation();openProjektMenu(this,'${p.id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
         <div class="projekt-card-header">
           <div class="projekt-card-name">${p.nazev || "—"}</div>
-          <div class="projekt-card-datum">${datum}${window.tenKody ? window.tenKody.badge(p.id) : ""}</div>
+          <div class="projekt-card-datum">${datum}</div>
         </div>
+        ${window.tenKody ? `<div class="projekt-card-kod">${window.tenKody.badge(p.id)}</div>` : ""}
         ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
         ${p.wikiText ? `
           <div class="projekt-card-wiki">${p.wikiText}</div>
@@ -4365,7 +4369,7 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
   document.getElementById("projekt-detail-body").innerHTML = `
     <!-- INFO -->
     <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Informace o akci</div>
+      <div class="projekt-sekce-title">Informace o projektu</div>
       ${garantJmeno ? `
         <div class="projekt-info-row">
           <div class="projekt-info-label">Garant</div>
@@ -4381,7 +4385,7 @@ if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length
   
     <!-- WIKI -->
     <div class="projekt-sekce">
-      <div class="projekt-sekce-title">O akci</div>
+      <div class="projekt-sekce-title">Popis (AI)</div>
       <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === "ADMIN" ? "true" : "false"}">${projekt.wikiText || "Zatím žádný popis."}</div>
       ${currentUser?.role === "ADMIN" ? `
         <div class="projekt-wiki-actions">
@@ -6858,5 +6862,28 @@ async function processFilesWithEvid(fileResults) {
   
 <script type="module" src="viewers.js"></script>
 <script type="module" src="decks.js"></script>
+<script>
+/* Boční panel: zúžení na ikony, volba se pamatuje */
+(function () {
+  var KEY = "10space-sidebar-collapsed";
+  function apply(c) {
+    var sb = document.getElementById("left-sidebar"), b = document.getElementById("sidebar-collapse");
+    if (!sb) return;
+    sb.classList.toggle("collapsed", c);
+    if (b) { b.setAttribute("aria-pressed", c ? "true" : "false"); var t = c ? "Zobrazit popisky" : "Skrýt popisky"; b.setAttribute("aria-label", t); b.title = t; }
+  }
+  window.toggleSidebar = function () {
+    var c = !document.getElementById("left-sidebar").classList.contains("collapsed");
+    apply(c); try { localStorage.setItem(KEY, c ? "1" : "0"); } catch (e) {}
+  };
+  // popisek po najetí, když jsou vidět jen ikony (text tlačítka se může měnit, např. tmavý režim)
+  document.addEventListener("mouseover", function (e) {
+    var el = e.target.closest && e.target.closest(".left-sidebar.collapsed .sidebar-tab, .left-sidebar.collapsed .sidebar-action");
+    if (el) el.title = el.textContent.replace(/\s+/g, " ").trim();
+  });
+  var saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved === "1");
+})();
+</script>
 </body>
 </html>
