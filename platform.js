@@ -25,6 +25,14 @@
     root.style.colorScheme = dark ? 'dark' : 'light';
     root.style.backgroundColor = bg;
     one('theme-color').setAttribute('content', bg);
+    // iOS 26 ignoruje theme-color a barvu horní lišty bere z prvku těsně u horního okraje: pevný proužek se barví s režimem
+    var t = document.getElementById('ten-tint');
+    if (!t) {
+      t = document.createElement('div'); t.id = 'ten-tint'; t.setAttribute('aria-hidden', 'true');
+      t.style.cssText = 'position:fixed;top:0;left:0;right:0;height:max(env(safe-area-inset-top),6px);pointer-events:none;z-index:0';
+      (document.body || document.documentElement).appendChild(t);
+    }
+    t.style.backgroundColor = bg;
     one('color-scheme').setAttribute('content', dark ? 'dark' : 'light');
   };
   function sync() { window.tenChrome(document.body.classList.contains('dark')); }
