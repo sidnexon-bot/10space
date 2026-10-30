@@ -2422,6 +2422,7 @@ window.multiMove = () => {
 };
 
 window.switchTab = (tab) => {
+  document.body.classList.toggle("settings-page", tab === "settings"); // v Nastavení se skryje vyhledávání a spodní lišta
   if (window.innerWidth <= 768) window.scrollTo(0, 0); // na telefonu se posouvá celá stránka, nová záložka začíná nahoře
   currentTab = tab;
   selectedItems.clear();
@@ -4615,9 +4616,15 @@ window.mobileSwitchTab = (tab) => {
 };
 
 window.openSettings = () => {
+  if (currentTab !== "settings") window.__prevTab = currentTab;
   document.querySelectorAll(".bottom button").forEach(b => b.classList.remove("active"));
   closeMobileProfileMenu?.();
   switchTab("settings");
+};
+window.__tenSettingsBack = () => {
+  const t = window.__prevTab && window.__prevTab !== "settings" ? window.__prevTab : "recent";
+  document.getElementById(`mob-${t}`)?.classList.add("active");
+  switchTab(t);
 };
 
 // BOTTOM SHEET

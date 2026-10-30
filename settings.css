@@ -29,3 +29,22 @@
   .st-seg button { flex: 1; padding: 9px 6px; }
   .st-ic { width: 40px; height: 40px; }
 }
+
+/* přetahování karet */
+.st-list { position: relative; }
+.st-grip { flex: none; width: 32px; height: 40px; margin-left: -8px; display: grid; place-items: center; border: none; border-radius: 10px; background: transparent; color: var(--muted, #8e8e93); cursor: grab; touch-action: none; transition: background 0.15s ease, color 0.15s ease; }
+.st-grip svg { width: 18px; height: 18px; fill: currentColor; }
+.st-grip:hover { background: var(--surface-2, rgba(120, 120, 128, 0.14)); color: var(--text, #1c1c1e); }
+.st-grip:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: 1px; }
+.st-list.is-dragging, .st-list.is-dragging .st-grip { cursor: grabbing; }
+.st-row.dragging { position: relative; z-index: 3; background: var(--raised, var(--surface, #fff)); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); border-top-color: transparent; padding-left: 8px; padding-right: 8px; transition: box-shadow 0.15s ease; }
+.st-list.is-dragging .st-row:not(.dragging) { transition: transform 0.15s ease; }
+.st-back { margin: 8px 0 0; }
+.st-back svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Stránka Nastavení: bez vyhledávání a spodní lišty, jen tlačítko Zpět */
+body.settings-page .topbar-center, body.settings-page .bottom-wrap, body.settings-page .search-results { display: none !important; }
+@media (max-width: 768px) {
+  body.settings-page .main-content, body.settings-page #content-area { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  .st-back { margin-left: 0; }
+}

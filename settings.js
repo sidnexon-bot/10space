@@ -77,24 +77,26 @@
     up: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 15 12 9 18 15"/></svg>',
     down: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>',
     minus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>',
+    grip: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>',
+    back: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
   };
   function pageHtml() {
     var vis = dashboardCards(), hidden = S.dashboard.hidden;
-    var shown = vis.map(function (id, i) {
+    var shown = vis.map(function (id) {
       var c = card(id);
-      return '<div class="st-row" data-card="' + id + '"><div class="st-t"><div class="st-name">' + esc(c.title) + '</div><div class="st-desc">' + esc(c.desc) + '</div></div><div class="st-acts">' +
-        '<button type="button" class="st-ic" data-up="' + id + '" aria-label="Posunout výš: ' + esc(c.title) + '" title="Výš"' + (i === 0 ? " disabled" : "") + ">" + ICON.up + "</button>" +
-        '<button type="button" class="st-ic" data-down="' + id + '" aria-label="Posunout níž: ' + esc(c.title) + '" title="Níž"' + (i === vis.length - 1 ? " disabled" : "") + ">" + ICON.down + "</button>" +
+      return '<div class="st-row" data-card="' + id + '"><button type="button" class="st-grip" data-grip="' + id + '" aria-label="Přesunout kartu ' + esc(c.title) + ' (šipky nahoru a dolů)" title="Přetáhni">' + ICON.grip + '</button>' +
+        '<div class="st-t"><div class="st-name">' + esc(c.title) + '</div><div class="st-desc">' + esc(c.desc) + '</div></div><div class="st-acts">' +
         '<button type="button" class="st-ic" data-hide="' + id + '" aria-label="Odebrat z Přehledu: ' + esc(c.title) + '" title="Odebrat">' + ICON.minus + "</button></div></div>";
-    }).join("") || '<div class="st-empty">Přehled je prázdný. Přidej karty níže.</div>';
+    }).join("");
+    shown = shown ? '<div class="st-list" id="st-list">' + shown + "</div>" : '<div class="st-empty">Přehled je prázdný. Přidej karty níže.</div>';
     var more = hidden.map(function (id) {
       var c = card(id);
       return '<div class="st-row" data-card="' + id + '"><div class="st-t"><div class="st-name">' + esc(c.title) + '</div><div class="st-desc">' + esc(c.desc) + '</div></div><div class="st-acts"><button type="button" class="drive-toolbar-btn" data-show="' + id + '">' + ICON.plus + "<span>Přidat</span></button></div></div>";
     }).join("");
     var seg = THEMES.map(function (t) { return '<button type="button" role="radio" aria-checked="' + (S.theme === t[0]) + '" class="' + (S.theme === t[0] ? "on" : "") + '" data-theme="' + t[0] + '">' + t[1] + "</button>"; }).join("");
     var isDefault = JSON.stringify(S.dashboard) === JSON.stringify(cleanDash(null));
-    return '<div class="st-wrap"><h1 class="st-title">Nastavení</h1><h2 class="st-h">Přizpůsobit</h2>' +
+    return '<div class="st-wrap"><button type="button" class="drive-toolbar-btn st-back" data-back="1">' + ICON.back + '<span>Zpět</span></button><h1 class="st-title">Nastavení</h1><h2 class="st-h">Přizpůsobit</h2>' +
       '<div class="dashboard-card st-card"><div class="dashboard-card-title">Vzhled</div><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">Výchozí režim</div><div class="st-desc">Světlý, tmavý, nebo podle nastavení telefonu či počítače. Platí na všech tvých zařízeních.</div></div>' +
       '<div class="st-seg" role="radiogroup" aria-label="Výchozí režim">' + seg + "</div></div></div>" +
       '<div class="dashboard-card st-card"><div class="dashboard-card-title">Přehled</div><p class="st-hint">Vyber, které karty se na Přehledu zobrazují, a nastav jejich pořadí.</p>' + shown + "</div>" +
@@ -107,18 +109,59 @@
     area.innerHTML = pageHtml(); area.scrollTop = mt; if (document.scrollingElement) document.scrollingElement.scrollTop = top;
   }
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-theme],[data-up],[data-down],[data-hide],[data-show],[data-reset]");
+    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back]");
     if (!t || !area || !area.contains(t)) return;
     if (t.dataset.theme) return setTheme(t.dataset.theme);
-    if (t.dataset.up) return move(t.dataset.up, -1);
-    if (t.dataset.down) return move(t.dataset.down, 1);
+    if (t.dataset.back) return back();
     if (t.dataset.hide) return hide(t.dataset.hide);
     if (t.dataset.show) return show(t.dataset.show);
     if (t.dataset.reset) return setDash(null);
   }
+
+  // ── přetahování karet (myš, dotyk i pero) a klávesnice (šipky na úchytu) ──
+  var D = null;
+  function dragStart(e) {
+    var g = e.target.closest && e.target.closest(".st-grip"); if (!g || (e.button && e.button !== 0)) return;
+    var row = g.closest(".st-row"), list = row && row.parentNode; if (!list) return;
+    e.preventDefault();
+    D = { row: row, list: list, startY: e.clientY, id: g.dataset.grip, pid: e.pointerId, grip: g };
+    try { g.setPointerCapture(e.pointerId); } catch (x) { /* bez zachycení */ }
+    row.classList.add("dragging"); list.classList.add("is-dragging");
+  }
+  function relayout(fn) { // přesun v DOM bez skoku: řádek zůstane pod prstem
+    var r = D.row; r.style.transform = "none"; var t0 = r.getBoundingClientRect().top; fn(); var t1 = r.getBoundingClientRect().top; D.startY += t1 - t0;
+  }
+  function dragMove(e) {
+    if (!D || e.pointerId !== D.pid) return;
+    D.row.style.transform = "translateY(" + (e.clientY - D.startY) + "px)";
+    for (var k = 0; k < 4; k++) {
+      var rr = D.row.getBoundingClientRect(), c = rr.top + rr.height / 2, prev = D.row.previousElementSibling, next = D.row.nextElementSibling;
+      if (prev && c < prev.getBoundingClientRect().top + prev.offsetHeight / 2) relayout(function () { D.list.insertBefore(D.row, prev); });
+      else if (next && c > next.getBoundingClientRect().top + next.offsetHeight / 2) relayout(function () { D.list.insertBefore(next, D.row); });
+      else break;
+      D.row.style.transform = "translateY(" + (e.clientY - D.startY) + "px)";
+    }
+  }
+  function dragEnd(e) {
+    if (!D || (e && e.pointerId !== D.pid)) return;
+    var d = D; D = null;
+    try { d.grip.releasePointerCapture(d.pid); } catch (x) { /* už uvolněno */ }
+    d.row.style.transform = ""; d.row.classList.remove("dragging"); d.list.classList.remove("is-dragging");
+    var order = [].map.call(d.list.querySelectorAll(".st-row"), function (r) { return r.dataset.card; });
+    if (order.join() !== dashboardCards().join()) setDash({ order: order.concat(S.dashboard.order.filter(function (i) { return order.indexOf(i) < 0; })), hidden: S.dashboard.hidden });
+  }
+  function onKey(e) {
+    var g = e.target.closest && e.target.closest(".st-grip"); if (!g || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    e.preventDefault(); var id = g.dataset.grip; move(id, e.key === "ArrowUp" ? -1 : 1);
+    var again = area && area.querySelector('.st-grip[data-grip="' + id + '"]'); if (again) again.focus();
+  }
+  function back() { var t = window.__tenSettingsBack; if (typeof t === "function") t(); }
   function render(el) {
     area = el; area.innerHTML = pageHtml();
-    if (!area.__stBound) { area.__stBound = true; area.addEventListener("click", onClick); }
+    if (!area.__stBound) {
+      area.__stBound = true; area.addEventListener("click", onClick); area.addEventListener("keydown", onKey);
+      area.addEventListener("pointerdown", dragStart); area.addEventListener("pointermove", dragMove); area.addEventListener("pointerup", dragEnd); area.addEventListener("pointercancel", dragEnd);
+    }
   }
 
   // ── start ──
