@@ -14,6 +14,7 @@ export const fileOf = (s) => s?.driveFileId || driveIdOf(s?.pdf) || null;
 const STATUSES = ["Aktivní", "Neaktuální", "Mimo repertoár"];
 const VERSIONS = ["", "TTBB", "SATB"];
 const EDIT_ROLES = ["ADMIN", "ART", "Owner"];
+const HEART_SM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 const DOTS = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>';
 const FILTER_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>';
 /* ikony položek nabídky u skladby (20 px, jako ve zbytku aplikace) */
@@ -58,7 +59,7 @@ export function createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, 
     const acts = `<button class="mp-icon dk-mini rp-more" data-act="rpMenu" data-id="${esc(s.id)}" aria-label="Akce skladby" aria-haspopup="menu" title="Akce">${DOTS}</button>`;
     return `<div class="dk-row has-acts${fid ? "" : " off"}" ${fid ? `data-open="${esc(fid)}" data-title="${esc(s.name || "Noty")}" role="button" tabindex="0"` : ""}>
     <span class="dk-ic">${ICON.pdf}</span>
-    <span class="dk-t"><b>${esc(s.name || "Bez názvu")}${s.version ? ` <em class="rp-ver">${esc(s.version)}</em>` : ""}</b>${meta ? `<small>${esc(meta)}</small>` : ""}${sub ? `<small>${esc(sub)}</small>` : ""}</span>
+    <span class="dk-t"><b>${esc(s.name || "Bez názvu")}${R.fav[s.id] ? `<span class="rp-heart" role="img" aria-label="Oblíbená" title="Oblíbená">${HEART_SM}</span>` : ""}${s.version ? ` <em class="rp-ver">${esc(s.version)}</em>` : ""}</b>${meta ? `<small>${esc(meta)}</small>` : ""}${sub ? `<small>${esc(sub)}</small>` : ""}</span>
     <span class="dk-chips"><span class="dk-chip ${chip}">${esc(s.status || "—")}</span>${fid ? pinChip(fid) : `<span class="dk-chip">Bez not</span>`}</span><span class="dk-acts">${acts}</span></div>`;
   }
 

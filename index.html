@@ -1528,6 +1528,10 @@
       .multi-toolbar-btn svg { width: 18px; height: 18px; }
     }
 
+    .ro-badge { flex: none; display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .drive-toolbar-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .drive-fab.is-ro { display: none !important; }
+    .move-ro { margin-right: 8px; font-size: 11px; color: var(--muted); }
     /* kontextové menu: položky se nezalamují, takže jeho velikost nezávisí na poloze u okraje */
     .context-menu { max-width: calc(100vw - 16px); }
     .context-menu-item { white-space: nowrap; }
@@ -1825,7 +1829,9 @@ const FUNCTIONS = {
   getMyAcl: "https://getmyacl-etp6s2ynnq-uc.a.run.app",
   getFileAcl: "https://getfileacl-etp6s2ynnq-uc.a.run.app",
   generateProjektWiki: "https://generateprojektwiki-etp6s2ynnq-uc.a.run.app",
-  getThumbnail: "https://getthumbnail-etp6s2ynnq-uc.a.run.app"
+  getThumbnail: "https://getthumbnail-etp6s2ynnq-uc.a.run.app",
+  getDriveTree: "https://getdrivetree-etp6s2ynnq-uc.a.run.app",
+  setEvidCislo: "https://setevidcislo-etp6s2ynnq-uc.a.run.app"
 };
 
 window.__tenCtx = { get auth() { return auth; }, get FUNCTIONS() { return FUNCTIONS; }, get db() { return db; }, get user() { return currentUser; }, ref: ref, get: get, update: update, onValue: onValue }; // pro viewers.js, decks.js a ui.js
@@ -2105,6 +2111,40 @@ function getDriveFileIcon(mimeType, size) {
   </svg>`;
 }
   
+// STROM SOUBORŮ A OPRÁVNĚNÍ
+// Strom souborů a složek dodává server podle oprávnění člena (getDriveTree): skryté položky v něm nejsou ani názvem.
+// /driveCache je pro klienty zavřený. window.driveAcc = výjimky z výchozí úrovně (jen "read"), ostatní položky smí číst i měnit.
+const treeIdb = () => new Promise((res, rej) => { const r = indexedDB.open("10space-tree", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const treeIdbGet = (k) => treeIdb().then((d) => new Promise((res) => { const q = d.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); })).catch(() => null);
+const treeIdbPut = (k, v) => treeIdb().then((d) => new Promise((res) => { const t = d.transaction("kv", "readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = res; t.onerror = res; })).catch(() => {});
+
+function applyDriveTree(r) {
+  const first = window.driveTreeV === undefined;
+  const changed = first || r.v !== window.driveTreeV;
+  window.driveFolders = r.folders || {};
+  window.driveFiles = r.files || {};
+  window.driveAcc = r.acc || {};
+  window.driveTreeV = r.v || 0;
+  window.aclLoaded = true;
+  window.userAccessCache = {};
+  if (!changed) return;
+  if (["documents", "media", "folders"].includes(currentTab)) renderTab();
+  else if (currentTab === "recent" && document.getElementById("dashboard-recent-empty") && Object.keys(window.driveFiles).length) renderTab(); // dashboard se vykreslil dřív, než dorazila data souborů
+}
+
+const canWrite = (id) => !id || window.getUserAccess?.(id) === "write";
+// Složka jen pro čtení: nahrávat do ní ani v ní nic měnit nejde (server to hlídá taky)
+function writeGate(folderId = window.currentFolder) {
+  if (canWrite(folderId)) return true;
+  window.tenDialog.alert("Tato složka je jen pro čtení. Nahrávat do ní ani v ní nic měnit nemůžete.");
+  return false;
+}
+function syncWriteUi(folderId) {
+  const w = canWrite(folderId);
+  document.querySelectorAll(".drive-add-desktop button").forEach((b) => { b.disabled = !w; b.title = w ? "" : "Složka je jen pro čtení"; });
+  document.getElementById("drive-fab")?.classList.toggle("is-ro", !w);
+}
+
 // LOAD DATA
 async function loadData() {
   loadShares(true).catch(() => {}); // zahřeje Cloud Function a naplní paměť dřív, než se otevře dashboard
@@ -2114,21 +2154,6 @@ async function loadData() {
 
    const repertoarSnap = await offlineGet("/repertoar");
   window.repertoar = repertoarSnap.val() || {};
-
-  // Načti Drive folders do paměti
-  onValue(ref(db, "/driveCache/folders"), (snap) => {
-    window.driveFolders = snap.val() || {};
-  });
-
-  // Reaktivní listener pro Drive soubory
-  onValue(ref(db, "/driveCache/files"), (snap) => {
-    window.driveFiles = snap.val() || {};
-    if (["documents", "media", "folders"].includes(currentTab)) {
-      renderTab();
-    } else if (currentTab === "recent" && document.getElementById("dashboard-recent-empty") && Object.keys(window.driveFiles).length) {
-      renderTab(); // dashboard se vykreslil dřív, než dorazila data souborů
-    }
-  });
 
   // Hash routing — zkontroluj URL při načtení
   const hash = window.location.hash;
@@ -2143,58 +2168,45 @@ async function loadData() {
     }
   }
 
-  // Načti ACL pro aktuálního uživatele
-  // /acl je pro klienty zavřené — přístupy efektivního uživatele vrací funkce getMyAcl
-  window.myAcl = {};
-  window.userAccessCache = {}; // cache výsledků kontroly přístupu
-  window.loadMyAcl = async (asMemberId) => {
+  // Strom souborů a oprávnění: jedna funkce (getDriveTree); poslední stav se drží v IndexedDB, ať aplikace naskočí hned.
+  window.driveAcc = {};
+  window.userAccessCache = {};
+  let treeFor = null, treeTimer = 0, treeDirty = false;
+  const treeKey = () => "tree:" + (auth.currentUser?.uid || "");
+  window.loadMyAcl = async (asMemberId) => { // název zůstává kvůli „Zobrazit jako“
+    treeFor = asMemberId || null;
     try {
-      const r = await callFn(FUNCTIONS.getMyAcl, asMemberId ? { asMemberId } : {});
-      window.myAcl = r.acl || {};
+      const r = await callFn(FUNCTIONS.getDriveTree, asMemberId ? { asMemberId } : {});
+      applyDriveTree(r);
+      if (!asMemberId) treeIdbPut(treeKey(), r);
     } catch (e) {
-      console.error("getMyAcl:", e.message);
-      if (!window.aclLoaded) { // oprávnění se ještě nikdy nenačetla: do té doby se nic neukazuje, zkusí se to znovu
+      console.error("getDriveTree:", e.message);
+      if (!window.aclLoaded) { // strom se ještě nikdy nenačetl: do té doby se nic neukazuje, zkusí se to znovu
         window.aclRetries = (window.aclRetries || 0) + 1;
         if (window.aclRetries <= 8) setTimeout(() => window.loadMyAcl(asMemberId), Math.min(30000, 2000 * window.aclRetries));
         return;
-      } // jinak zůstanou poslední známá oprávnění
+      } // jinak zůstane poslední známý stav
     }
     window.aclLoaded = true;
-    if (!asMemberId) window.tenCache?.set("acl." + (auth.currentUser?.uid || ""), window.myAcl);
-    window.userAccessCache = {};
   };
-  // oprávnění se nečekají: z paměti se použijí hned (do 2 minut, bez připojení i starší), živá je pak nahradí
-  const aclCached = window.tenCache?.get("acl." + (auth.currentUser?.uid || ""), navigator.onLine === false ? 14 * 24 * 3600 * 1000 : 120000);
-  if (aclCached) { window.myAcl = aclCached; window.aclLoaded = true; } else window.aclLoaded = false;
+  window.aclLoaded = false;
+  treeIdbGet(treeKey()).then((c) => { if (c && !window.aclLoaded && !treeFor) applyDriveTree(c); }); // uložený strom hned, živý ho pak nahradí
   window.aclReady = window.loadMyAcl().then(() => { if (["folders", "documents", "media"].includes(currentTab)) renderTab(); });
-  
+
+  // změna stromu nebo oprávnění na serveru (nahrání, přesun, smazání, nastavení oprávnění): stáhne se znovu
+  onValue(ref(db, "/driveCacheMeta/v"), (snap) => {
+    const v = snap.val() || 0;
+    if (window.driveTreeV === undefined || v === window.driveTreeV) return;
+    clearTimeout(treeTimer);
+    treeTimer = setTimeout(() => { if (document.hidden) treeDirty = true; else window.loadMyAcl(treeFor); }, 1200);
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && treeDirty) { treeDirty = false; window.loadMyAcl(treeFor); } });
+
   function getUserAccess(fileId) {
-    if (window.aclLoaded === false) return "none"; // oprávnění ještě nedorazila
-    const effectiveUid = impersonateUid || "self";
-    const cacheKey = `${effectiveUid}_${fileId}`;
-    if (window.userAccessCache[cacheKey] !== undefined) {
-      return window.userAccessCache[cacheKey];
-    }
-    
-    let current = fileId;
-    let access = "read";
-    
-    for (let i = 0; i < 15; i++) {
-      if (window.myAcl[current] !== undefined) {
-        access = window.myAcl[current];
-        break;
-      }
-      const folder = window.driveFolders?.[current];
-      const file = window.driveFiles?.[current];
-      const parentId = folder?.parentId || file?.parentId;
-      if (!parentId) break;
-      current = parentId;
-    }
-  
-  window.userAccessCache[cacheKey] = access;
-  return access;
-}
-  
+    if (window.aclLoaded === false) return "none"; // strom ještě nedorazil
+    return (fileId && window.driveAcc?.[fileId]) || "write";
+  }
+
   window.getUserAccess = getUserAccess;
   
   // Sleduj změny hashe
@@ -2293,12 +2305,14 @@ function renderMoveFolderList() {
     ? folders.map(([id, f]) => `
         <div class="move-folder-item" onclick="moveNavigateTo('${id}')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span style="flex:1">${f.name}</span>
+          <span style="flex:1">${driveEsc(f.name)}</span>${canWrite(id) ? "" : '<span class="move-ro">Jen pro čtení</span>'}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
       `).join("")
     : `<div style="padding:20px;text-align:center;color:#8e8e93;font-size:13px">Žádné podsložky</div>`;
 
+  const confirmBtn = document.getElementById("move-confirm-btn");
+  if (confirmBtn) { const w = canWrite(moveCurrentFolderId); confirmBtn.disabled = !w; confirmBtn.title = w ? "" : "Do této složky nemáte oprávnění přesouvat (jen pro čtení)"; }
   document.getElementById("move-breadcrumb").innerHTML = renderDriveLocationTree(moveCurrentFolderId)
     .replace(/onclick="navigateToDriveFolder\('([^']*)'/g, `onclick="moveNavigateTo('$1'`);
 }
@@ -2316,6 +2330,7 @@ window.confirmMove = async () => {
   const ROOT = "0B23cZAlYDWOndmtIZU45WWJrbWM";
   const targetId = moveCurrentFolderId || ROOT;
   const ids = [...new Set(moveItemIds)];
+  if (!canWrite(targetId)) { window.tenDialog.alert("Do této složky nemáte oprávnění přesouvat (jen pro čtení)."); return; }
   closeMoveModal();
   if (!ids.length) return;
   showSpinner();
@@ -2385,9 +2400,9 @@ window.confirmMove = async () => {
 window.multiMove = () => {
   // vybrané položky mohou být i mimo Drive (např. dokumenty); přesunout jde jen Drive soubory a složky
   const ids = Array.from(selectedItems).filter((id) => window.driveFiles?.[id] || window.driveFolders?.[id]);
-  const allowed = ids.filter((id) => window.getUserAccess?.(id) !== "none");
-  if (!allowed.length) { (window.showToast || alert)("Vybrané položky nelze přesunout."); return; }
-  if (allowed.length < selectedItems.size) (window.showToast || alert)(`Přesunout lze ${allowed.length} z ${selectedItems.size} vybraných položek.`);
+  const allowed = ids.filter((id) => canWrite(id)); // jen položky, které smí uživatel měnit
+  if (!allowed.length) { (window.showToast || alert)("Vybrané položky nelze přesunout (jsou jen pro čtení)."); return; }
+  if (allowed.length < selectedItems.size) (window.showToast || alert)(`Přesunout lze ${allowed.length} z ${selectedItems.size} vybraných položek (ostatní jsou jen pro čtení).`);
   openMoveModal(allowed);
 };
 
@@ -2964,7 +2979,10 @@ function renderDriveBreadcrumb(folderId = window.currentFolder) {
   }
 
   const back = `<button type="button" class="bc-back" onclick="driveGoBack()" ${trail.length ? "" : "disabled"} aria-label="Zpět o úroveň výš" title="Zpět o úroveň výš">${BC_BACK}</button>`;
-  el.innerHTML = back + parts.join(`<span class="bc-sep" aria-hidden="true">${BC_CHEVRON}</span>`);
+  const ro = folderId && !canWrite(folderId)
+    ? `<span class="ro-badge" title="Do této složky nelze nahrávat ani v ní nic měnit">${ctxIcon(CTX_PATHS.manageAcl, 13)}Jen pro čtení</span>` : "";
+  el.innerHTML = back + parts.join(`<span class="bc-sep" aria-hidden="true">${BC_CHEVRON}</span>`) + ro;
+  syncWriteUi(folderId);
 }
 
 // DRIVE KLIKNUTÍ
@@ -3064,14 +3082,14 @@ const CTX_ITEMS = [
   { key: "open", label: "Otevřít", when: (c) => c.drive },
   { key: "addToDeck", label: "Přidat do osobních desek", when: (c) => c.drive && !c.isFolder && c.mime === "application/pdf" },
   { key: "download", label: "Stáhnout" },
-  { key: "share", label: "Sdílet" },
-  { key: "rename", label: "Přejmenovat" },
-  { key: "move", label: "Přesunout" },
+  { key: "share", label: "Sdílet", when: (c) => c.write }, // sdílet ven smí jen ten, kdo smí položku měnit
+  { key: "rename", label: "Přejmenovat", when: (c) => c.write },
+  { key: "move", label: "Přesunout", when: (c) => c.write },
   { key: "info", label: "Podrobnosti" },
   { key: "assignEvid", label: "Přiřadit evidenční číslo", when: (c) => c.docs && c.isAdmin && c.noEvid && !c.isFolder },
   { key: "manageAcl", label: "Oprávnění", when: (c) => c.isAdmin }, // nastavovat oprávnění smí jen ADMIN / Owner (jinak by funkce vrátila chybu)
   { sep: true },
-  { key: "delete", label: "Smazat", danger: true }
+  { key: "delete", label: "Smazat", danger: true, when: (c) => c.write }
 ];
 
 const isAclAdmin = () => ["ADMIN", "Owner"].includes(currentUser?.role);
@@ -3096,7 +3114,7 @@ window.openDriveContextMenu = (e, id, name, isFolder) => {
   contextItemId = id;
   name = name || window.driveFiles?.[id]?.name || window.driveFolders?.[id]?.name || "";
   e.stopPropagation();
-  const c = { drive: true, isFolder, mime: window.driveFiles?.[id]?.mimeType || "", isAdmin: isAclAdmin() };
+  const c = { drive: true, isFolder, mime: window.driveFiles?.[id]?.mimeType || "", isAdmin: isAclAdmin(), write: canWrite(id) };
 
   if (window.innerWidth <= 768) {
     openBottomSheet(name, ctxVisible(c).filter((it) => !it.sep).map((it) => ({
@@ -3636,7 +3654,7 @@ window.openDocument = async (docId) => {
 window.openContextMenu = (e, id, isFolder) => {
   contextItemId = id;
   const doc = window.allDocs[id];
-  const c = { docs: true, isFolder, isAdmin: isAclAdmin(), noEvid: !!doc && (!doc.evidCislo || doc.evidCislo === "—") };
+  const c = { docs: true, write: true, isFolder, isAdmin: isAclAdmin(), noEvid: !!doc && (!doc.evidCislo || doc.evidCislo === "—") };
   placeContextMenu(renderContextMenuEl(c), e);
 };
 
@@ -3808,6 +3826,7 @@ window.multiDelete = async () => {
 };
 
 window.createFolder = async () => {
+  if (!writeGate()) return;
   const name = await window.tenDialog.prompt("Nová složka", "", { placeholder: "Název složky", ok: "Vytvořit" });
   if (!name) return;
 
@@ -3829,8 +3848,7 @@ window.createFolder = async () => {
         parentId: window.currentFolder || "0B23cZAlYDWOndmtIZU45WWJrbWM",
         modifiedTime: new Date().toISOString()
       };
-      // Zapiš do RTDB, ne jen do paměti
-      await set(ref(db, `/driveCache/folders/${data.driveFileId}`), folderData);
+      // do stromu souborů složku zapsal server; tady se jen hned ukáže
       window.driveFolders[data.driveFileId] = folderData;
       renderTab();
     } else {
@@ -6344,7 +6362,7 @@ window.openAclModal = async (fileId) => {
     const currentAccess = m.access || "default";
     return `
       <div class="acl-member-row">
-        <span class="acl-member-name">${m.name || m.email}</span>
+        <span class="acl-member-name">${driveEsc(m.name || m.email)}</span>
         <select class="acl-member-select" onchange="updateAcl('${fileId}', '${uid}', this.value)">
           <option value="default" ${currentAccess === "default" ? "selected" : ""}>Výchozí</option>
           <option value="read" ${currentAccess === "read" ? "selected" : ""}>Může číst</option>
@@ -6397,6 +6415,7 @@ window.stopImpersonate = async () => {
   
 // UPLOAD
 window.openUpload = () => {
+  if (!writeGate()) return;
   document.getElementById("upload-zone").classList.toggle("hidden");
 };
 window.handleDrop = (e) => {
@@ -6411,6 +6430,7 @@ async function processFiles(files) {
     alert("Nejdřív vyber složku kam chceš nahrát.");
     return;
   }
+  if (!writeGate()) return;
   // Otevři dialog pro evidenční čísla
   openEvidModal(Array.from(files));
 }
@@ -6442,7 +6462,7 @@ async function processFilesWithEvid(fileResults) {
 
       // Zapiš evidenční číslo přímo k souboru v driveCache
       if (evidCislo) {
-        await set(ref(db, `/driveCache/files/${data.driveFileId}/evidCislo`), evidCislo);
+        await callFn(FUNCTIONS.setEvidCislo, { fileId: data.driveFileId, evidCislo }).catch((e) => console.warn("evidCislo:", e.message));
         if (window.driveFiles?.[data.driveFileId]) {
           window.driveFiles[data.driveFileId].evidCislo = evidCislo;
         }
@@ -6795,7 +6815,7 @@ async function processFilesWithEvid(fileResults) {
     <div id="move-folder-list" class="modal-list"></div>
     <div class="modal-footer" style="margin-top:16px">
       <button class="modal-btn modal-btn-secondary" onclick="closeMoveModal()">Zrušit</button>
-      <button class="modal-btn modal-btn-primary" onclick="confirmMove()">Přesunout sem</button>
+      <button class="modal-btn modal-btn-primary" id="move-confirm-btn" onclick="confirmMove()">Přesunout sem</button>
     </div>
   </div>
 </div>
@@ -6827,6 +6847,7 @@ async function processFilesWithEvid(fileResults) {
 <div class="modal-overlay" id="acl-modal">
   <div class="modal" style="width:380px">
     <h2>Oprávnění složky</h2>
+    <p class="modal-hint" style="margin:-8px 0 10px">Výchozí = číst i měnit. Nastavení platí i pro vše uvnitř, nejbližší nastavení vyhrává. „Všichni ostatní“ platí pro členy, kteří tu nemají vlastní nastavení.</p>
     <div id="acl-members-list" style="max-height:400px;overflow-y:auto"></div>
     <div class="modal-footer">
       <button class="modal-btn modal-btn-secondary" onclick="closeAclModal()" style="width:100%">Zavřít</button>
