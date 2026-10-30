@@ -1,8 +1,8 @@
 /* 10space – kódy projektů (nákladová čísla): číslo akce E1234, jeho účetní položky E1234-001, -002 … a obecné kódy G1234 (režie).
    Čísla a položky zapisuje jen server (funkce projektKodyApi, jen administrátor), tady se čtou z /projektKody a zobrazují:
-   • štítek s číslem na kartě projektu,
    • řádek „Interní kód“ mezi informacemi o akci v detailu projektu (kopírování; administrátor spravuje položky -002 …),
-   • sekce „Obecné kódy (režie)“ pod seznamem projektů.
+   • záložka Projekty, sekce „Kódy“: seznam všech kódů (nejdřív režijní, potom projekty) s oknem se všemi položkami,
+   • karta „Otevřené kódy“ na Přehledu (jen pro čtení).
    Vypnutí: odebrat <script src="kody.js"> a <link href="kody.css"> z <head>. */
 (function () {
   "use strict";
@@ -47,23 +47,94 @@
       (admin ? '<button type="button" class="kd-more" data-manage="' + esc(c) + '" aria-label="Spravovat položky kódu" aria-haspopup="menu">' + MORE + "</button>" : "");
   }
 
-  function generalHtml() {
-    if (!S.loaded) return "";
-    var nums = Object.keys(S.cisla).filter(function (c) { return S.cisla[c].typ === "G"; }).sort(function (a, b) { return (S.cisla[a].nazev || "").localeCompare(S.cisla[b].nazev || "", "cs"); });
-    if (!nums.length && !isAdmin()) return "";
-    return '<div class="kd-general"><div class="kd-gtitle">Obecné kódy (režie)</div><p class="kd-hint">Náklady a příjmy, které nepatří k žádné akci (např. občerstvení, nájem zkušebny), a také zkoušky a soustředění.</p>' +
-      (nums.map(function (c) { return numberBlock(c, { title: true }); }).join("") || '<p class="kd-hint">Zatím žádné obecné kódy.</p>') +
-      (isAdmin() ? '<button type="button" class="kd-add" data-gnew="1">+ Nový obecný kód</button>' : "") + "</div>";
-  }
-
   // vykreslení do míst, která si stránka připravila; bez změny dat se DOM nepřekresluje (podpis), aby pozorovatel nezacyklil
   function fill(el, html) { var h = html.length + ":" + sig; if (el.dataset.kdSig === h) return; el.dataset.kdSig = h; el.innerHTML = html; }
   function renderAll() {
     var s = sig = JSON.stringify([S.loaded, S.byAkce, S.cisla, S.polozky, isAdmin()]);
     document.querySelectorAll("[data-kod-akce]").forEach(function (b) { var c = S.byAkce[b.dataset.kodAkce]; var t = c && c.cislo ? c.cislo : ""; if (b.textContent !== t) b.textContent = t; });
     document.querySelectorAll("[data-kod-row]").forEach(function (d) { var h = rowHtml(d.dataset.kodRow); fill(d, h); var r = d.closest(".projekt-info-row"); if (r) r.style.display = h ? "" : "none"; });
-    var g = document.getElementById("kody-general"); if (g) fill(g, generalHtml());
+    var l = document.getElementById("kody-list"); if (l) fill(l, listHtml());
+    var o = document.getElementById("kody-open"); if (o) fill(o, openCodesHtml());
+    if (M.el) { if (S.cisla[M.cislo]) fill(M.el.querySelector(".kl-mc"), modalHtml(M.cislo)); else closeCode(); }
     sig = s;
+  }
+
+
+  // ── Sekce Kódy v záložce Projekty ──────────────────────────────────────────
+  var fmtD = function (ms) { return ms ? new Date(ms).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" }) : "—"; };
+  // Číslo je otevřené, dokud má aspoň jednu aktivní položku; zavřené je, když jsou všechny uzavřené (datum = poslední uzavření).
+  function stavOf(c) {
+    var list = sorted(c).map(function (k) { return S.polozky[c][k]; });
+    var open = !list.length || list.some(function (p) { return p.stav !== "uzavrena"; });
+    var closedAt = open ? 0 : list.reduce(function (m, p) { return Math.max(m, p.upraveno || p.vytvoreno || 0); }, 0);
+    return { open: open, closedAt: closedAt };
+  }
+  function rowsOf() {
+    var all = Object.keys(S.cisla).map(function (c) { return { c: c, r: S.cisla[c], st: stavOf(c) }; });
+    var g = all.filter(function (x) { return x.r.typ === "G"; }).sort(function (a, b) { return (a.r.nazev || "").localeCompare(b.r.nazev || "", "cs"); });
+    var e = all.filter(function (x) { return x.r.typ !== "G"; }).sort(function (a, b) { return (b.r.vytvoreno || 0) - (a.r.vytvoreno || 0); });
+    return g.concat(e);
+  }
+  var stChip = function (open) { return '<span class="kl-st ' + (open ? "open" : "closed") + '">' + (open ? "otevřený" : "zavřený") + "</span>"; };
+
+  function listHtml() {
+    if (!S.loaded) return '<div class="kl-empty">Načítám kódy…</div>';
+    var rows = rowsOf();
+    var add = isAdmin() ? '<div class="kl-bar"><button type="button" class="kd-add" data-gnew="1">+ Nový režijní kód</button></div>' : "";
+    if (!rows.length) return add + '<div class="kl-empty">Zatím žádné kódy.</div>';
+    return add + '<div class="kl-table" role="table"><div class="kl-h" role="row"><span>Kód</span><span>Název</span><span class="kl-d">Otevřeno</span><span class="kl-d">Uzavřeno</span><span>Stav</span></div>' +
+      rows.map(function (x) {
+        var g = x.r.typ === "G";
+        return '<button type="button" class="kl-row' + (x.st.open ? "" : " is-closed") + '" role="row" data-open-code="' + esc(x.c) + '"><span class="kl-code">' + esc(x.c) + "</span>" +
+          '<span class="kl-n">' + esc(x.r.nazev || "—") + (g ? '<em class="kl-tag">režie</em>' : "") + '</span><span class="kl-d">' + fmtD(x.r.vytvoreno) + '</span><span class="kl-d">' + (x.st.open ? "—" : fmtD(x.st.closedAt)) + "</span><span>" + stChip(x.st.open) + "</span></button>";
+      }).join("") + "</div>";
+  }
+
+  // Přehled: otevřené kódy s názvem projektu, jen ke čtení
+  function openCodesHtml() {
+    if (!S.loaded) return '<div class="dashboard-empty">Načítám…</div>';
+    var rows = rowsOf().filter(function (x) { return x.st.open; });
+    if (!rows.length) return '<div class="dashboard-empty">Žádné otevřené kódy</div>';
+    var MAX = 12;
+    return rows.slice(0, MAX).map(function (x) { return '<div class="ko-row"><span class="ko-code">' + esc(x.c) + '</span><span class="ko-name">' + esc(x.r.nazev || "—") + "</span></div>"; }).join("") +
+      (rows.length > MAX ? '<div class="ko-more">a dalších ' + (rows.length - MAX) + "</div>" : "");
+  }
+
+  // Okno s kompletním kódem: číslo, položky -001 …, přidání a uzavření (správce); ostatní jen čtou
+  var M = { cislo: null, el: null };
+  function modalHtml(c) {
+    var rec = S.cisla[c] || {}, st = stavOf(c), admin = isAdmin(), g = rec.typ === "G";
+    var items = sorted(c).map(function (k) {
+      var p = S.polozky[c][k], closed = p.stav === "uzavrena";
+      return '<li class="kd-it' + (closed ? " closed" : "") + '"><button type="button" class="kd-code sm" data-copy="' + esc(p.kod) + '" title="Kopírovat kód">' + esc(p.kod) + COPY + '</button><span class="kd-t">' + esc(p.nazev) + "</span>" +
+        (closed ? '<span class="kd-st">uzavřená</span>' : "") +
+        (admin ? '<button type="button" class="kd-more" data-toggle="' + esc(c) + "|" + k + '" aria-label="' + (closed ? "Znovu otevřít položku" : "Uzavřít položku") + '" title="' + (closed ? "Znovu otevřít" : "Uzavřít") + '">' + (closed ? ICON.unlock : ICON.lock) + "</button>" +
+          '<button type="button" class="kd-more" data-more="' + esc(c) + "|" + k + '" aria-label="Další akce položky" aria-haspopup="menu">' + MORE + "</button>" : "") + "</li>";
+    }).join("");
+    return '<div class="kl-mhead"><button type="button" class="kd-code" data-copy="' + esc(c) + '" title="Kopírovat číslo">' + esc(c) + COPY + '</button>' + stChip(st.open) + '<button type="button" class="kl-x" data-close-code="1" aria-label="Zavřít">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      '<div class="kl-mtitle">' + esc(rec.nazev || "—") + (g ? '<em class="kl-tag">režie</em>' : "") + "</div>" +
+      '<div class="kl-meta"><span>Otevřeno ' + fmtD(rec.vytvoreno) + "</span>" + (st.open ? "" : "<span>Uzavřeno " + fmtD(st.closedAt) + "</span>") + "</div>" +
+      (rec.akceId ? '<button type="button" class="kd-add kl-go" data-go-projekt="' + esc(rec.akceId) + '">Otevřít projekt</button>' : "") +
+      '<div class="kl-sub">Položky kódu</div><ul class="kd-list">' + (items || '<li class="kd-it"><span class="kd-t">Žádné položky.</span></li>') + "</ul>" +
+      (admin ? '<button type="button" class="kd-add" data-add="' + esc(c) + '">+ Přidat položku</button>' : '<p class="kd-hint">Položky a jejich uzavírání spravuje administrátor.</p>');
+  }
+  function closeCode() {
+    var el = M.el; if (!el) return; M.el = null; M.cislo = null;
+    document.removeEventListener("keydown", onKey, true);
+    el.classList.remove("active"); setTimeout(function () { el.remove(); }, 240);
+  }
+  function onKey(e) { if (e.key === "Escape") { e.stopPropagation(); closeCode(); } }
+  function openCode(c) {
+    if (!S.cisla[c]) return;
+    closeCode();
+    var o = document.createElement("div"); o.className = "modal-overlay kl-ov";
+    o.innerHTML = '<div class="modal kl-modal" role="dialog" aria-modal="true" aria-label="Kód ' + esc(c) + '"><div class="kl-mc"></div></div>';
+    document.body.appendChild(o); M = { cislo: c, el: o };
+    o.addEventListener("click", function (e) { if (e.target === o) closeCode(); });
+    document.addEventListener("keydown", onKey, true);
+    fill(o.querySelector(".kl-mc"), modalHtml(c));
+    requestAnimationFrame(function () { o.classList.add("active"); });
   }
 
   function copy(text) {
@@ -88,10 +159,18 @@
   var ask = function (title, value, ph) { return window.tenDialog.prompt(title, value || "", { title: title, ok: "Uložit", placeholder: ph || "" }); };
 
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-copy],[data-more],[data-manage],[data-add],[data-assign],[data-gnew],[data-grename]"); if (!t) return;
+    var t = e.target.closest && e.target.closest("[data-copy],[data-more],[data-manage],[data-add],[data-assign],[data-gnew],[data-grename],[data-open-code],[data-close-code],[data-go-projekt],[data-toggle]"); if (!t) return;
     e.stopPropagation();
     if (t.dataset.copy) return copy(t.dataset.copy);
+    if (t.dataset.openCode) return openCode(t.dataset.openCode);
+    if (t.dataset.closeCode) return closeCode();
+    if (t.dataset.goProjekt) { closeCode(); return window.otevritProjekt && window.otevritProjekt(t.dataset.goProjekt); }
     if (!isAdmin()) return;
+    if (t.dataset.toggle) {
+      var tp = t.dataset.toggle.split("|"), tc = tp[0], tk = tp[1], pp = (S.polozky[tc] || {})[tk]; if (!pp) return;
+      if (pp.stav === "uzavrena") return run({ action: "polozka_update", cislo: tc, poradi: tk, stav: "aktivni" }, "Položka znovu otevřena.");
+      return window.tenDialog.confirm("Uzavřít položku " + pp.kod + "? Kód zůstane, jen se na ni přestanou nabízet nové platby.", { title: "Uzavřít položku", ok: "Uzavřít", danger: false }).then(function (y) { if (y) return run({ action: "polozka_update", cislo: tc, poradi: tk, stav: "uzavrena" }, "Položka uzavřena."); });
+    }
     if (t.dataset.assign) return run({ action: "assign", akceId: t.dataset.assign }, "Kód přidělen.");
     if (t.dataset.gnew) return ask("Nový obecný kód", "", "Např. Občerstvení").then(function (n) { if (n) return run({ action: "general_create", nazev: n }, "Obecný kód vytvořen."); });
     if (t.dataset.grename) { var gc = t.dataset.grename; return ask("Přejmenovat obecný kód", (S.cisla[gc] || {}).nazev).then(function (n) { if (n) return run({ action: "general_rename", cislo: gc, nazev: n }, "Přejmenováno."); }); }
@@ -129,5 +208,5 @@
     new MutationObserver(function () { if (pending) return; pending = true; requestAnimationFrame(function () { pending = false; renderAll(); }); }).observe(document.body, { childList: true, subtree: true });
   }
 
-  window.tenKody = { start: start, badge: function (akceId) { return '<span class="pc-kod" data-kod-akce="' + esc(akceId) + '"></span>'; }, refresh: renderAll, _state: function () { return S; } };
+  window.tenKody = { start: start, badge: function (akceId) { return '<span class="pc-kod" data-kod-akce="' + esc(akceId) + '"></span>'; }, refresh: renderAll, openCode: openCode, _state: function () { return S; } };
 })();

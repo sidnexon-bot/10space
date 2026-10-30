@@ -126,8 +126,6 @@ body .bottom-sheet-overlay { z-index: 4000; }
 body .bottom-sheet { z-index: 4001; }
 
 /* Kód projektu v kartě: vlastní řádek vpravo dole, ne nalepený na datum */
-.projekt-card-kod { display: flex; justify-content: flex-end; margin-top: 8px; }
-.projekt-card-kod:has(.pc-kod:empty) { display: none; }
 
 /* Boční panel: zúžení na ikony (tlačítko je dole pod Odhlásit se, oddělené tenkou linkou) */
 .left-sidebar { transition: width var(--m-base, 0.22s) var(--m-ease, ease); }

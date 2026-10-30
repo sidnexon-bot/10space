@@ -1584,7 +1584,7 @@
 <div class="topbar" id="topbar">
 <div class="topbar-left">
   <div>
-    <h1 id="pageTitle">Dashboard</h1>
+    <h1 id="pageTitle">Přehled</h1>
     <div class="topbar-subtitle">10<span style="color:#EE220C">space</span></div>
   </div>
   <button class="mobile-avatar-btn" id="mobile-avatar-btn" onclick="openProfileSheet(event)">
@@ -1651,7 +1651,7 @@
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" onclick="switchTab('recent')" id="tab-recent">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-          Dashboard
+          Přehled
         </button>
         <button class="sidebar-tab" onclick="switchTab('folders')" id="tab-folders">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -2227,7 +2227,7 @@ async function loadData() {
   });
 
   if (window.tenDecks) window.tenDecks.start(); else window.__tenStartRequested = true;
-  // po výpadku, zavření nebo znovunačtení naváže tam, kde uživatel skončil (do 2 minut); jinak Dashboard, bez připojení osobní desky
+  // po výpadku, zavření nebo znovunačtení naváže tam, kde uživatel skončil (do 2 minut); jinak Přehled, bez připojení osobní desky
   window.tenKody?.start();
   window.tenResume?.init(auth.currentUser?.uid);
   const resumed = window.tenResume ? await window.tenResume.restore() : false;
@@ -2433,7 +2433,7 @@ window.switchTab = (tab) => {
   if (listHeaderEl) listHeaderEl.style.display = (tab === "folders" || tab === "favorites") ? "grid" : "none";
   
   const titles = {
-    recent: "Dashboard",
+    recent: "Přehled",
     documents: "Dokumenty",
     folders: "Drive",
     media: "Multimédia",
@@ -2700,6 +2700,10 @@ async function renderDashboard() {
       <div class="dashboard-card">
         <div class="dashboard-card-title">To-do z projektů</div>
         ${todoHtml}
+      </div>
+      <div class="dashboard-card">
+        <div class="dashboard-card-title">Otevřené kódy</div>
+        <div id="kody-open"></div>
       </div>
       <div class="dashboard-card">
         <div class="dashboard-card-title">Sdílené odkazy</div>
@@ -4122,7 +4126,6 @@ async function renderProjekty() {
           <div class="projekt-card-name">${p.nazev || "—"}</div>
           <div class="projekt-card-datum">${datum}</div>
         </div>
-        ${window.tenKody ? `<div class="projekt-card-kod">${window.tenKody.badge(p.id)}</div>` : ""}
         ${p.misto ? `<div class="projekt-card-misto">📍 ${p.misto}</div>` : ""}
         ${p.wikiText ? `
           <div class="projekt-card-wiki">${p.wikiText}</div>
@@ -4151,10 +4154,24 @@ async function renderProjekty() {
     `;
   }
 
-  html += `<div id="kody-general"></div>`;
-  area.innerHTML = html;
+  const sec = pjSekce();
+  area.innerHTML = `<div class="pj-seg" role="tablist" aria-label="Projekty">
+      <button type="button" role="tab" data-sec="akce" class="${sec === "akce" ? "on" : ""}" aria-selected="${sec === "akce"}" onclick="setProjektySekce('akce')">Akce</button>
+      <button type="button" role="tab" data-sec="kody" class="${sec === "kody" ? "on" : ""}" aria-selected="${sec === "kody"}" onclick="setProjektySekce('kody')">Kódy</button>
+    </div>
+    <div id="pj-akce" class="${sec === "akce" ? "" : "hidden"}">${html}</div>
+    <div id="pj-kody" class="${sec === "kody" ? "" : "hidden"}"><div id="kody-list"></div></div>`;
   window.tenKody?.refresh();
 }
+
+const pjSekce = () => { try { return localStorage.getItem("10space-projekty-sekce") === "kody" ? "kody" : "akce"; } catch (e) { return "akce"; } };
+window.setProjektySekce = (sec) => {
+  try { localStorage.setItem("10space-projekty-sekce", sec); } catch (e) { /* bez uložení */ }
+  document.getElementById("pj-akce")?.classList.toggle("hidden", sec !== "akce");
+  document.getElementById("pj-kody")?.classList.toggle("hidden", sec !== "kody");
+  document.querySelectorAll(".pj-seg button").forEach((b) => { const on = b.dataset.sec === sec; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+  window.tenKody?.refresh();
+};
 
 window.toggleArchiv = () => {
   archivOtevren = !archivOtevren;
@@ -6590,7 +6607,7 @@ async function processFilesWithEvid(fileResults) {
       <span class="icon">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
       </span>
-      <small>Dashboard</small>
+      <small>Přehled</small>
     </button>
     <button id="mob-folders" onclick="mobileSwitchTab('folders')">
       <span class="icon">
@@ -6608,7 +6625,7 @@ async function processFilesWithEvid(fileResults) {
       <span class="icon">
         <svg viewBox="0 0 24 24"><path d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-2 2V6a2 2 0 0 1 2-2z"/><path d="M8 9h6M8 13h4"/></svg>
       </span>
-      <small>Osobní desky</small>
+      <small>Desky</small>
     </button>
   </div>
 </div>
