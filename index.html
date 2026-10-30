@@ -2187,10 +2187,15 @@ let moveItemIds = [];
 let moveCurrentFolderId = null; // kam právě nahlížíme v modalu (cílová složka)
 let moveExcludedIds = new Set(); // vlastní podsložky, kam se nesmí přesunout
 
+const movePlural = (n, one, few, many) => (n === 1 ? one : n >= 2 && n <= 4 ? few : many);
+
 window.openMoveModal = (itemIds) => {
   moveItemIds = itemIds;
   moveCurrentFolderId = "0B23cZAlYDWOndmtIZU45WWJrbWM";
   moveExcludedIds = new Set();
+
+  const title = document.getElementById("move-title");
+  if (title) title.textContent = itemIds.length > 1 ? `Přesunout ${itemIds.length} ${movePlural(itemIds.length, "položku", "položky", "položek")} do...` : "Přesunout do...";
 
   // Pokud přesouváme složku(y), vylouč jejich vlastní podstrom (nelze přesunout do sebe)
   for (const id of itemIds) {
@@ -2242,31 +2247,68 @@ window.closeMoveModal = () => {
 };
 
 window.confirmMove = async () => {
-  const targetId = moveCurrentFolderId || "0B23cZAlYDWOndmtIZU45WWJrbWM";
+  const ROOT = "0B23cZAlYDWOndmtIZU45WWJrbWM";
+  const targetId = moveCurrentFolderId || ROOT;
+  const ids = [...new Set(moveItemIds)];
   closeMoveModal();
+  if (!ids.length) return;
   showSpinner();
+
+  const nameOf = (id) => (window.driveFiles?.[id] || window.driveFolders?.[id])?.name || id;
+  // je složka `id` uvnitř `ancestorId` (nebo je to ona sama)?
+  const isInside = (id, ancestorId) => {
+    for (let i = 0, c = id; c && i < 30; i++, c = window.driveFolders?.[c]?.parentId) if (c === ancestorId) return true;
+    return false;
+  };
+  const moved = [], already = [], failed = [];
 
   try {
     const token = await auth.currentUser.getIdToken();
-    for (const fileId of moveItemIds) {
+    const moveOne = async (fileId) => {
       const item = window.driveFiles?.[fileId] || window.driveFolders?.[fileId];
-      const oldParentId = item?.parentId || "0B23cZAlYDWOndmtIZU45WWJrbWM";
-      if (oldParentId === targetId) continue; // už tam je
-
-      const res = await fetch(FUNCTIONS.moveFile, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId, newParentId: targetId, oldParentId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (window.driveFiles?.[fileId]) window.driveFiles[fileId].parentId = targetId;
-        if (window.driveFolders?.[fileId]) window.driveFolders[fileId].parentId = targetId;
-      } else {
-        alert(`Chyba u souboru: ${data.error}`);
+      const oldParentId = item?.parentId || ROOT;
+      if (oldParentId === targetId) { already.push(fileId); return; } // už tam je
+      if (window.driveFolders?.[fileId] && isInside(targetId, fileId)) { failed.push([fileId, "složku nelze přesunout do sebe"]); return; }
+      try {
+        const res = await fetch(FUNCTIONS.moveFile, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId, newParentId: targetId, oldParentId })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          if (window.driveFiles?.[fileId]) window.driveFiles[fileId].parentId = targetId;
+          if (window.driveFolders?.[fileId]) window.driveFolders[fileId].parentId = targetId;
+          moved.push(fileId);
+        } else {
+          failed.push([fileId, data.error || `HTTP ${res.status}`]);
+        }
+      } catch (err) {
+        failed.push([fileId, err.message]);
       }
-    }
+    };
+
+    // nejvýš 4 požadavky najednou, ať se Disk ani server nezahltí
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, ids.length) }, async () => {
+      while (next < ids.length) await moveOne(ids[next++]);
+    }));
+
+    // z výběru odeber jen to, co je vyřízené; nepovedené zůstanou vybrané pro další pokus
+    [...moved, ...already].forEach((id) => selectedItems.delete(id));
+    const all = document.getElementById("select-all");
+    if (all) all.checked = false;
+    updateMultiToolbar();
     renderTab();
+
+    const parts = [];
+    if (moved.length) parts.push(`Přesunuto: ${moved.length} ${movePlural(moved.length, "položka", "položky", "položek")}.`);
+    if (already.length) parts.push(`${already.length} ${movePlural(already.length, "položka už byla", "položky už byly", "položek už bylo")} v cílové složce.`);
+    if (parts.length) (window.showToast || alert)(parts.join(" "));
+    if (failed.length) {
+      const list = failed.slice(0, 5).map(([id, why]) => `${nameOf(id)} (${why})`).join("; ") + (failed.length > 5 ? `; … a ${failed.length - 5} dalších` : "");
+      alert(`Chyba: nepodařilo se přesunout ${failed.length} ${movePlural(failed.length, "položku", "položky", "položek")}: ${list}`);
+    }
   } catch(err) {
     alert("Chyba: " + err.message);
   } finally {
@@ -2275,7 +2317,12 @@ window.confirmMove = async () => {
 };
 
 window.multiMove = () => {
-  openMoveModal(Array.from(selectedItems));
+  // vybrané položky mohou být i mimo Drive (např. dokumenty); přesunout jde jen Drive soubory a složky
+  const ids = Array.from(selectedItems).filter((id) => window.driveFiles?.[id] || window.driveFolders?.[id]);
+  const allowed = ids.filter((id) => window.getUserAccess?.(id) !== "none");
+  if (!allowed.length) { (window.showToast || alert)("Vybrané položky nelze přesunout."); return; }
+  if (allowed.length < selectedItems.size) (window.showToast || alert)(`Přesunout lze ${allowed.length} z ${selectedItems.size} vybraných položek.`);
+  openMoveModal(allowed);
 };
 
 window.switchTab = (tab) => {
@@ -3451,7 +3498,7 @@ window.openVersionMenu = (e, docId, version) => {
 
 // MULTI SELECT ACTIONS
 window.multiDownload = () => alert("Hromadné stažení — bude implementováno");
-window.multiMove = () => alert("Přesunout — bude implementováno");
+// multiMove je definované u okna „Přesunout do...“ (openMoveModal / confirmMove)
 window.multiDelete = async () => {
   if (!(await window.tenDialog.confirm(`Smazat ${selectedItems.size} položek?`, { ok: "Smazat" }))) return;
   const token = await auth.currentUser.getIdToken();
@@ -6466,7 +6513,7 @@ async function processFilesWithEvid(fileResults) {
 <!-- MOVE MODAL -->  
 <div class="modal-overlay" id="move-modal">
   <div class="modal" style="width:380px">
-    <h2>Přesunout do...</h2>
+    <h2 id="move-title">Přesunout do...</h2>
     <div id="move-breadcrumb" class="modal-hint" style="margin-bottom:8px"></div>
     <div id="move-folder-list" class="modal-list"></div>
     <div class="modal-footer" style="margin-top:16px">
