@@ -1838,6 +1838,10 @@ const FUNCTIONS = {
   listDriveFiles: "https://listdrivefiles-etp6s2ynnq-uc.a.run.app",
   indexDrive: "https://indexdrive-etp6s2ynnq-uc.a.run.app",
   getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
+  listFileRevisions: "https://listfilerevisions-etp6s2ynnq-uc.a.run.app",
+  uploadFileVersion: "https://uploadfileversion-etp6s2ynnq-uc.a.run.app",
+  restoreFileRevision: "https://restorefilerevision-etp6s2ynnq-uc.a.run.app",
+  migrateAnnotationsToRevisions: "https://migrateannotationstorevisions-etp6s2ynnq-uc.a.run.app",
   renameFile: "https://renamefile-etp6s2ynnq-uc.a.run.app",
   createShareToken: "https://createsharetoken-etp6s2ynnq-uc.a.run.app",
   regenerateSharePin: "https://regeneratesharepin-etp6s2ynnq-uc.a.run.app",
@@ -3427,10 +3431,85 @@ function renderDriveDetailContent(fileId, isFolder) {
       </div>
     `;
   } else if (activeDetailTab === "versions") {
-      content.innerHTML = `<div class="detail-empty"><p>Verzování bude dostupné brzy</p></div>`;
+      renderVersions(fileId, item, content);
   } else if (activeDetailTab === "preview") {
       renderPreview(fileId, item, content);
     }
+}
+
+// KARTA „VERZE“ (podrobnosti souboru): historie revizí na Disku, otevření / stažení / obnovení starší verze, nahrání nové verze
+const verFmtDate = (t) => t ? new Date(t).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const VER_MAX_BYTES = 23 * 1024 * 1024; // base64 v jednom požadavku funkce (limit 32 MB)
+async function renderVersions(fileId, item, content) {
+  if (window.driveFolders?.[fileId]) { content.innerHTML = `<div class="detail-empty"><p>Složky nemají verze</p></div>`; return; }
+  content.dataset.verFile = fileId;
+  content.innerHTML = `<div class="detail-empty"><div class="spinner" style="display:block;margin:0 auto"></div></div>`;
+  const stale = () => content.dataset.verFile !== fileId; // mezitím se vybral jiný soubor
+  const again = () => renderVersions(fileId, item, content);
+  let r;
+  try { r = await callFn(FUNCTIONS.listFileRevisions, { fileId }); }
+  catch (e) {
+    if (stale()) return;
+    content.innerHTML = `<div class="detail-empty"><p>${navigator.onLine === false ? "Bez připojení se verze nedají načíst" : "Verze se nepodařilo načíst"}</p><button type="button" class="drive-toolbar-btn" data-ver-act="retry"><span>Zkusit znovu</span></button></div>`;
+    content.onclick = (ev) => { if (ev.target.closest("[data-ver-act=retry]")) again(); };
+    return;
+  }
+  if (stale()) return;
+  if (r.headRevisionId) window.tenRev.setHead(fileId, r.headRevisionId);
+  if (!r.supported) { content.innerHTML = `<div class="detail-empty"><p>Google dokumenty si verze spravují samy v Google Disku</p></div>`; return; }
+  const name = item?.name || "Soubor", isPdf = /pdf/i.test(item?.mimeType || "") || /\.pdf$/i.test(name);
+  const rows = r.revisions.map((v) => `<div class="ver-row${v.current ? " is-current" : ""}">
+      <div class="ver-t">${driveEsc(verFmtDate(v.time))}${v.current ? ' <span class="ver-cur">· aktuální</span>' : ""}</div>
+      <div class="ver-m">${driveEsc([v.author, v.size ? formatFileSize(v.size) : null, v.keepForever ? "uchováno trvale" : null].filter(Boolean).join(" · "))}</div>
+      <div class="ver-a">
+        ${isPdf ? `<button type="button" class="drive-toolbar-btn" data-ver-act="open" data-rev="${driveEsc(v.id)}"><span>Otevřít</span></button>` : ""}
+        <button type="button" class="drive-toolbar-btn" data-ver-act="download" data-rev="${driveEsc(v.id)}" data-time="${driveEsc(v.time || "")}"><span>Stáhnout</span></button>
+        ${r.canWrite && !v.current ? `<button type="button" class="drive-toolbar-btn" data-ver-act="restore" data-rev="${driveEsc(v.id)}" data-time="${driveEsc(v.time || "")}"><span>Obnovit</span></button>` : ""}
+      </div></div>`).join("");
+  content.innerHTML = `<div class="ver-wrap">
+      <p class="ver-hint">Každá úprava souboru se uchová. Poznámky se vážou ke konkrétní verzi.</p>
+      ${rows || '<div class="detail-empty"><p>Zatím jen aktuální verze</p></div>'}
+      ${r.canWrite ? `<div class="ver-up"><button type="button" class="drive-toolbar-btn primary" data-ver-act="upload"><span id="ver-up-label">Nahrát novou verzi</span></button><input type="file" id="ver-file" hidden></div>` : ""}
+    </div>`;
+  const busy = (on, label) => { const l = content.querySelector("#ver-up-label"); if (l) l.textContent = label || "Nahrát novou verzi"; content.querySelectorAll("button").forEach((b) => { b.disabled = !!on; }); };
+  content.onclick = async (ev) => {
+    const b = ev.target.closest("[data-ver-act]"); if (!b || b.disabled) return;
+    const act = b.dataset.verAct, rev = b.dataset.rev, when = verFmtDate(b.dataset.time);
+    if (act === "open") return window.openPdfViewer(fileId, name, rev);
+    if (act === "download") {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(fileId)}&revisionId=${encodeURIComponent(rev)}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error("Server vrátil " + res.status);
+        const blob = await res.blob(), dot = name.lastIndexOf("."), d = (b.dataset.time || "").slice(0, 10);
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = dot > 0 ? `${name.slice(0, dot)} (verze ${d})${name.slice(dot)}` : `${name} (verze ${d})`;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      } catch (e) { window.tenDialog.alert("Verzi se nepodařilo stáhnout.", { title: "Stažení selhalo" }); }
+      return;
+    }
+    if (act === "restore") {
+      if (!(await window.tenDialog.confirm(`Obnovit verzi z ${when} jako aktuální? Dosavadní aktuální verze zůstane v historii.`, { title: "Obnovit verzi", ok: "Obnovit" }))) return;
+      busy(true, "Obnovuji…");
+      try { await callFn(FUNCTIONS.restoreFileRevision, { fileId, revisionId: rev }); window.showToast?.("Verze obnovena"); }
+      catch (e) { window.tenDialog.alert(e.message || "Verzi se nepodařilo obnovit.", { title: "Obnovení selhalo" }); }
+      return again();
+    }
+    if (act === "upload") return content.querySelector("#ver-file")?.click();
+  };
+  content.querySelector("#ver-file")?.addEventListener("change", async (ev) => {
+    const f = ev.target.files?.[0]; ev.target.value = ""; if (!f) return;
+    const ext = (n) => (n.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+    if (f.size > VER_MAX_BYTES) return window.tenDialog.alert("Soubor je příliš velký (nejvýš asi 23 MB).", { title: "Nová verze" });
+    if (ext(f.name) !== ext(name)) return window.tenDialog.alert(`Nová verze musí být stejného typu jako soubor (${ext(name) || "bez přípony"}).`, { title: "Nová verze" });
+    if (!(await window.tenDialog.confirm(`Nahrát „${f.name}“ jako novou verzi souboru „${name}“? Dosavadní verze zůstane v historii.`, { title: "Nová verze", ok: "Nahrát" }))) return;
+    busy(true, "Nahrávám…");
+    try {
+      const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1] || ""); fr.onerror = () => rej(fr.error); fr.readAsDataURL(f); });
+      await callFn(FUNCTIONS.uploadFileVersion, { fileId, base64Data: b64 });
+      window.showToast?.("Nová verze nahrána");
+    } catch (e) { window.tenDialog.alert(e.message || "Novou verzi se nepodařilo nahrát.", { title: "Nahrání selhalo" }); }
+    again();
+  });
 }
 
 function renderDetailContent() {
@@ -4784,6 +4863,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 
 window.openPdfViewerLegacy = async (driveFileId, title) => {
   pdfCurrentFileId = driveFileId;
+  await window.tenRev.ensureHead(driveFileId); // poznámky se čtou a ukládají pod aktuální revizi
   document.getElementById("pdf-title").textContent = title || "Dokument";
   document.getElementById("pdf-overlay").classList.remove("hidden");
   document.getElementById("pdf-stage").innerHTML = "";
@@ -5247,7 +5327,7 @@ async function loadAndRenderCurrentAnnotations() {
     publicData = window.pdfPreservedAnnotations.public[pr.pageNum];
   } else {
     try {
-      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/public/pages/${pr.pageNum}`));
+      const snap = await get(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/public/pages/${pr.pageNum}`));
       publicData = snap.val();
     } catch(e) {}
   }
@@ -5260,7 +5340,7 @@ async function loadAndRenderCurrentAnnotations() {
     personalData = window.pdfPreservedAnnotations.personal[pr.pageNum];
   } else {
     try {
-      const snap = await get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pr.pageNum}`));
+      const snap = await get(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/${uid}/pages/${pr.pageNum}`));
       personalData = snap.val();
     } catch(e) {}
   }
@@ -5534,19 +5614,19 @@ async function savePdfAnnotations() {
 
   if (pr.personalFabricCanvas) {
     const json = JSON.stringify(pr.personalFabricCanvas.toJSON());
-    await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages/${pr.pageNum}`), {
+    await set(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/${uid}/pages/${pr.pageNum}`), {
       json, width: pr.fitWidth, height: pr.fitHeight
     });
-    await set(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/updatedAt`), Date.now());
+    await set(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/${uid}/updatedAt`), Date.now());
   }
 
   const canEditPublic = ["ADMIN", "ART"].includes(currentUser?.role);
   if (canEditPublic && pr.publicFabricCanvas) {
     const json = JSON.stringify(pr.publicFabricCanvas.toJSON());
-    await set(ref(db, `/annotations/${pdfCurrentFileId}/public/pages/${pr.pageNum}`), {
+    await set(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/public/pages/${pr.pageNum}`), {
       json, width: pr.fitWidth, height: pr.fitHeight
     });
-    await set(ref(db, `/annotations/${pdfCurrentFileId}/public/updatedAt`), Date.now());
+    await set(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/public/updatedAt`), Date.now());
   }
 }
   
@@ -5660,8 +5740,8 @@ async function downloadAnnotatedPdf() {
   // Uložené anotace všech stránek (obě vrstvy)
   const uid = auth.currentUser.uid;
   const [pubSnap, perSnap] = await Promise.all([
-    get(ref(db, `/annotations/${pdfCurrentFileId}/public/pages`)),
-    get(ref(db, `/annotations/${pdfCurrentFileId}/${uid}/pages`))
+    get(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/public/pages`)),
+    get(ref(db, `${tenRev.annBase(pdfCurrentFileId)}/${uid}/pages`))
   ]);
   const pubPages = pubSnap.val() || {};
   const perPages = perSnap.val() || {};
@@ -5767,10 +5847,34 @@ let pdfReaderApi = null;
 
 async function pdfCacheKeyIndex() { try { return JSON.parse(localStorage.getItem("pdf2.cacheIdx") || "[]"); } catch (e) { return []; } }
 
-async function pdfGetBytes(fileId, onProgress) {
+// VERZE DOKUMENTŮ
+// Každá úprava souboru na Disku je revize. Poznámky (anotace) se vážou k revizi: /annotations/{fileId}/{revisionId}/{public|uid}/…
+// Čtečka dostává „složené id“ souboru@revize; tenRev ho rozebere a řekne, kam se poznámky ukládají a kterou verzi stáhnout.
+const revKey = (id) => String(id).replace(/[.$#\[\]\/]/g, (c) => "%" + c.charCodeAt(0).toString(16));
+const revCache = {};
+const headLs = (id) => { try { return localStorage.getItem("10space.head." + id) || null; } catch (e) { return null; } };
+window.tenRev = {
+  split: (id) => { const s = String(id), i = s.indexOf("@"); return i < 0 ? { fileId: s, revisionId: null } : { fileId: s.slice(0, i), revisionId: s.slice(i + 1) || null }; },
+  join: (fileId, revisionId) => revisionId ? fileId + "@" + revisionId : fileId,
+  // aktuální revize: ze stromu souborů (server ji drží aktuální), jinak z poslední odpovědi serveru, jinak z uložené kopie (bez připojení)
+  headOf: (fileId) => window.driveFiles?.[fileId]?.headRevisionId || revCache[fileId] || headLs(fileId),
+  setHead: (fileId, rev) => { if (!rev) return; revCache[fileId] = rev; try { localStorage.setItem("10space.head." + fileId, rev); } catch (e) { /* bez uložení */ } },
+  async ensureHead(fileId) {
+    const known = window.driveFiles?.[fileId]?.headRevisionId || revCache[fileId];
+    if (known) return known;
+    if (navigator.onLine !== false) { try { const r = await callFn(FUNCTIONS.listFileRevisions, { fileId }); if (r.headRevisionId) window.tenRev.setHead(fileId, r.headRevisionId); return r.headRevisionId || null; } catch (e) { /* použije se uložená kopie */ } }
+    return headLs(fileId);
+  },
+  isHead: (fileId, revisionId) => !revisionId || revisionId === window.tenRev.headOf(fileId),
+  // cesta k poznámkám souboru; bez známé revize zůstává dosavadní uspořádání (do převodu poznámek)
+  annBase: (fileId, revisionId) => { const r = revisionId || window.tenRev.headOf(fileId); return r ? `/annotations/${fileId}/${revKey(r)}` : `/annotations/${fileId}`; }
+};
+
+async function pdfGetBytes(fileId, onProgress, revisionId = null) {
+  // revisionId je zadané jen u starší (neaktuální) verze: ta se nemění, takže se ukládá pod pevným klíčem
   const modified = window.driveFiles?.[fileId]?.modifiedTime || "";
-  const prefix = `https://pdf-cache.invalid/${fileId}/`, key = prefix + encodeURIComponent(modified);
-  const pinned = await window.tenDecks?.pinnedBytes(fileId, modified); // noty z osobních desek uložené v zařízení
+  const prefix = `https://pdf-cache.invalid/${fileId}/`, key = prefix + (revisionId ? "rev-" + encodeURIComponent(revisionId) : encodeURIComponent(modified));
+  const pinned = revisionId ? null : await window.tenDecks?.pinnedBytes(fileId, modified); // noty z osobních desek uložené v zařízení
   if (pinned) { onProgress?.(1); return pinned; }
   let cache = null;
   try { cache = await caches.open(PDF_CACHE); } catch (e) { /* bez Cache API */ }
@@ -5780,7 +5884,7 @@ async function pdfGetBytes(fileId, onProgress) {
   }
   try {
     const token = await auth.currentUser.getIdToken();
-    const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(fileId)}`, { headers: { "Authorization": `Bearer ${token}` } });
+    const res = await fetch(`${FUNCTIONS.getFileStream}?driveFileId=${encodeURIComponent(fileId)}${revisionId ? "&revisionId=" + encodeURIComponent(revisionId) : ""}`, { headers: { "Authorization": `Bearer ${token}` } });
     if (!res.ok) throw new Error("Server vrátil " + res.status);
     const total = parseInt(res.headers.get("Content-Length") || "0", 10);
     // do úložiště v zařízení se soubor zapisuje přímo ze streamu (klon odpovědi), bez další kopie v paměti
@@ -5806,7 +5910,7 @@ async function pdfGetBytes(fileId, onProgress) {
     if (cache && putP) {
       try {
         await putP;
-        for (const k of await cache.keys()) if (k.url.startsWith(prefix) && k.url !== key) await cache.delete(k); // starší verze téhož souboru
+        if (!revisionId) for (const k of await cache.keys()) if (k.url.startsWith(prefix) && !k.url.includes("/rev-") && k.url !== key) await cache.delete(k); // starší stav téhož souboru (uložené starší verze zůstávají)
         const idx = (await pdfCacheKeyIndex()).filter(k => k !== key); idx.push(key);
         while (idx.length > PDF_CACHE_MAX) await cache.delete(idx.shift());
         localStorage.setItem("pdf2.cacheIdx", JSON.stringify(idx));
@@ -5816,48 +5920,53 @@ async function pdfGetBytes(fileId, onProgress) {
     return buf;
   } catch (err) {
     if (cache) { // bez připojení: použij starší uloženou verzi
-      for (const k of await cache.keys()) if (k.url.startsWith(prefix)) return await (await cache.match(k)).arrayBuffer();
+      for (const k of await cache.keys()) if (k.url.startsWith(prefix) && (revisionId ? k.url === key : !k.url.includes("/rev-"))) return await (await cache.match(k)).arrayBuffer();
     }
-    const kept = await window.tenDecks?.pinnedBytes(fileId, "");
+    const kept = revisionId ? null : await window.tenDecks?.pinnedBytes(fileId, "");
     if (kept) return kept;
     throw err;
   }
 }
 
+window.tenPdfEnv = () => buildPdfReaderEnv(); // pro automatické testy
 function buildPdfReaderEnv() {
-  const annRef = (fileId, layerKey, sub) => ref(db, `/annotations/${fileId}/${layerKey}/${sub}`);
+  // čtečka pracuje se složeným id (soubor@revize); poznámky jdou pod revizi, bajty a data v zařízení pod samotný soubor
+  const parts = (id) => window.tenRev.split(id);
+  const base = (id) => { const p = parts(id); return window.tenRev.annBase(p.fileId, p.revisionId); };
+  const isCurrent = (id) => { const p = parts(id); return window.tenRev.isHead(p.fileId, p.revisionId); };
+  const annRef = (id, layerKey, sub) => ref(db, `${base(id)}/${layerKey}/${sub}`);
   return {
     pdfjsLib, fabric: window.fabric, PDFLib: window.PDFLib,
     get user() { return { uid: auth.currentUser.uid, role: currentUser?.role }; },
     get canEditPublic() { return ["ADMIN", "ART"].includes(currentUser?.role); },
-    getPdfBytes: pdfGetBytes,
-    // anotace z kopie v zařízení (osobní desky), když není připojení; bez kopie se čtení nezdaří stejně jako dřív
-    readAnnotPage: async (fileId, layerKey, page) => {
-      const cached = async () => { const c = await window.tenDecks?.offlineAnnot(fileId, layerKey); return c ? { v2: c.pagesV2?.[page] ?? null, legacy: c.pages?.[page] ?? null } : null; };
+    getPdfBytes: (id, onProgress) => { const p = parts(id); return pdfGetBytes(p.fileId, onProgress, window.tenRev.isHead(p.fileId, p.revisionId) ? null : p.revisionId); },
+    // poznámky z kopie v zařízení (osobní desky) jsou jen k aktuální revizi; bez kopie se čtení bez připojení nezdaří stejně jako dřív
+    readAnnotPage: async (id, layerKey, page) => {
+      const cached = async () => { if (!isCurrent(id)) return null; const c = await window.tenDecks?.offlineAnnot(parts(id).fileId, layerKey); return c ? { v2: c.pagesV2?.[page] ?? null, legacy: c.pages?.[page] ?? null } : null; };
       if (navigator.onLine === false) { const c = await cached(); if (c) return c; throw new Error("Bez připojení a bez uložených poznámek"); }
       try {
-        const [v2, legacy] = await Promise.all([get(annRef(fileId, layerKey, `pagesV2/${page}`)), get(annRef(fileId, layerKey, `pages/${page}`))]);
+        const [v2, legacy] = await Promise.all([get(annRef(id, layerKey, `pagesV2/${page}`)), get(annRef(id, layerKey, `pages/${page}`))]);
         return { v2: v2.val(), legacy: legacy.val() };
       } catch (e) { const c = await cached(); if (c) return c; throw e; }
     },
-    writeAnnotPage: (fileId, layerKey, page, data) => {
-      window.tenDecks?.annotWritten(fileId, layerKey, page, data);
-      return update(ref(db, `/annotations/${fileId}/${layerKey}`), { [`pagesV2/${page}`]: data, updatedAt: Date.now() });
+    writeAnnotPage: (id, layerKey, page, data) => {
+      if (isCurrent(id)) window.tenDecks?.annotWritten(parts(id).fileId, layerKey, page, data);
+      return update(ref(db, `${base(id)}/${layerKey}`), { [`pagesV2/${page}`]: data, updatedAt: Date.now() });
     },
-    readAllAnnot: async (fileId, layerKey) => {
-      const fromCache = async () => { const c = await window.tenDecks?.offlineAnnot(fileId, layerKey); return c ? { v2: c.pagesV2 || {}, legacy: c.pages || {} } : null; };
+    readAllAnnot: async (id, layerKey) => {
+      const fromCache = async () => { if (!isCurrent(id)) return null; const c = await window.tenDecks?.offlineAnnot(parts(id).fileId, layerKey); return c ? { v2: c.pagesV2 || {}, legacy: c.pages || {} } : null; };
       if (navigator.onLine === false) { const c = await fromCache(); if (c) return c; throw new Error("Bez připojení a bez uložených poznámek"); }
       try {
-        const v = (await get(ref(db, `/annotations/${fileId}/${layerKey}`))).val() || {};
+        const v = (await get(ref(db, `${base(id)}/${layerKey}`))).val() || {};
         return { v2: v.pagesV2 || {}, legacy: v.pages || {} };
       } catch (e) { const c = await fromCache(); if (c) return c; throw e; }
     },
-    deleteLegacyPage: (fileId, layerKey, page) => remove(annRef(fileId, layerKey, `pages/${page}`)),
-    openLegacy: (fileId, title) => window.openPdfViewerLegacy(fileId, title)
+    deleteLegacyPage: (id, layerKey, page) => remove(annRef(id, layerKey, `pages/${page}`)),
+    openLegacy: (id, title) => window.openPdfViewerLegacy(parts(id).fileId, title)
   };
 }
 
-window.openPdfViewer = async (driveFileId, title) => {
+window.openPdfViewer = async (driveFileId, title, revisionId = null) => {
   recordRecentOpen(driveFileId);
   if (localStorage.getItem("pdfViewer") === "legacy") return window.openPdfViewerLegacy(driveFileId, title);
   try {
@@ -5865,7 +5974,10 @@ window.openPdfViewer = async (driveFileId, title) => {
       const mod = await import(PDF_READER_URL);
       pdfReaderApi = mod.createPdfReader(buildPdfReaderEnv());
     }
-    await pdfReaderApi.open(driveFileId, title);
+    // soubor se otevírá vždy k určité revizi (aktuální, nebo vybrané v kartě Verze); poznámky se k ní vážou
+    const rev = revisionId || await window.tenRev.ensureHead(driveFileId);
+    const isOld = revisionId && !window.tenRev.isHead(driveFileId, revisionId);
+    await pdfReaderApi.open(window.tenRev.join(driveFileId, rev), isOld ? (title || "Dokument") + " (starší verze)" : title);
   } catch (err) {
     console.error("Nový PDF prohlížeč se nepodařilo spustit, otevírám původní:", err);
     pdfReaderApi = null;
@@ -5984,7 +6096,7 @@ function renderMobileDetailContent(fileId, isFolder) {
       </div>
     `;
   } else if (mobileDetailTab === "versions") {
-    content.innerHTML = `<div class="detail-empty"><p>Verzování bude dostupné brzy</p></div>`;
+    renderVersions(fileId, item, content);
   } else if (mobileDetailTab === "preview") {
     renderPreview(fileId, item, content);
   }

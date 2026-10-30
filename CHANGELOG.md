@@ -3,6 +3,13 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 1.1.0 (30. 10. 2026)
+Verze dokumentů.
+- Karta Verze v podrobnostech souboru: historie úprav (datum, autor, velikost), Otevřít, Stáhnout, Obnovit starší verzi jako aktuální, Nahrát novou verzi.
+- Každá verze se na Disku uchová trvale (keepForever), takže ji Disk po čase nesmaže.
+- Poznámky (osobní i veřejné) se vážou ke konkrétní verzi souboru; poznámky starší verze se nepřilepí na novou.
+- Administrátor jednorázově převede dosavadní poznámky pod aktuální verzi souborů (Nastavení, Správa).
+
 ## 1.0.0 (30. 10. 2026)
 První označené vydání pro denní používání členy.
 - Oprávnění na Disku: nevidí, může číst, může měnit; skryté složky se k členovi vůbec nedostanou, ani názvem.

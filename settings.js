@@ -81,6 +81,12 @@
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
   };
+  var isAdminUser = function () { var u = ctx() && ctx().user; return !!u && (u.role === "ADMIN" || u.role === "Owner"); };
+  function adminHtml() {
+    if (!isAdminUser()) return "";
+    return '<h2 class="st-h">Správa</h2><div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">Převést poznámky na verze souborů</div><div class="st-desc">Jednorázově přiřadí dosavadní poznámky k aktuální verzi každého souboru. Původní data se nemažou a opakované spuštění nic nezdvojí.</div></div>' +
+      '<div class="st-acts"><button type="button" class="drive-toolbar-btn" data-migrate-ann="1"><span id="st-mig-label">Převést poznámky</span></button></div></div></div>';
+  }
   function aboutHtml() {
     var V = globalThis.TEN_VERSION || {};
     return '<div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">10space ' + esc(V.version || "") + '</div><div class="st-desc">Vydáno ' + esc(V.date || "") + '. Aplikace sama nabídne obnovení, jakmile vyjde novější verze.</div></div>' +
@@ -107,7 +113,7 @@
       '<div class="dashboard-card st-card"><div class="dashboard-card-title">Přehled</div><p class="st-hint">Vyber, které karty se na Přehledu zobrazují, a nastav jejich pořadí.</p>' + shown + "</div>" +
       (more ? '<div class="dashboard-card st-card"><div class="dashboard-card-title">Další karty</div>' + more + "</div>" : "") +
       '<div class="st-foot"><button type="button" class="drive-toolbar-btn" data-reset="1"' + (isDefault ? " disabled" : "") + "><span>Obnovit výchozí Přehled</span></button></div>" +
-      '<h2 class="st-h">O aplikaci</h2>' + aboutHtml() + "</div>";
+      adminHtml() + '<h2 class="st-h">O aplikaci</h2>' + aboutHtml() + "</div>";
   }
   function refreshPage() {
     if (!area || !area.isConnected || !area.querySelector(".st-wrap")) return;
@@ -115,13 +121,14 @@
     area.innerHTML = pageHtml(); area.scrollTop = mt; if (document.scrollingElement) document.scrollingElement.scrollTop = top;
   }
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back],[data-check-update]");
+    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back],[data-check-update],[data-migrate-ann]");
     if (!t || !area || !area.contains(t)) return;
     if (t.dataset.theme) return setTheme(t.dataset.theme);
     if (t.dataset.checkUpdate) {
       var lb = document.getElementById("st-upd-label"); if (lb) lb.textContent = "Kontroluji…";
       return (window.tenVersionCheck ? window.tenVersionCheck(true) : Promise.resolve(null)).then(function (r) { var l2 = document.getElementById("st-upd-label"); if (l2) l2.textContent = r === false ? "Máte nejnovější verzi" : r === null ? "Nepodařilo se zjistit" : "Nová verze " + r; });
     }
+    if (t.dataset.migrateAnn) return migrateAnnotations();
     if (t.dataset.back) return back();
     if (t.dataset.hide) return hide(t.dataset.hide);
     if (t.dataset.show) return show(t.dataset.show);
@@ -164,6 +171,20 @@
     var g = e.target.closest && e.target.closest(".st-grip"); if (!g || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
     e.preventDefault(); var id = g.dataset.grip; move(id, e.key === "ArrowUp" ? -1 : 1);
     var again = area && area.querySelector('.st-grip[data-grip="' + id + '"]'); if (again) again.focus();
+  }
+  async function migrateAnnotations() {
+    var c = ctx(), call = function (apply) { return c.auth.currentUser.getIdToken().then(function (tok) { return fetch(c.FUNCTIONS.migrateAnnotationsToRevisions, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok }, body: JSON.stringify({ apply: apply }) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Chyba"); return j; }); }); }); };
+    var lb = document.getElementById("st-mig-label"); if (lb) lb.textContent = "Zjišťuji…";
+    try {
+      var plan = await call(false);
+      if (lb) lb.textContent = "Převést poznámky";
+      if (!plan.plan.length) return window.tenDialog.alert("Není co převádět" + (plan.skipped.length ? " (" + plan.skipped.length + " položek už je převedeno nebo bez aktuální verze)." : "."), { title: "Převod poznámek" });
+      if (!(await window.tenDialog.confirm("K převodu je " + plan.plan.length + " vrstev poznámek u " + plan.files + " souborů. Převést?", { title: "Převod poznámek", ok: "Převést" }))) return;
+      if (lb) lb.textContent = "Převádím…";
+      var done = await call(true);
+      if (lb) lb.textContent = "Převést poznámky";
+      window.tenDialog.alert("Převedeno vrstev: " + done.copied + ".", { title: "Převod poznámek" });
+    } catch (e) { if (lb) lb.textContent = "Převést poznámky"; window.tenDialog.alert(e.message || "Převod se nepodařil.", { title: "Převod poznámek" }); }
   }
   function back() { var t = window.__tenSettingsBack; if (typeof t === "function") t(); }
   function render(el) {
