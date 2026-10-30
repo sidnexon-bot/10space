@@ -3,8 +3,9 @@
    • Nikdy se neukládá nic z backendu (Cloud Functions, Firebase, Google API): přihlášení, data a soubory
      chodí vždy živě, offline kopie not řeší aplikace sama (decks.js).
    Nová verze aplikace se projeví při příštím otevření (nejdřív síť, úložiště je záloha). */
-const VERSION = "10space-shell-v7";
-const SHELL = ["./", "index.html", "redesign.css", "viewers.css", "decks.css", "ui.css", "kody.css", "motion.css", "settings.css", "settings.js", "platform.js", "ui.js", "kody.js", "viewers.js", "decks.js", "repertoar.js", "pdf-reader.js?v=1", "manifest.json", "icon-192.png", "icon-512.png"];
+importScripts("version.js");   // TEN_VERSION: číslo vydání, podle něj se pojmenuje úložiště
+const VERSION = "10space-shell-" + globalThis.TEN_VERSION.version;
+const SHELL = ["./", "index.html", "redesign.css", "viewers.css", "decks.css", "ui.css", "kody.css", "motion.css", "settings.css", "settings.js", "version.js", "platform.js", "ui.js", "kody.js", "viewers.js", "decks.js", "repertoar.js", "pdf-reader.js?v=1", "manifest.json", "icon-192.png", "icon-512.png"];
 const CDN = /^https:\/\/(www\.gstatic\.com\/firebasejs|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//;
 
 self.addEventListener("install", (e) => {
@@ -41,6 +42,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     if (url.pathname.endsWith("/sw.js")) return;
+    if (url.pathname.endsWith("/version.js") && url.search) return;   // kontrola nové verze jde vždy na síť a neukládá se
     e.respondWith(networkFirst(req, req.mode === "navigate" ? "index.html" : null));
   } else if (CDN.test(req.url)) {
     e.respondWith(cacheFirst(req)); // verze knihoven jsou pevné v adrese

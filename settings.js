@@ -81,6 +81,11 @@
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
   };
+  function aboutHtml() {
+    var V = globalThis.TEN_VERSION || {};
+    return '<div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">10space ' + esc(V.version || "") + '</div><div class="st-desc">Vydáno ' + esc(V.date || "") + '. Aplikace sama nabídne obnovení, jakmile vyjde novější verze.</div></div>' +
+      '<div class="st-acts"><button type="button" class="drive-toolbar-btn" data-check-update="1"><span id="st-upd-label">Zkontrolovat aktualizace</span></button></div></div></div>';
+  }
   function pageHtml() {
     var vis = dashboardCards(), hidden = S.dashboard.hidden;
     var shown = vis.map(function (id) {
@@ -101,7 +106,8 @@
       '<div class="st-seg" role="radiogroup" aria-label="Výchozí režim">' + seg + "</div></div></div>" +
       '<div class="dashboard-card st-card"><div class="dashboard-card-title">Přehled</div><p class="st-hint">Vyber, které karty se na Přehledu zobrazují, a nastav jejich pořadí.</p>' + shown + "</div>" +
       (more ? '<div class="dashboard-card st-card"><div class="dashboard-card-title">Další karty</div>' + more + "</div>" : "") +
-      '<div class="st-foot"><button type="button" class="drive-toolbar-btn" data-reset="1"' + (isDefault ? " disabled" : "") + "><span>Obnovit výchozí Přehled</span></button></div></div>";
+      '<div class="st-foot"><button type="button" class="drive-toolbar-btn" data-reset="1"' + (isDefault ? " disabled" : "") + "><span>Obnovit výchozí Přehled</span></button></div>" +
+      '<h2 class="st-h">O aplikaci</h2>' + aboutHtml() + "</div>";
   }
   function refreshPage() {
     if (!area || !area.isConnected || !area.querySelector(".st-wrap")) return;
@@ -109,9 +115,13 @@
     area.innerHTML = pageHtml(); area.scrollTop = mt; if (document.scrollingElement) document.scrollingElement.scrollTop = top;
   }
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back]");
+    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back],[data-check-update]");
     if (!t || !area || !area.contains(t)) return;
     if (t.dataset.theme) return setTheme(t.dataset.theme);
+    if (t.dataset.checkUpdate) {
+      var lb = document.getElementById("st-upd-label"); if (lb) lb.textContent = "Kontroluji…";
+      return (window.tenVersionCheck ? window.tenVersionCheck(true) : Promise.resolve(null)).then(function (r) { var l2 = document.getElementById("st-upd-label"); if (l2) l2.textContent = r === false ? "Máte nejnovější verzi" : r === null ? "Nepodařilo se zjistit" : "Nová verze " + r; });
+    }
     if (t.dataset.back) return back();
     if (t.dataset.hide) return hide(t.dataset.hide);
     if (t.dataset.show) return show(t.dataset.show);
