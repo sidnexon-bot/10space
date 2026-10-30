@@ -6,7 +6,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-  <title>10space — Sdílený soubor</title>
+  <title>10space — Sdílený obsah</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -197,73 +197,131 @@
       vertical-align: top;
     }
 
-    /* ── Sjednocený vzhled s 10base a 10space: plochy bez okrajů, velké zaoblení, jemný stín, tmavý režim podle systému ── */
+    /* ── Vzhled portálu: sjednocený s 10base a 10space (plochy bez okrajů, zaoblení, jemný stín, tmavý režim podle systému) ── */
     :root {
-      --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --muted: #8e8e93; --hair: rgba(60, 60, 67, 0.12);
+      --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --muted: #6e6e73; --hair: rgba(60, 60, 67, 0.12);
       --surface-2: rgba(120, 120, 128, 0.12); --accent: #EE220C; --accent-press: #cc1a09;
-      --r-card: 18px; --r-ctl: 14px;
-      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 22px rgba(0, 0, 0, 0.06);
+      --r-card: 16px; --r-ctl: 12px;
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
       --ease: cubic-bezier(0.22, 0.8, 0.28, 1); --spring: cubic-bezier(0.2, 1.2, 0.3, 1);
     }
     @media (prefers-color-scheme: dark) {
-      :root { --bg: #000000; --card: #151517; --text: #ececee; --muted: #8e8e93; --hair: rgba(255, 255, 255, 0.08); --surface-2: #222225; --shadow-card: none; }
+      :root { --bg: #000000; --card: #151517; --text: #ececee; --muted: #9a9aa0; --hair: rgba(255, 255, 255, 0.09); --surface-2: #222225; --shadow-card: none; }
     }
     html { background: var(--bg); }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh; }
+    body > div[id^="page-"]:not(.hidden) { flex: 1; }
+    .site-foot { padding: 20px 24px calc(20px + env(safe-area-inset-bottom)); text-align: center; font-size: 12px; color: var(--muted); }
+    .site-foot b { color: var(--text); font-weight: 600; }
 
-    .page-header { background: color-mix(in srgb, var(--card) 82%, transparent); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); border-bottom: 1px solid var(--hair); padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); }
-    .page-header-back { width: 36px; height: 36px; justify-content: center; border-radius: 50%; color: var(--text); transition: background 0.15s ease, transform 0.14s var(--spring); }
+    /* Horní lišta: značka vlevo, název sdíleného obsahu, vpravo popisek */
+    .page-header { background: color-mix(in srgb, var(--card) 86%, transparent); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px);
+      border-bottom: 1px solid var(--hair); padding: 0 max(24px, calc((100vw - 1040px) / 2 + 24px)); min-height: 60px; padding-top: env(safe-area-inset-top); gap: 12px; }
+    .page-header-logo { order: -1; font-size: 20px; letter-spacing: -0.03em; color: var(--text); line-height: 28px; }
+    .page-header:has(.page-header-back:not(.hidden)) .page-header-logo { padding-right: 14px; margin-right: 2px; border-right: 1px solid var(--hair); }
+    .page-header-back { order: 0; width: 36px; height: 36px; justify-content: center; border-radius: 50%; color: var(--text); transition: background 0.15s ease, transform 0.14s var(--spring); }
     .page-header-back:hover { background: var(--surface-2); }
     .page-header-back:active { transform: scale(0.88); }
-    .page-header-title { color: var(--text); letter-spacing: -0.01em; }
-    .page-header-logo, .logo { letter-spacing: -0.03em; color: var(--text); }
-    .page-content { padding: 20px 16px calc(28px + env(safe-area-inset-bottom)); animation: shIn 0.34s var(--ease) both; }
-    @keyframes shIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .page-header-title { order: 1; color: var(--muted); font-size: 14px; font-weight: 500; }
+    #explorer-title, #projekt-share-title { display: none; }
+    .page-header::after { content: "Sdílený obsah"; order: 2; margin-left: auto; font-size: 12px; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap; }
+    .page-content { max-width: 1040px; padding: 32px 24px calc(24px + env(safe-area-inset-bottom)); animation: shIn 0.34s var(--ease) both; }
+    @keyframes shIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin: 0 0 6px; word-break: break-word; }
+    .page-sub { font-size: 14px; color: var(--muted); margin-bottom: 22px; }
 
-    .pin-page-content { width: calc(100% - 32px); margin-top: 12vh; padding: 28px 22px 24px; background: var(--card); border-radius: 24px; box-shadow: var(--shadow-card); animation: shIn 0.4s var(--ease) both; }
-    .logo { font-size: 30px; }
-    .subtitle { color: var(--muted); font-size: 14px; }
+    /* Vstup s PINem */
+    .logo { font-size: 32px; letter-spacing: -0.03em; color: var(--text); }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+    #page-pin { display: flex; align-items: center; justify-content: center; padding: 24px 0; }
+    .pin-page-content { width: calc(100% - 32px); max-width: 400px; margin: 0 auto; padding: 36px 32px 28px; background: var(--card); border-radius: 20px; box-shadow: var(--shadow-card); animation: shIn 0.4s var(--ease) both; }
     .pin-input { border: 2px solid transparent; background: var(--surface-2); color: var(--text); border-radius: var(--r-ctl); transition: border-color 0.15s ease, box-shadow 0.2s ease, background 0.15s ease; }
     .pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(238, 34, 12, 0.14); background: var(--card); }
-    .primary-btn { min-height: 48px; border-radius: var(--r-ctl); background: var(--accent); transition: background 0.2s ease, transform 0.14s var(--ease), box-shadow 0.2s ease; }
+    .primary-btn { min-height: 46px; border-radius: var(--r-ctl); background: var(--accent); transition: background 0.2s ease, transform 0.14s var(--ease), box-shadow 0.2s ease; }
     @media (hover: hover) { .primary-btn:hover { background: var(--accent-press); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(238, 34, 12, 0.28); } }
-    .primary-btn:active { transform: scale(0.97); box-shadow: none; }
+    .primary-btn:active { transform: scale(0.98); box-shadow: none; }
     .error { color: var(--accent); }
     .pin-error-shake { animation: shShake 0.36s ease; }
     @keyframes shShake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+    .spinner { border-color: var(--surface-2); border-top-color: var(--accent); }
 
-    .file-detail-card, .explorer-list, .explorer-empty, .share-section { background: var(--card); border: 0; border-radius: var(--r-card); box-shadow: var(--shadow-card); }
-    .file-detail-card { padding: 32px 24px 24px; }
-    .file-icon { display: inline-flex; width: 76px; height: 76px; align-items: center; justify-content: center; border-radius: 22px; background: var(--surface-2); }
-    .file-name { color: var(--text); font-size: 17px; letter-spacing: -0.01em; }
-    .action-btn { min-height: 48px; border: 0; border-radius: var(--r-ctl); background: var(--surface-2); color: var(--text); transition: background 0.15s ease, transform 0.14s var(--ease); }
+    /* Složka: cesta + seznam */
+    .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+    .crumbs button { border: 0; background: none; font: inherit; color: var(--muted); cursor: pointer; padding: 3px 6px; border-radius: 8px; transition: background 0.15s ease, color 0.15s ease; }
+    .crumbs button:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+    .crumbs button:disabled { color: var(--text); font-weight: 600; cursor: default; }
+    .crumbs .sep { opacity: 0.5; }
+    .explorer-list, .explorer-empty { background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-card); overflow: hidden; }
+    .explorer-head { display: grid; grid-template-columns: 1fr 120px 28px; gap: 14px; padding: 10px 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--hair); }
+    .explorer-item { display: grid; grid-template-columns: 36px 1fr 120px 28px; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--hair); cursor: pointer; transition: background 0.15s ease; }
+    .explorer-head { grid-template-columns: 50px 1fr 120px 28px; }
+    .explorer-item:last-child { border-bottom: 0; }
+    .explorer-item:hover { background: var(--surface-2); }
+    .explorer-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .explorer-item .ic { display: flex; align-items: center; justify-content: center; }
+    .explorer-item-name { color: var(--text); font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .explorer-item-type { font-size: 13px; color: var(--muted); }
+    .explorer-item .chev { color: var(--muted); opacity: 0.6; transition: transform 0.15s var(--ease), opacity 0.15s ease; }
+    .explorer-item:hover .chev { transform: translateX(3px); opacity: 1; }
+    .explorer-empty { padding: 48px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+    .sk { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--surface-2) 45%, transparent) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shSk 1.3s ease-in-out infinite; }
+    @keyframes shSk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+    /* Detail souboru */
+    .file-detail-card { display: flex; align-items: center; gap: 24px; padding: 28px; text-align: left; background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-card); }
+    .file-icon { margin: 0; display: flex; width: 88px; height: 88px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 20px; background: var(--surface-2); }
+    .file-meta { flex: 1; min-width: 0; }
+    .file-name { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 4px; color: var(--text); word-break: break-word; }
+    .file-type { font-size: 13px; color: var(--muted); }
+    .file-actions { display: flex; gap: 10px; flex-shrink: 0; }
+    .action-btn { width: auto; min-height: 44px; padding: 0 20px; margin: 0; border: 0; border-radius: var(--r-ctl); background: var(--surface-2); color: var(--text); font-size: 14px; transition: background 0.15s ease, transform 0.14s var(--ease); }
     .action-btn:hover { background: color-mix(in srgb, var(--surface-2) 70%, var(--muted)); }
     .action-btn:active { transform: scale(0.97); }
     #view-btn:not(.hidden), #view-btn.hidden + .action-btn { background: var(--accent); color: #fff; }
     #view-btn:not(.hidden):hover, #view-btn.hidden + .action-btn:hover { background: var(--accent-press); }
 
-    .explorer-item { border-bottom: 1px solid var(--hair); padding: 14px 16px; transition: background 0.15s ease, transform 0.14s var(--ease); }
-    .explorer-item:hover { background: var(--surface-2); }
-    .explorer-item:active { transform: scale(0.99); }
-    .explorer-item-name { color: var(--text); }
-    .explorer-empty { color: var(--muted); }
-    .spinner { border-color: var(--surface-2); border-top-color: var(--accent); }
-
-    .share-section { padding: 18px; }
-    .share-section-title { color: var(--muted); letter-spacing: 0.06em; }
-    .share-info-row { border-bottom: 1px solid var(--hair); }
+    /* Projekt */
+    .projekt-hero { margin-bottom: 22px; }
+    .projekt-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow-card); font-size: 13px; color: var(--text); }
+    .chip svg { color: var(--muted); }
+    .projekt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .projekt-grid .wide { grid-column: 1 / -1; }
+    .share-section { background: var(--card); border: 0; border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 20px 22px; margin: 0; }
+    .share-section-title { color: var(--muted); font-size: 11px; letter-spacing: 0.06em; margin-bottom: 12px; }
+    .share-section p { font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-line; }
+    .share-info-row { border-bottom: 1px solid var(--hair); padding: 9px 0; }
+    .share-info-row span:first-child { color: var(--muted); width: 96px; }
     .share-info-row span:last-child { color: var(--text); }
-    .share-table { border-collapse: separate; border-spacing: 0; overflow: hidden; border-radius: 12px; }
-    .share-table th { background: var(--surface-2); color: var(--muted); border: 0; border-bottom: 1px solid var(--hair); }
-    .share-table td { border: 0; border-bottom: 1px solid var(--hair); color: var(--text); }
+    .share-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    .share-table th { background: none; color: var(--muted); border: 0; border-bottom: 1px solid var(--hair); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 10px 8px 0; }
+    .share-table td { border: 0; border-bottom: 1px solid var(--hair); color: var(--text); padding: 10px 10px 10px 0; }
     .share-table tr:last-child td { border-bottom: 0; }
+    .podklady-btn { width: auto; padding: 0 22px; }
 
-    .pdf-toolbar { background: rgba(28, 28, 30, 0.9); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); padding-top: env(safe-area-inset-top); height: calc(52px + env(safe-area-inset-top)); }
+    /* PDF čtečka */
+    .pdf-toolbar { background: rgba(28, 28, 30, 0.92); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); padding-top: env(safe-area-inset-top); height: calc(52px + env(safe-area-inset-top)); }
     .pdf-btn { border-radius: 50%; transition: background 0.15s ease, transform 0.14s var(--spring); }
     .pdf-btn:active { transform: scale(0.88); }
     .pdf-overlay:not(.hidden) { animation: shFade 0.22s ease both; }
     @keyframes shFade { from { opacity: 0; } to { opacity: 1; } }
 
+    @media (max-width: 720px) {
+      .page-header { padding: 0 16px; min-height: 54px; }
+      .page-header::after { display: none; }
+      .page-content { padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); }
+      .page-title { font-size: 23px; }
+      .explorer-head { display: none; }
+      .explorer-item { grid-template-columns: 36px 1fr 20px; padding: 12px 16px; }
+      .explorer-item-type { display: none; }
+      .file-detail-card { flex-direction: column; align-items: stretch; text-align: center; padding: 24px 20px; }
+      .file-icon { margin: 0 auto; }
+      .file-actions { flex-direction: column; }
+      .action-btn { width: 100%; }
+      .projekt-grid { grid-template-columns: 1fr; }
+      .share-section { padding: 18px; }
+      .pin-page-content { padding: 28px 22px 24px; }
+    }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
   </style>
   <link rel="stylesheet" href="ui.css">
@@ -297,6 +355,9 @@
       <span class="page-header-logo">10<span>space</span></span>
     </div>
     <div class="page-content">
+      <nav class="crumbs" id="explorer-crumbs" aria-label="Cesta ve složce"></nav>
+      <h1 class="page-title" id="explorer-h1"></h1>
+      <div class="page-sub" id="explorer-sub"></div>
       <div class="explorer-list" id="explorer-list"></div>
     </div>
   </div>
@@ -313,15 +374,20 @@
     <div class="page-content">
       <div class="file-detail-card">
         <div class="file-icon" id="file-icon"></div>
-        <div class="file-name" id="file-name"></div>
-        <button class="action-btn" id="view-btn" onclick="viewFile()">
+        <div class="file-meta">
+          <div class="file-name" id="file-name"></div>
+          <div class="file-type" id="file-type"></div>
+        </div>
+        <div class="file-actions">
+          <button class="action-btn" id="view-btn" onclick="viewFile()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Zobrazit
         </button>
-        <button class="action-btn" onclick="downloadFile()">
+          <button class="action-btn" onclick="downloadFile()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Stáhnout
         </button>
+        </div>
       </div>
     </div>
   </div>
@@ -348,6 +414,8 @@
       <div id="projekt-share-body"></div>
     </div>
   </div>
+
+  <footer class="site-foot">Sdíleno přes <b>10space</b> · 10men</footer>
 
   <script>
     const FUNCTIONS = {
@@ -422,23 +490,87 @@
     function getFileIconSvg(mimeType, size) {
       const s = size || 48;
       const mime = (mimeType || "").toLowerCase();
-      if (mime === "application/vnd.google-apps.folder") {
+    
+      if (mimeType === "application/vnd.google-apps.folder") {
         return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
       }
+    
+      if (mime.includes("image")) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+    
+      if (mime.includes("video")) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`;
+    
+      if (mime.includes("audio")) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#af52de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    
+      // Typ dokumentu
+      let label = "";
+      let color = "#8e8e93";
+    
       if (mime.includes("pdf")) {
-        return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+        label = "PDF"; color = "#EE220C";
+      } else if (
+        mime.includes("spreadsheet") ||
+        mime.includes("excel") ||
+        mime.includes("vnd.ms-excel") ||
+        mime.includes("vnd.openxmlformats-officedocument.spreadsheetml")
+      ) {
+        label = "XLS"; color = "#1e7e34";
+      } else if (
+        mime.includes("presentation") ||
+        mime.includes("powerpoint") ||
+        mime.includes("vnd.ms-powerpoint") ||
+        mime.includes("vnd.openxmlformats-officedocument.presentationml")
+      ) {
+        label = "PPT"; color = "#c49200";
+      } else if (
+        mime.includes("document") ||
+        mime.includes("msword") ||
+        mime.includes("vnd.openxmlformats-officedocument.wordprocessingml")
+      ) {
+        label = "DOC"; color = "#2b5eb8";
       }
-      if (mime.includes("image")) {
-        return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
-      }
-      return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    
+      // Papír se štítkem; rozměry jsou v souřadnicích viewBox (24×24), takže se štítek škáluje s ikonou
+      const fontSize = 6;
+      const badgeH = 8;
+      const badgeY = 11.5;
+      const badgeX = 2;
+      const badgeW = 20;
+    
+      return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Papír -->
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#4a4a4a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+        <polyline points="14 2 14 8 20 8" stroke="#4a4a4a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${label ? `
+        <!-- Štítek -->
+        <rect x="${badgeX}" y="${badgeY}" width="${badgeW}" height="${badgeH}" rx="1.5" fill="${color}"/>
+        <text x="12" y="${badgeY + badgeH * 0.74}" text-anchor="middle" fill="white" font-size="${fontSize}" font-family="system-ui, -apple-system, sans-serif" font-weight="700">${label}</text>
+        ` : ""}
+      </svg>`;
+    }
+
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    function typeLabel(mime, isFolder) {
+      const m = (mime || "").toLowerCase();
+      if (isFolder || m === "application/vnd.google-apps.folder") return "Složka";
+      if (m.includes("pdf")) return "Dokument PDF";
+      if (m.includes("spreadsheet") || m.includes("excel")) return "Tabulka";
+      if (m.includes("presentation") || m.includes("powerpoint")) return "Prezentace";
+      if (m.includes("document") || m.includes("msword")) return "Dokument";
+      if (m.includes("image")) return "Obrázek";
+      if (m.includes("video")) return "Video";
+      if (m.includes("audio")) return "Zvuk";
+      if (m.includes("zip")) return "Archiv";
+      return "Soubor";
     }
 
     // ===== EXPLORER =====
     async function loadSharedFolder(folderId, folderName) {
-      document.getElementById("explorer-title").textContent = folderName;
+      document.getElementById("explorer-title").textContent = rootData?.nazev || folderName;
+      document.getElementById("explorer-h1").textContent = folderName;
+      document.getElementById("explorer-sub").textContent = "";
+      renderCrumbs();
       document.getElementById("explorer-back-btn").classList.toggle("hidden", explorerPath.length <= 1 && !explorerCameFromProjekt);
-      document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty"><div class="spinner"></div></div>`;
+      document.getElementById("explorer-list").innerHTML = `<div class="explorer-list-sk">${[0, 1, 2, 3, 4].map(() => `<div class="explorer-item" style="cursor:default"><span class="sk" style="width:28px;height:28px"></span><span class="sk" style="height:14px;width:55%"></span><span class="sk" style="height:12px;width:70px"></span><span></span></div>`).join("")}</div>`;
 
       try {
         const res = await fetch(FUNCTIONS.listSharedFolder, {
@@ -449,7 +581,7 @@
         const data = await res.json();
 
         if (!data.success) {
-          document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Chyba: ${data.error}</div>`;
+          document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Chyba: ${esc(data.error)}</div>`;
           return;
         }
 
@@ -464,16 +596,37 @@
           return a.name.localeCompare(b.name, "cs");
         });
 
-        document.getElementById("explorer-list").innerHTML = sorted.map(f => `
-          <div class="explorer-item" onclick="${f.isFolder ? `openSharedSubfolder('${f.id}', '${f.name.replace(/'/g, "\\'")}')` : `openSharedFile('${f.id}', '${f.name.replace(/'/g, "\\'")}', '${f.mimeType}')`}">
-            ${getFileIconSvg(f.isFolder ? "application/vnd.google-apps.folder" : f.mimeType, 20)}
-            <span class="explorer-item-name">${f.name}</span>
+        document.getElementById("explorer-sub").textContent = sorted.length === 1 ? "1 položka" : sorted.length >= 2 && sorted.length <= 4 ? sorted.length + " položky" : sorted.length + " položek";
+        document.getElementById("explorer-list").innerHTML = `<div class="explorer-head"><span>Název</span><span>Typ</span><span></span></div>` + sorted.map(f => `
+          <div class="explorer-item" role="button" tabindex="0" data-id="${esc(f.id)}" data-name="${esc(f.name)}" data-mime="${esc(f.mimeType)}" data-folder="${f.isFolder ? 1 : 0}">
+            <span class="ic">${getFileIconSvg(f.isFolder ? "application/vnd.google-apps.folder" : f.mimeType, 28)}</span>
+            <span class="explorer-item-name">${esc(f.name)}</span>
+            <span class="explorer-item-type">${typeLabel(f.mimeType, f.isFolder)}</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         `).join("");
       } catch(err) {
-        document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Chyba: ${err.message}</div>`;
+        document.getElementById("explorer-list").innerHTML = `<div class="explorer-empty">Chyba: ${esc(err.message)}</div>`;
       }
     }
+
+    function renderCrumbs() {
+      const el = document.getElementById("explorer-crumbs");
+      if (explorerPath.length < 2) { el.innerHTML = ""; return; }
+      el.innerHTML = explorerPath.map((p, i) => (i ? `<span class="sep">/</span>` : "") + `<button type="button" data-i="${i}" ${i === explorerPath.length - 1 ? "disabled" : ""}>${esc(p.name)}</button>`).join("");
+    }
+    document.getElementById("explorer-crumbs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-i]"); if (!b || b.disabled) return;
+      explorerPath = explorerPath.slice(0, +b.dataset.i + 1);
+      const t = explorerPath[explorerPath.length - 1]; loadSharedFolder(t.id, t.name);
+    });
+    const openRow = (row) => {
+      if (!row) return;
+      const { id, name, mime, folder } = row.dataset;
+      if (folder === "1") openSharedSubfolder(id, name); else openSharedFile(id, name, mime);
+    };
+    document.getElementById("explorer-list").addEventListener("click", (e) => openRow(e.target.closest(".explorer-item[data-id]")));
+    document.getElementById("explorer-list").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { const r = e.target.closest(".explorer-item[data-id]"); if (r) { e.preventDefault(); openRow(r); } } });
 
     window.openSharedSubfolder = (folderId, folderName) => {
       explorerPath.push({ id: folderId, name: folderName });
@@ -504,7 +657,8 @@
     function showFileDetail(name, mimeType) {
       showPage("page-file");
       document.getElementById("file-name").textContent = name;
-      document.getElementById("file-icon").innerHTML = getFileIconSvg(mimeType);
+      document.getElementById("file-icon").innerHTML = getFileIconSvg(mimeType, 52);
+      document.getElementById("file-type").textContent = typeLabel(mimeType);
       document.getElementById("view-btn").classList.toggle("hidden", mimeType !== "application/pdf");
     }
 
@@ -590,7 +744,8 @@
     // ===== NASDÍLENÉ PROJEKTY =====
     async function loadSharedProjekt() {
       document.getElementById("projekt-share-title").textContent = rootData.nazev || "Projekt";
-      document.getElementById("projekt-share-body").innerHTML = `<div class="loading-spinner"></div>`;
+      document.getElementById("projekt-share-body").innerHTML = `<div class="projekt-hero"><span class="sk" style="height:30px;width:60%"></span><span class="sk" style="height:28px;width:260px;margin-top:14px;border-radius:999px"></span></div>
+        <div class="projekt-grid">${[5, 4].map((n) => `<div class="share-section"><span class="sk" style="height:11px;width:130px;margin-bottom:18px"></span>${Array.from({ length: n }, (_, i) => `<span class="sk" style="height:14px;width:${92 - i * 11}%;margin:14px 0"></span>`).join("")}</div>`).join("")}<div class="share-section wide"><span class="sk" style="height:11px;width:150px;margin-bottom:18px"></span>${[0, 1, 2].map(() => `<span class="sk" style="height:14px;width:100%;margin:14px 0"></span>`).join("")}</div></div>`;
     
       try {
         const res = await fetch(FUNCTIONS.getSharedProjekt, {
@@ -601,62 +756,61 @@
         const data = await res.json();
     
         if (!data.success) {
-          document.getElementById("projekt-share-body").innerHTML = `<p>Chyba: ${data.error}</p>`;
+          document.getElementById("projekt-share-body").innerHTML = `<div class="explorer-empty">Chyba: ${esc(data.error)}</div>`;
           return;
         }
     
-        const datum = data.datum ? new Date(data.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
-    
-        let infoHtml = `
+        const datum = data.datum ? new Date(data.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "";
+        const ic = (p) => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+        const row = (l, v) => v ? `<div class="share-info-row"><span>${l}</span><span>${esc(v)}</span></div>` : "";
+
+        const heroHtml = `<div class="projekt-hero"><h1 class="page-title">${esc(data.nazev || rootData.nazev || "Projekt")}</h1>
+          <div class="projekt-chips">
+            ${datum ? `<span class="chip">${ic('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>')}${esc(datum)}</span>` : ""}
+            ${data.misto ? `<span class="chip">${ic('<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>')}${esc(data.misto)}</span>` : ""}
+          </div></div>`;
+
+        const infoHtml = `
           <div class="share-section">
-            <div class="share-section-title">Informace o akci</div>
-            <div class="share-info-row"><span>Datum</span><span>${datum}</span></div>
-            ${data.misto ? `<div class="share-info-row"><span>Místo</span><span>${data.misto}</span></div>` : ""}
-            ${data.sraz ? `<div class="share-info-row"><span>Sraz</span><span>${data.sraz}</span></div>` : ""}
-            ${data.doprava ? `<div class="share-info-row"><span>Doprava</span><span>${data.doprava}</span></div>` : ""}
-            ${data.garant ? `<div class="share-info-row"><span>Garant</span><span>${data.garant}</span></div>` : ""}
+            <div class="share-section-title">Informace o projektu</div>
+            ${row("Datum", datum || "—")}${row("Místo", data.misto)}${row("Sraz", data.sraz)}${row("Doprava", data.doprava)}${row("Garant", data.garant)}
           </div>`;
-    
-        let wikiHtml = data.wikiText ? `
+
+        const wikiHtml = data.wikiText ? `
           <div class="share-section">
-            <div class="share-section-title">O akci</div>
-            <p>${data.wikiText}</p>
+            <div class="share-section-title">Popis (AI)</div>
+            <p>${esc(data.wikiText)}</p>
           </div>` : "";
-    
-        let timelineHtml = "";
-        if (data.timeline?.length) {
-          timelineHtml = `
-            <div class="share-section">
-              <div class="share-section-title">Harmonogram</div>
-              ${data.timeline.map(t => `<div class="share-info-row"><span>${t.cas || "—"}</span><span>${t.popis || ""}</span></div>`).join("")}
-            </div>`;
-        }
-    
-        let riderHtml = "";
-        if (data.harmonogramKoncertu?.length) {
-          riderHtml = `
-            <div class="share-section">
-              <div class="share-section-title">Program koncertu</div>
-              <table class="share-table">
-                <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th></tr></thead>
-                <tbody>
-                  ${data.harmonogramKoncertu.map(r => {
-                    const detail = r.skladby ? r.skladby.map(s => s.name).join(", ") : (r.moderatorJmeno || "");
-                    return `<tr><td>${r.nazev || "—"}</td><td>${detail}</td><td>${r.stopaz_min ? r.stopaz_min + " min" : "—"}</td></tr>`;
-                  }).join("")}
-                </tbody>
-              </table>
-            </div>`;
-        }
-    
-        let podkladyHtml = data.hasPodklady ? `
+
+        const timelineHtml = data.timeline?.length ? `
           <div class="share-section">
-            <button class="primary-btn" onclick="openProjektPodklady()">Otevřít podklady</button>
+            <div class="share-section-title">Harmonogram</div>
+            ${data.timeline.map(t => `<div class="share-info-row"><span>${esc(t.cas || "—")}</span><span>${esc(t.popis || "")}</span></div>`).join("")}
           </div>` : "";
-    
-        document.getElementById("projekt-share-body").innerHTML = infoHtml + wikiHtml + timelineHtml + riderHtml + podkladyHtml;
+
+        const riderHtml = data.harmonogramKoncertu?.length ? `
+          <div class="share-section wide">
+            <div class="share-section-title">Detailní program</div>
+            <table class="share-table">
+              <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th></tr></thead>
+              <tbody>
+                ${data.harmonogramKoncertu.map(r => {
+                  const detail = r.skladby ? r.skladby.map(s => s.name).join(", ") : (r.moderatorJmeno || "");
+                  return `<tr><td>${esc(r.nazev || "—")}</td><td>${esc(detail)}</td><td>${r.stopaz_min ? esc(r.stopaz_min) + " min" : "—"}</td></tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>` : "";
+
+        const podkladyHtml = data.hasPodklady ? `
+          <div class="share-section wide">
+            <div class="share-section-title">Složky projektu</div>
+            <button class="primary-btn podklady-btn" onclick="openProjektPodklady()">Otevřít podklady</button>
+          </div>` : "";
+
+        document.getElementById("projekt-share-body").innerHTML = heroHtml + `<div class="projekt-grid">${infoHtml}${wikiHtml}${timelineHtml}${riderHtml}${podkladyHtml}</div>`;
       } catch(err) {
-        document.getElementById("projekt-share-body").innerHTML = `<p>Chyba připojení: ${err.message}</p>`;
+        document.getElementById("projekt-share-body").innerHTML = `<div class="explorer-empty">Chyba připojení: ${esc(err.message)}</div>`;
       }
     }
     
