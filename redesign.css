@@ -194,65 +194,78 @@ body.dark .modal-list { border-color: var(--hair); }
    Stejná konstrukce jako v 10base, akcent je červený.
    ════════════════════════════════════════════════════════════════════ */
 .bottom-wrap { padding: 0 16px calc(10px + env(safe-area-inset-bottom)); }
-.bottom {
-  position: relative; isolation: isolate;
-  display: flex; gap: 2px; width: min(100%, 440px); padding: 6px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.60), rgba(255, 255, 255, 0.28));
-  -webkit-backdrop-filter: blur(22px) saturate(190%);
-  backdrop-filter: blur(22px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow:
-    0 14px 34px rgba(20, 24, 40, 0.18), 0 2px 6px rgba(20, 24, 40, 0.08),
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(255, 255, 255, 0.30),
-    inset 0 0 16px rgba(255, 255, 255, 0.20);
-  pointer-events: auto;
+/* ════════════════════════════════════════════════════════════════════
+   Spodní lišta, Apple (iOS 26 „Liquid Glass“). Android a ostatní: viz níže, beze změny.
+   Vrstvy (vkládá platform.js do .bottom): .lg-blur jemně rozostřený základ, .lg-edge okraj čočky
+   (silnější sytost a světlo na obvodu, jako když sklo láme obraz pod hranou), .lg-spec odlesk po obvodu (světlo shora vlevo),
+   .lg-pill vybraná záložka jako vlastní kapka skla, která se mezi záložkami přesouvá.
+   Safari neumí SVG filtr v backdrop-filter, takže lom obrazu je nahrazen vrstvami sytosti, jasu a odlesku.
+   ════════════════════════════════════════════════════════════════════ */
+html:not([data-platform="android"]) .bottom {
+  --lg-accent: #EE220C; --lg-accent-dark: #ff453a;
+  --h: 64px;
+  position: relative; isolation: isolate; height: var(--h); width: min(100%, 420px); padding: 6px; gap: 0;
+  border-radius: 999px; background: none; border: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 0 12px 30px rgba(20, 24, 40, 0.14), 0 3px 8px rgba(20, 24, 40, 0.08), 0 0 0 0.5px rgba(20, 24, 40, 0.06);
 }
-.bottom::before {
-  content: ""; position: absolute; inset: 0; left: 0; right: 0; top: 0; height: auto; border-radius: inherit; pointer-events: none; z-index: -1;
-  background:
-    radial-gradient(110% 120% at 12% -10%, rgba(255, 255, 255, 0.75), transparent 46%),
-    radial-gradient(90% 110% at 92% 115%, rgba(255, 255, 255, 0.40), transparent 52%);
-  opacity: 0.9;
+html:not([data-platform="android"]) .bottom::before, html:not([data-platform="android"]) .bottom::after { display: none; }
+html:not([data-platform="android"]) .bottom .lg { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+/* základ: čiré sklo, jemné rozostření, zvýšená sytost barev pod ním */
+html:not([data-platform="android"]) .bottom .lg-blur {
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.12) 55%, rgba(255, 255, 255, 0.20));
+  -webkit-backdrop-filter: blur(8px) saturate(1.55) brightness(1.04); backdrop-filter: blur(8px) saturate(1.55) brightness(1.04);
 }
-.bottom button {
-  background: transparent; border: none; border-radius: 999px;
-  padding: 8px 2px 7px; gap: 3px;
-  color: #55555b; font-size: 10px; font-weight: 600; letter-spacing: 0.01em;
-  box-shadow: none; transition: background 0.25s ease, box-shadow 0.25s ease, color 0.2s ease, transform 0.15s ease;
-  min-height: 52px;
+/* okraj čočky: na obvodu se barvy sytěji a jasněji vrství (3 pásy s klesající silou) */
+html:not([data-platform="android"]) .bottom .lg-edge {
+  z-index: 0;
+  -webkit-backdrop-filter: blur(1px) saturate(1.25) brightness(1.07); backdrop-filter: blur(1px) saturate(1.25) brightness(1.07);
+  -webkit-mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box; mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box;
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 4px; opacity: 0.85;
 }
-.bottom button small { font-size: 10px; margin-top: 0; }
-.bottom button .icon { width: 22px; height: 22px; }
-.bottom button .icon svg { width: 23px; height: 23px; }
-.bottom button.active {
-  color: #EE220C;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.46));
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 1), inset 0 -1px 2px rgba(0, 0, 0, 0.05), 0 3px 12px rgba(20, 24, 40, 0.12);
+/* odlesk: tenká světlá hrana, nejjasnější vlevo nahoře a vpravo dole, a vnitřní záře */
+html:not([data-platform="android"]) .bottom .lg-spec {
+  z-index: 2;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 0.95), inset 0 -1.5px 1px -0.5px rgba(255, 255, 255, 0.55),
+    inset 0 0 14px rgba(255, 255, 255, 0.28), inset 0 -8px 14px -10px rgba(20, 24, 40, 0.10);
 }
-.bottom button.active .icon svg { stroke: #EE220C; transform: none; }
-.bottom button:active { transform: scale(0.96); opacity: 1; }
+html:not([data-platform="android"]) .bottom .lg-spec::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
+  background: conic-gradient(from 200deg at 50% 50%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.0) 22%, rgba(255, 255, 255, 0.0) 44%, rgba(255, 255, 255, 0.85) 62%, rgba(255, 255, 255, 0.0) 84%, rgba(255, 255, 255, 1));
+  -webkit-mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box; mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box;
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+/* vybraná záložka: kapka skla, která se přesouvá */
+html:not([data-platform="android"]) .bottom .lg-pill {
+  position: absolute; z-index: 1; top: 6px; bottom: 6px; left: 0; width: 0; border-radius: 999px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0.22));
+  -webkit-backdrop-filter: blur(3px) saturate(1.15) brightness(1.10); backdrop-filter: blur(3px) saturate(1.15) brightness(1.10);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.7), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 1), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.5),
+    inset 0 0 10px rgba(255, 255, 255, 0.35), 0 3px 10px rgba(20, 24, 40, 0.12);
+  transition: transform 0.48s cubic-bezier(0.3, 1.3, 0.4, 1), width 0.48s cubic-bezier(0.3, 1.3, 0.4, 1), opacity 0.2s ease;
+}
+html:not([data-platform="android"]) .bottom button { position: relative; z-index: 3; flex: 1; background: transparent !important; box-shadow: none !important; min-height: 52px; }
+html:not([data-platform="android"]) .bottom button.active { color: var(--lg-accent); background: transparent !important; box-shadow: none !important; }
+html:not([data-platform="android"]) .bottom button.active .icon svg { stroke: var(--lg-accent); }
+html:not([data-platform="android"]) .bottom button:not(.active) { color: #3c3c43; }
 
-body.dark .bottom {
-  background: linear-gradient(180deg, rgba(96, 96, 104, 0.46), rgba(38, 38, 42, 0.34));
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.30),
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.22), inset 0 -1px 1px rgba(255, 255, 255, 0.05),
-    inset 0 0 18px rgba(255, 255, 255, 0.05);
-}
-body.dark .bottom::before {
-  background:
-    radial-gradient(110% 120% at 12% -10%, rgba(255, 255, 255, 0.26), transparent 46%),
-    radial-gradient(90% 110% at 92% 115%, rgba(255, 255, 255, 0.10), transparent 52%);
-}
-body.dark .bottom button { background: transparent; color: #a0a0a8; }
-body.dark .bottom button.active {
-  color: #ff453a;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.09));
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.28), inset 0 -1px 2px rgba(0, 0, 0, 0.25), 0 3px 12px rgba(0, 0, 0, 0.35);
-}
-body.dark .bottom button.active .icon svg { stroke: #ff453a; }
+/* tmavý režim */
+body.dark .bottom .lg-blur { background: linear-gradient(180deg, rgba(120, 120, 128, 0.30), rgba(60, 60, 67, 0.16) 55%, rgba(90, 90, 98, 0.24)); -webkit-backdrop-filter: blur(8px) saturate(1.4) brightness(1.0); backdrop-filter: blur(8px) saturate(1.4) brightness(1.0); }
+body.dark .bottom .lg-edge { -webkit-backdrop-filter: blur(1px) saturate(1.2) brightness(1.25); backdrop-filter: blur(1px) saturate(1.2) brightness(1.25); opacity: 0.55; }
+body.dark .bottom .lg-spec { box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 0.45), inset 0 -1.5px 1px -0.5px rgba(255, 255, 255, 0.22), inset 0 0 14px rgba(255, 255, 255, 0.07); }
+body.dark .bottom .lg-spec::before { background: conic-gradient(from 200deg at 50% 50%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 22%, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.55) 62%, rgba(255, 255, 255, 0) 84%, rgba(255, 255, 255, 0.75)); }
+body.dark .bottom .lg-pill { background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.3), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 0.55), inset 0 0 10px rgba(255, 255, 255, 0.10), 0 3px 12px rgba(0, 0, 0, 0.4); }
+body.dark .bottom { box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), 0 3px 8px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.08); }
+body.dark .bottom button:not(.active) { color: #c7c7cc; }
+body.dark .bottom { --lg-accent: #ff453a; }
+
+
+html:not([data-platform="android"]) .bottom button { padding: 8px 2px 7px; gap: 3px; border-radius: 999px; border: none; font-size: 10px; font-weight: 600; letter-spacing: 0.01em; transition: color 0.25s ease, transform 0.15s ease; }
+html:not([data-platform="android"]) .bottom button small { font-size: 10px; margin-top: 0; }
+html:not([data-platform="android"]) .bottom button .icon { width: 22px; height: 22px; }
+html:not([data-platform="android"]) .bottom button .icon svg { width: 23px; height: 23px; }
+html:not([data-platform="android"]) .bottom button:active { transform: scale(0.96); opacity: 1; }
 
 /* ── Android: Samsung One UI ─────────────────────────────────────── */
 html[data-platform="android"] .bottom-wrap { padding: 0 12px calc(12px + env(safe-area-inset-bottom)); }
