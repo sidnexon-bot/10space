@@ -285,8 +285,16 @@
     .projekt-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow-card); font-size: 13px; color: var(--text); }
     .chip svg { color: var(--muted); }
-    .projekt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-    .projekt-grid .wide { grid-column: 1 / -1; }
+    /* Dvě logické části: vlevo obsah (popis, harmonogram, program), vpravo stručné informace a podklady */
+    .projekt-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+    .pg-main, .pg-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .pg-side { position: sticky; top: 76px; }
+    .sk { --sk-a: rgba(120, 120, 128, 0.2); --sk-b: rgba(120, 120, 128, 0.09); background: linear-gradient(90deg, var(--sk-a) 25%, var(--sk-b) 50%, var(--sk-a) 75%); background-size: 200% 100%; }
+    .sk-t { height: 11px; width: 140px; margin-bottom: 18px; }
+    .sk-l { height: 14px; margin: 12px 0; }
+    .sk-k { height: 14px; width: 84px; flex-shrink: 0; }
+    .sk-row { display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+    .sk-row:last-child { border-bottom: 0; }
     .share-section { background: var(--card); border: 0; border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 20px 22px; margin: 0; }
     .share-section-title { color: var(--muted); font-size: 11px; letter-spacing: 0.06em; margin-bottom: 12px; }
     .share-section p { font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-line; }
@@ -306,6 +314,7 @@
     .pdf-overlay:not(.hidden) { animation: shFade 0.22s ease both; }
     @keyframes shFade { from { opacity: 0; } to { opacity: 1; } }
 
+    @media (max-width: 900px) { .projekt-grid { grid-template-columns: minmax(0, 1fr) 280px; } }
     @media (max-width: 720px) {
       .page-header { padding: 0 16px; min-height: 54px; }
       .page-header::after { display: none; }
@@ -318,7 +327,9 @@
       .file-icon { margin: 0 auto; }
       .file-actions { flex-direction: column; }
       .action-btn { width: 100%; }
-      .projekt-grid { grid-template-columns: 1fr; }
+      .projekt-grid { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+      .pg-main, .pg-side { display: contents; position: static; }
+      .sec-info { order: 1; } .sec-wiki { order: 2; } .sec-time { order: 3; } .sec-prog { order: 4; } .sec-pod { order: 5; }
       .share-section { padding: 18px; }
       .pin-page-content { padding: 28px 22px 24px; }
     }
@@ -744,8 +755,16 @@
     // ===== NASDÍLENÉ PROJEKTY =====
     async function loadSharedProjekt() {
       document.getElementById("projekt-share-title").textContent = rootData.nazev || "Projekt";
-      document.getElementById("projekt-share-body").innerHTML = `<div class="projekt-hero"><span class="sk" style="height:30px;width:60%"></span><span class="sk" style="height:28px;width:260px;margin-top:14px;border-radius:999px"></span></div>
-        <div class="projekt-grid">${[5, 4].map((n) => `<div class="share-section"><span class="sk" style="height:11px;width:130px;margin-bottom:18px"></span>${Array.from({ length: n }, (_, i) => `<span class="sk" style="height:14px;width:${92 - i * 11}%;margin:14px 0"></span>`).join("")}</div>`).join("")}<div class="share-section wide"><span class="sk" style="height:11px;width:150px;margin-bottom:18px"></span>${[0, 1, 2].map(() => `<span class="sk" style="height:14px;width:100%;margin:14px 0"></span>`).join("")}</div></div>`;
+      document.getElementById("projekt-share-body").innerHTML = `<div class="projekt-hero"><span class="sk" style="height:32px;width:min(480px,70%)"></span><div class="projekt-chips"><span class="sk" style="height:30px;width:150px;border-radius:999px"></span><span class="sk" style="height:30px;width:130px;border-radius:999px"></span></div></div>
+        <div class="projekt-grid" aria-busy="true" aria-label="Načítám projekt">
+          <div class="pg-main">
+            <div class="share-section sec-wiki"><span class="sk sk-t"></span>${[100, 96, 88, 60].map((w) => `<span class="sk sk-l" style="width:${w}%"></span>`).join("")}</div>
+            <div class="share-section sec-time"><span class="sk sk-t"></span>${[0, 1, 2].map(() => `<div class="sk-row"><span class="sk sk-k"></span><span class="sk sk-l" style="flex:1;margin:0"></span></div>`).join("")}</div>
+          </div>
+          <div class="pg-side">
+            <div class="share-section sec-info"><span class="sk sk-t"></span>${[0, 1, 2, 3, 4].map(() => `<div class="sk-row"><span class="sk sk-k"></span><span class="sk sk-l" style="flex:1;margin:0"></span></div>`).join("")}</div>
+          </div>
+        </div>`;
     
       try {
         const res = await fetch(FUNCTIONS.getSharedProjekt, {
@@ -771,25 +790,25 @@
           </div></div>`;
 
         const infoHtml = `
-          <div class="share-section">
+          <div class="share-section sec-info">
             <div class="share-section-title">Informace o projektu</div>
             ${row("Datum", datum || "—")}${row("Místo", data.misto)}${row("Sraz", data.sraz)}${row("Doprava", data.doprava)}${row("Garant", data.garant)}
           </div>`;
 
         const wikiHtml = data.wikiText ? `
-          <div class="share-section">
+          <div class="share-section sec-wiki">
             <div class="share-section-title">Popis (AI)</div>
             <p>${esc(data.wikiText)}</p>
           </div>` : "";
 
         const timelineHtml = data.timeline?.length ? `
-          <div class="share-section">
+          <div class="share-section sec-time">
             <div class="share-section-title">Harmonogram</div>
             ${data.timeline.map(t => `<div class="share-info-row"><span>${esc(t.cas || "—")}</span><span>${esc(t.popis || "")}</span></div>`).join("")}
           </div>` : "";
 
         const riderHtml = data.harmonogramKoncertu?.length ? `
-          <div class="share-section wide">
+          <div class="share-section sec-prog">
             <div class="share-section-title">Detailní program</div>
             <table class="share-table">
               <thead><tr><th>Název</th><th>Detail</th><th>Stopáž</th></tr></thead>
@@ -803,12 +822,12 @@
           </div>` : "";
 
         const podkladyHtml = data.hasPodklady ? `
-          <div class="share-section wide">
+          <div class="share-section sec-pod">
             <div class="share-section-title">Složky projektu</div>
             <button class="primary-btn podklady-btn" onclick="openProjektPodklady()">Otevřít podklady</button>
           </div>` : "";
 
-        document.getElementById("projekt-share-body").innerHTML = heroHtml + `<div class="projekt-grid">${infoHtml}${wikiHtml}${timelineHtml}${riderHtml}${podkladyHtml}</div>`;
+        document.getElementById("projekt-share-body").innerHTML = heroHtml + `<div class="projekt-grid"><div class="pg-main">${wikiHtml}${timelineHtml}${riderHtml}</div><div class="pg-side">${infoHtml}${podkladyHtml}</div></div>`;
       } catch(err) {
         document.getElementById("projekt-share-body").innerHTML = `<div class="explorer-empty">Chyba připojení: ${esc(err.message)}</div>`;
       }
