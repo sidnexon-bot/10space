@@ -1504,11 +1504,20 @@
       .bc-crumb { max-width: 140px; }
       .drive-toolbar { align-items: center; gap: 8px; padding: 10px 12px; }
       .drive-toolbar .view-toggle { margin-left: auto; }
+      /* řazení vlevo (kde dřív bylo „+“), přepínač zobrazení vpravo */
+      .drive-toolbar .drive-sort-btn { order: -1; max-width: calc(100% - 64px); }
+      .drive-toolbar .drive-sort-btn #sort-label { overflow: hidden; text-overflow: ellipsis; }
+      /* plovoucí „Přidat“ nad spodní lištou */
+      .drive-fab { position: fixed; right: 16px; bottom: calc(100px + env(safe-area-inset-bottom)); z-index: 250; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 6px 18px rgba(238,34,12,.40), 0 2px 6px rgba(0,0,0,.22); transition: transform .15s, box-shadow .15s; }
+      .drive-fab:active { transform: scale(.92); }
+      .drive-fab.is-off { display: none; }
+      /* poslední položky se dají posunout nad plovoucí tlačítko */
+      body.drive-fab-on #content-area { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
+      /* aby poslední položky nezůstaly pod plovoucím tlačítkem */
     }
+    .drive-fab { display: none; }
+    @media (max-width: 768px) { .drive-fab:not(.is-off) { display: flex; } }
     @media (max-width: 520px) {
-      /* tlačítka řazení a filtru jen jako ikony (popisek zůstává pro čtečky v aria-label) */
-      #sort-label, #drive-filter-label { display: none; }
-      .drive-toolbar-btn:not(.primary) { width: 44px; padding: 0; }
       .view-toggle-btn[aria-pressed="true"] { display: none; }
       .view-toggle-btn[aria-pressed="false"] { width: 44px; height: 44px; background: var(--surface); color: var(--text); }
       .view-toggle { border-radius: var(--radius-md); }
@@ -1715,11 +1724,6 @@
           </button>
         </div>
       
-        <!-- Mobil: jedno tlačítko + -->
-        <button class="drive-toolbar-btn primary drive-add-mobile" onclick="openAddMenu()" aria-label="Přidat">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-      
         <div class="drive-toolbar-spacer"></div>
       
         <div class="view-toggle" role="group" aria-label="Zobrazení položek">
@@ -1731,13 +1735,9 @@
           </button>
         </div>
       
-        <button class="drive-toolbar-btn" onclick="openSortSheet()" aria-label="Seřadit" title="Seřadit">
+        <button class="drive-toolbar-btn drive-sort-btn" onclick="openSortSheet()" aria-label="Seřadit" title="Seřadit" aria-haspopup="dialog">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
           <span id="sort-label">Seřadit</span>
-        </button>
-        <button class="drive-toolbar-btn" id="drive-filter-btn" onclick="openDriveFilterSheet()" aria-label="Filtrovat" title="Filtrovat">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
-          <span id="drive-filter-label">Filtrovat</span>
         </button>
       </div>
 
@@ -2493,6 +2493,8 @@ function safeRender(tab, fn) {
 
 function renderTab() {
   const area = document.getElementById("content-area");
+  document.getElementById("drive-fab")?.classList.toggle("is-off", currentTab !== "folders");
+  document.body.classList.toggle("drive-fab-on", currentTab === "folders");
 
   if (currentTab === "recent") {
     safeRender("recent", renderDashboard);
@@ -5977,58 +5979,37 @@ window.closeGdocsViewer = () => {
   document.getElementById("gdocs-iframe").src = "";
 };
 
-// DRIVE SORT & FILTER
+// DRIVE ŘAZENÍ (filtrování typu už je ve vyhledávači nahoře)
 let driveSortBy = "name"; // "name" | "created" | "modified"
 let driveSortDir = "asc"; // "asc" | "desc"
-let driveFilterType = "all"; // "all" | "folder" | "document" | "image" | "audio" | "video"
+let driveFilterType = "all"; // zůstává „all“; filterDriveItems ho respektuje
 
-const DRIVE_SORT_LABELS = { name: "Abecedně", modified: "Datum změny", created: "Datum přidání" };
-const DRIVE_FILTER_LABELS = { all: "Filtrovat", folder: "Složky", document: "Dokumenty", image: "Obrázky", audio: "Audio", video: "Video", other: "Ostatní" };
+const DRIVE_SORT_CHOICES = [
+  { by: "name", dir: "asc", label: "Název A–Z" },
+  { by: "name", dir: "desc", label: "Název Z–A" },
+  { by: "modified", dir: "desc", label: "Změněno: nejnovější" },
+  { by: "modified", dir: "asc", label: "Změněno: nejstarší" },
+  { by: "created", dir: "desc", label: "Přidáno: nejnovější" },
+  { by: "created", dir: "asc", label: "Přidáno: nejstarší" }
+];
 
 window.openSortSheet = () => {
-  const options = [
-    { value: "name", label: DRIVE_SORT_LABELS.name },
-    { value: "modified", label: DRIVE_SORT_LABELS.modified },
-    { value: "created", label: DRIVE_SORT_LABELS.created }
-  ];
-  openBottomSheet("Seřadit podle", options.map(o => ({
-    label: o.label + (o.value === driveSortBy ? (driveSortDir === "asc" ? " ↑" : " ↓") : ""),
-    action: `setDriveSort('${o.value}');closeBottomSheet()`,
-    icon: ""
-  })));
+  openBottomSheet("Seřadit", DRIVE_SORT_CHOICES.map(c => {
+    const active = c.by === driveSortBy && c.dir === driveSortDir;
+    return { label: c.label + (active ? " ✓" : ""), action: `setDriveSort('${c.by}','${c.dir}');closeBottomSheet()`, icon: "" };
+  }));
 };
 
-window.setDriveSort = (sortBy) => {
-  if (driveSortBy === sortBy) {
-    driveSortDir = driveSortDir === "asc" ? "desc" : "asc";
-  } else {
-    driveSortBy = sortBy;
-    driveSortDir = sortBy === "name" ? "asc" : "desc"; // datum defaultně nejnovější první
-  }
-  document.getElementById("sort-label").textContent = DRIVE_SORT_LABELS[sortBy] + (driveSortDir === "asc" ? " ↑" : " ↓");
+window.setDriveSort = (sortBy, dir) => {
+  driveSortBy = sortBy;
+  driveSortDir = dir === "desc" ? "desc" : "asc";
+  const choice = DRIVE_SORT_CHOICES.find(c => c.by === driveSortBy && c.dir === driveSortDir);
+  const label = document.getElementById("sort-label");
+  if (label && choice) label.textContent = choice.label;
   // Sloupec s datem ukazuje to datum, podle kterého se řadí
   const dateHeader = document.getElementById("list-date-header");
   if (dateHeader) dateHeader.textContent = sortBy === "created" ? "Přidáno" : "Změněno";
   renderTab();
-};
-
-window.openDriveFilterSheet = () => {
-  const options = ["all", "folder", "document", "image", "audio", "video", "other"].map(value => ({
-    value, label: value === "all" ? "Vše" : DRIVE_FILTER_LABELS[value]
-  }));
-  openBottomSheet("Filtrovat podle typu", options.map(o => ({
-    label: o.label + (o.value === driveFilterType ? " ✓" : ""),
-    action: `setDriveFilter('${o.value}');closeBottomSheet()`,
-    icon: ""
-  })));
-};
-
-// Filtr platí pro aktuální složku (stejně jako řazení); globálně hledá vyhledávací pole
-window.setDriveFilter = (type) => {
-  driveFilterType = type;
-  document.getElementById("drive-filter-label").textContent = DRIVE_FILTER_LABELS[type];
-  document.getElementById("drive-filter-btn").classList.toggle("active-filter", type !== "all");
-  renderDriveFolderContent(window.currentFolder);
 };
 
 // Jednorázová reindexace Drive (jen ADMIN/ART — kontroluje funkce). Spuštění z konzole: reindexDrive()
@@ -6551,6 +6532,11 @@ async function processFilesWithEvid(fileResults) {
 </div>
 
 <!-- MOBILNÍ NAV -->
+<!-- PLOVOUCÍ TLAČÍTKO PŘIDAT (mobil, záložka Drive) -->
+<button type="button" class="drive-fab is-off" id="drive-fab" onclick="openAddMenu()" aria-label="Přidat" title="Přidat">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
 <div class="bottom-wrap">
   <div class="bottom">
     <button id="mob-recent" class="active" onclick="mobileSwitchTab('recent')">
