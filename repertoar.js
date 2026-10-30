@@ -75,8 +75,7 @@ export function createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, 
   /* stránka s celým repertoárem */
   function page() {
     const n = activeFilters().length;
-    return `<div class="dk-bar"><button class="mp-icon dk-back" data-act="home" aria-label="Zpět">${ICON.back}</button><h2>Repertoár</h2>
-      ${canEdit() ? `<button class="drive-toolbar-btn primary" data-act="rpAdd" ${online() ? "" : "disabled"}>${ICON.plus}<span>Přidat skladbu</span></button>` : ""}</div>
+    return `<div class="dk-bar"><button class="mp-icon dk-back" data-act="home" aria-label="Zpět">${ICON.back}</button><h2>Repertoár</h2></div>
     <div class="dashboard-card dk-card">
       <div class="rp-bar">
         <input class="field" id="rp-q" type="search" placeholder="Hledat skladbu, skladatele, kód…" autocomplete="off" value="${esc(R.q)}">
@@ -193,7 +192,6 @@ export function createRepertoire({ S, ctx, esc, $, toast, dialog, ICON, online, 
     if (act === "rpOpen") { S.view = { type: "repertoar" }; draw(); }
     else if (act === "rpFilterOpen") openFilter();
     else if (act === "rpMenu") openRowMenu(btn.dataset.id);
-    else if (act === "rpAdd") edit(null);
   }
   function onInput(e) { if (e.target.id === "rp-q") { R.q = e.target.value; refreshList(); } }
 

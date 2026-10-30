@@ -1,0 +1,76 @@
+/* 10space – pohyb a odezva (načítá se jako poslední). Jedno místo pro časování, ať působí aplikace jednotně.
+   Otevření oken a menu = jemný nájezd, zavření = rychlejší odjezd, ovladače reagují na najetí i stisk.
+   Při nastavení systému „omezit pohyb“ se všechno zkrátí na prosté prolnutí. */
+:root {
+  --m-fast: 0.14s; --m-base: 0.22s; --m-slow: 0.34s;
+  --m-ease: cubic-bezier(0.22, 0.8, 0.28, 1);        /* zpomalení na konci */
+  --m-spring: cubic-bezier(0.2, 1.2, 0.3, 1);         /* lehké překmitnutí */
+}
+
+/* ---- Modální okna: prolnutí pozadí + nájezd okna, při zavření odjezd ---- */
+.modal-overlay { display: flex; opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity var(--m-fast) ease, visibility 0s linear var(--m-fast);
+  -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); }
+.modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s, 0s;
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.modal-overlay .modal { transform: translateY(8px) scale(0.97); transition: transform var(--m-fast) ease; }
+.modal-overlay.active .modal { animation: mModalIn var(--m-slow) var(--m-spring) both; }
+@keyframes mModalIn { from { opacity: 0; transform: translateY(14px) scale(0.95); } to { opacity: 1; transform: none; } }
+
+/* ---- Kontextové menu a rozbalovací nabídky ---- */
+.context-menu:not(.hidden), .desktop-profile-menu:not(.hidden) { transform-origin: top left; animation: mPop var(--m-base) var(--m-spring) both; }
+.desktop-profile-menu:not(.hidden) { transform-origin: top right; }
+.context-menu:not(.hidden) .context-menu-item { animation: mItem var(--m-base) var(--m-ease) both; animation-delay: calc(var(--n, 0) * 22ms); }
+.context-menu:not(.hidden) .context-menu-item:nth-child(2) { --n: 1; } .context-menu:not(.hidden) .context-menu-item:nth-child(3) { --n: 2; }
+.context-menu:not(.hidden) .context-menu-item:nth-child(4) { --n: 3; } .context-menu:not(.hidden) .context-menu-item:nth-child(5) { --n: 4; }
+.context-menu:not(.hidden) .context-menu-item:nth-child(n+6) { --n: 5; }
+@keyframes mPop { from { opacity: 0; transform: scale(0.92) translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes mItem { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.context-menu-item, .desktop-profile-menu-item { transition: background var(--m-fast) ease, padding-left var(--m-fast) var(--m-ease); }
+.context-menu-item:hover { padding-left: 19px; }
+
+/* ---- Panely, které se objevují (průběh nahrávání, vyhledávání) ---- */
+.upload-progress-panel:not(.hidden) { animation: mRise var(--m-slow) var(--m-spring) both; }
+.search-results:not(.hidden) { animation: mPop var(--m-base) var(--m-ease) both; transform-origin: top center; }
+@keyframes mRise { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ---- Tlačítka: zdvih při najetí, stisk, plynulé barvy ---- */
+.primary-btn, .drive-toolbar-btn, .projekt-card-btn, .tn-btn, .dk-new, .view-toggle-btn, .mobile-detail-modal-tab {
+  transition: background var(--m-base) ease, border-color var(--m-base) ease, color var(--m-base) ease,
+    box-shadow var(--m-base) ease, transform var(--m-fast) var(--m-ease), opacity var(--m-base) ease; }
+@media (hover: hover) {
+  .primary-btn:hover:not(:disabled), .drive-toolbar-btn.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(238, 34, 12, 0.28); }
+  .drive-toolbar-btn:hover:not(:disabled):not(.primary), .projekt-card-btn:hover, .tn-btn:hover { transform: translateY(-1px); }
+}
+.primary-btn:active:not(:disabled), .drive-toolbar-btn:active:not(:disabled), .tn-btn:active, .projekt-card-btn:active, .dk-new:active:not(:disabled) { transform: scale(0.96); box-shadow: none; transition-duration: 0.06s; }
+
+/* ---- Karty a řádky: jemné zvednutí ---- */
+.projekt-card, .grid-card, .dashboard-card, .dk-card { transition: transform var(--m-base) var(--m-ease), box-shadow var(--m-base) ease, border-color var(--m-base) ease, background var(--m-base) ease; }
+@media (hover: hover) {
+  .projekt-card:hover, .grid-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12); }
+  .grid-card:hover .grid-thumb-img { transform: scale(1.04); }
+}
+.grid-thumb-img { transition: transform var(--m-slow) var(--m-ease), opacity var(--m-base) ease; }
+.projekt-card:active, .grid-card:active { transform: scale(0.985); transition-duration: 0.06s; }
+.dashboard-file-row, .dashboard-projekt-row, .dashboard-share-row, .dk-row, .dk-pick-row, .sidebar-tab, .bottom-sheet-item, .tn-mi, .pm-item {
+  transition: background var(--m-fast) ease, color var(--m-fast) ease, transform var(--m-fast) var(--m-ease); }
+.dashboard-file-row:active, .dk-row:active, .sidebar-tab:active, .bottom-sheet-item:active, .tn-mi:active { transform: scale(0.98); }
+.sidebar-tab svg { transition: transform var(--m-base) var(--m-spring); }
+@media (hover: hover) { .sidebar-tab:hover svg { transform: scale(1.12); } }
+
+/* ---- Ikonová tlačítka, oblíbené srdíčko, plovoucí „+“ ---- */
+.pc-more, .grid-dots, .mp-icon, .mobile-avatar-btn, .detail-close-btn, .mobile-detail-modal-close { transition: background var(--m-fast) ease, color var(--m-fast) ease, transform var(--m-fast) var(--m-spring); }
+.pc-more:active, .grid-dots:active, .mp-icon:active:not(:disabled), .mobile-avatar-btn:active { transform: scale(0.88); }
+.rp-heart { animation: mHeart var(--m-slow) var(--m-spring) both; }
+@keyframes mHeart { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
+.drive-fab { transition: transform var(--m-base) var(--m-spring), box-shadow var(--m-base) ease, opacity var(--m-base) ease; }
+.drive-fab:active { transform: scale(0.9); }
+
+/* ---- Pole formulářů: zvýraznění při psaní ---- */
+input, textarea, select { transition: border-color var(--m-fast) ease, box-shadow var(--m-base) ease, background var(--m-fast) ease; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { box-shadow: 0 0 0 3px rgba(238, 34, 12, 0.16); }
+
+/* ---- Omezený pohyb ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+}
