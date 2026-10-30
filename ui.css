@@ -142,3 +142,17 @@ body .bottom-sheet { z-index: 4001; }
 .left-sidebar.collapsed .sidebar-collapse-label { display: none; }
 .left-sidebar.collapsed .sidebar-tab.active { box-shadow: none; }
 .left-sidebar.collapsed .sidebar-divider { margin: 0 14px; height: 10px; }
+
+/* Telefon: posouvá se celá stránka (jako v 10base), ne vnitřní rámeček. Adresní řádek prohlížeče se tak při rolování
+   schová, funguje tah dolů a rolování přes celou plochu. Horní lišta zůstává přilepená (sticky), spodní lišta je fixní. */
+@media (max-width: 768px) {
+  html, body { height: auto; min-height: 100%; overflow: visible; }
+  body.login-page { min-height: 100vh; }
+  #app-screen { height: auto; min-height: 100vh; min-height: 100dvh; }
+  .app-body, .main-content { overflow: visible; }
+  .projekt-overlay, .pdf-overlay, .mobile-detail-modal, .modal-overlay, .tn-ov { overscroll-behavior: contain; }
+}
+@supports (height: 100dvh) {
+  .projekt-detail, .pdf-container { height: 100dvh; }
+  .modal { max-height: calc(100dvh - 32px); }
+}

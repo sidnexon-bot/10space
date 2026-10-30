@@ -211,7 +211,12 @@
   var R = { uid: null, on: false, restoring: false, pdf: null, pdfAt: 0, timer: 0 };
   var activeTab = function () { var t = $(".sidebar-tab.active"); return t && t.id ? t.id.replace(/^tab-/, "") : null; };
   var contentEl = function () { return document.getElementById("content-area"); };
-  var scroller = function () { var a = contentEl(); return a && a.scrollHeight > a.clientHeight ? a : document.querySelector(".main-content") || a; };
+  var scroller = function () {
+    var m = document.querySelector(".main-content");
+    // na telefonu se posouvá celá stránka (main-content nescrolluje), na počítači vnitřní panel
+    if (m && getComputedStyle(m).overflowY === "visible") return document.scrollingElement || document.documentElement;
+    var a = contentEl(); return a && a.scrollHeight > a.clientHeight ? a : m || a;
+  };
   function viewerOpen() { return !!(document.querySelector(".pdf2-root") || document.querySelector("#pdf-overlay:not(.hidden)")); }
   function snapshot() {
     var s = { tab: activeTab(), folder: null, projekt: null, pdf: null, viewer: null, deck: null, scroll: 0 };

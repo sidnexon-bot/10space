@@ -313,9 +313,9 @@ function drawFolder() {
 }
 function draw() {
   const a = S.area; if (!a) return;
-  const top = a.scrollTop;
+  const top = a.scrollTop, ds = document.scrollingElement, dtop = ds ? ds.scrollTop : 0; // na telefonu se posouvá celá stránka
   a.innerHTML = `<div class="dk-wrap">${S.view.type === "repertoar" ? RP.page() : S.view.type === "folder" && S.data.folders[S.view.id] ? drawFolder() : drawHome()}</div>`;
-  a.scrollTop = top;
+  a.scrollTop = top; if (ds) ds.scrollTop = dtop;
   const all = [...(S.next?.items || []), ...Object.values(S.data.items).flatMap((m) => Object.keys(m).map((fileId) => ({ fileId })))];
   all.slice(0, 60).forEach((it) => { if (it.fileId && !S.annot[it.fileId]) annotInfo(it.fileId).then((r) => { if (r?.own) rerenderSoon(); }); });
 }

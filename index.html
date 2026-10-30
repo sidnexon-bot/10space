@@ -2414,6 +2414,7 @@ window.multiMove = () => {
 };
 
 window.switchTab = (tab) => {
+  if (window.innerWidth <= 768) window.scrollTo(0, 0); // na telefonu se posouvá celá stránka, nová záložka začíná nahoře
   currentTab = tab;
   selectedItems.clear();
   window.currentFolder = null;
