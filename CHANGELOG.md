@@ -3,6 +3,11 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.1.3 (1. 11. 2026)
+Kompaktní prostředí na počítači (myš, okno od 768 px; telefony a tablety se nemění).
+- Menší písmo a pole (výška 32 px), užší okna a formuláře ve dvou až třech sloupcích, hustší tabulky a karty.
+- Karty vedle sebe tam, kde se vejde víc: Přehled a Projekty v 10space, faktury a náhrady v 10korun; Přehled v 10base bez mezer pod nižšími kartami.
+
 ## 3.1.2 (1. 11. 2026)
 - Android: spodní lišta je nižší, ikony a popisky jsou menší a aktivní záložka má barvu aplikace.
 
