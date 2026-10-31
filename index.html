@@ -1643,6 +1643,8 @@
 
     <!-- LEFT SIDEBAR -->
    <div class="left-sidebar" id="left-sidebar">
+      <!-- Logo (jen desktop: panel jde od horního okraje) -->
+      <div class="sidebar-logo" aria-label="10space">10<span class="logo-rest">space</span></div>
       <!-- Profil -->
       <div class="sidebar-profile">
         <div class="sidebar-profile-avatar" id="sidebar-avatar">
@@ -7050,6 +7052,7 @@ async function processFilesWithEvid(fileResults) {
     var sb = document.getElementById("left-sidebar"), b = document.getElementById("sidebar-collapse");
     if (!sb) return;
     sb.classList.toggle("collapsed", c);
+    document.documentElement.style.setProperty("--sb-w", c ? "68px" : "220px");
     if (b) { b.setAttribute("aria-pressed", c ? "true" : "false"); var t = c ? "Zobrazit panel" : "Skrýt panel"; b.setAttribute("aria-label", t); b.title = t; var l = b.querySelector(".sidebar-collapse-label"); if (l) l.textContent = t; }
   }
   window.toggleSidebar = function () {

@@ -324,3 +324,22 @@ html[data-platform="android"] body.dark .bottom button:active .icon::before { ba
     max-width: calc(1200px + 16%); padding-left: 8%; padding-right: 8%;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   10) DESKTOP: panel vlevo od horního okraje s logem, lišta s vyhledáváním vpravo od něj
+   Logo: černá 10 a červená „space“ (jako v 10korun). Lišta s vyhledáváním je o odstín tmavší než podklad
+   ve světlém režimu a o odstín světlejší v tmavém. Zúžený panel ukáže jen „10“.
+   ════════════════════════════════════════════════════════════════════ */
+:root { --sb-w: 220px; }
+.sidebar-logo { display: none; }
+@media (min-width: 769px) {
+  .left-sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sb-w); z-index: 150; transition: width 0.22s cubic-bezier(0.22, 0.8, 0.28, 1); }
+  .topbar, .app-body { margin-left: var(--sb-w); transition: margin-left 0.22s cubic-bezier(0.22, 0.8, 0.28, 1); }
+  .sidebar-logo { display: block; padding: 22px 20px 6px; font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: var(--text, #1c1c1e); line-height: 1.1; }
+  .sidebar-logo .logo-rest { color: var(--accent, #EE220C); }
+  .left-sidebar.collapsed .sidebar-logo { padding: 22px 0 6px; text-align: center; }
+  .left-sidebar.collapsed .sidebar-logo .logo-rest { display: none; }
+  .left-sidebar .sidebar-profile { margin-top: 10px; }
+  .topbar { background: color-mix(in srgb, var(--bg) 93%, #000); }
+  body.dark .topbar { background: color-mix(in srgb, #000000 93%, #fff); }
+}
