@@ -117,18 +117,18 @@ body.dark .context-menu-sep, body.dark .desktop-profile-menu-sep, body.dark .mob
 body.dark .search-select { background: transparent; }
 
 /* ── 4) Postranní panel: bez dělicí čáry, aktivní položka s proužkem ── */
-.left-sidebar, .right-sidebar { border-right: none; border-left: none; background: var(--bg); }
+.left-sidebar, .right-sidebar { border-right: none; border-left: none; background: var(--card); }   /* panel má stejný odstín jako karty */
 .right-sidebar { background: var(--card); }
-body.dark .left-sidebar { background: #000000; border-right: none; }
+body.dark .left-sidebar { background: var(--card); border-right: none; }
 body.dark .right-sidebar { background: #0e0e10; }
 .sidebar-divider { height: 14px; background: none; margin: 0; }
 body.dark .sidebar-divider { background: none; }
 .sidebar-tab { border-radius: 12px; }
 .sidebar-tab.active { box-shadow: inset 3px 0 0 var(--accent); }
 body.dark .sidebar-tab.active { box-shadow: inset 3px 0 0 #ff453a; }
-body.dark .sidebar-tab:hover { background: #151517; }
-.sidebar-profile { background: var(--card); box-shadow: var(--shadow-card); border-radius: 16px; }
-body.dark .sidebar-profile { background: #151517; }
+body.dark .sidebar-tab:hover { background: #1d1d20; }
+.sidebar-profile { background: var(--bg); box-shadow: none; border-radius: 16px; }
+body.dark .sidebar-profile { background: #1d1d20; }
 .detail-tabs, .mobile-detail-modal-tabs { border-bottom-color: var(--hair); }
 body.dark .detail-tabs { border-bottom-color: var(--hair); }
 
