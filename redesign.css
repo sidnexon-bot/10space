@@ -351,3 +351,10 @@ html[data-platform="android"] body.dark .bottom button:active .icon::before { ba
 /* najetí na akci v panelu: stejná plocha jako u položek */
 body.dark .sidebar-action:hover { background: #1d1d20; }
 .sidebar-tab, .sidebar-action { transition: background 0.14s ease, color 0.14s ease; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Jednotná typografie a velikosti (vzor 10space), stejné ve všech třech aplikacích
+   Tlačítka a pole berou písmo ze stránky (dřív výchozí písmo prohlížeče, v Chromiu Arial).
+   ════════════════════════════════════════════════════════════════════ */
+html, body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, select, textarea { font-family: inherit; }
