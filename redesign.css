@@ -583,3 +583,12 @@ html[data-platform="android"] body.dark .and-unit select {
 }
 html[data-platform="android"] .and-unit input[type=date], html[data-platform="android"] .and-unit input[type=time] { padding-right: 14px !important; }
 html[data-platform="android"] .and-unit ::-webkit-calendar-picker-indicator { margin-right: 6px; }
+
+/* spodní lišta: nižší, menší ikony i popisky; aktivní záložka v barvě aplikace */
+html[data-platform="android"] .bottom { padding: 8px 8px calc(10px + env(safe-area-inset-bottom)); }
+html[data-platform="android"] .bottom button { gap: 2px; }
+html[data-platform="android"] .bottom button .icon { height: 28px; }
+html[data-platform="android"] .bottom button .icon::before { width: 56px; height: 28px; border-radius: 14px; }
+html[data-platform="android"] .bottom button .icon svg { width: 21px; height: 21px; }
+html[data-platform="android"] .bottom button, html[data-platform="android"] .bottom button small { font-size: 11px; }
+html[data-platform="android"] .bottom button.active, html[data-platform="android"] body.dark .bottom button.active { color: var(--and-on-accent-c); }

@@ -3,6 +3,9 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.1.2 (1. 11. 2026)
+- Android: spodní lišta je nižší, ikony a popisky jsou menší a aktivní záložka má barvu aplikace.
+
 ## 3.1.1 (1. 11. 2026)
 Vzhled Androidu podle Material Design 3 (Apple se nemění) a nové formuláře.
 - Spodní lišta na Androidu jde od kraje ke kraji a navazuje na spodní hranu; odsazení pro systémová tlačítka a gesta řeší aplikace sama.
