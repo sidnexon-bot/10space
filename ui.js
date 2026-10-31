@@ -71,7 +71,7 @@
       }
     }
     document.addEventListener("keydown", key, true);
-    ov.addEventListener("mousedown", function (e) { if (e.target === ov) close(s.kind === "alert"); });
+    ov.addEventListener("mousedown", function (e) { if (e.target !== ov) return; if (s.kind === "prompt") { dlg.classList.remove("tn-nudge"); void dlg.offsetWidth; dlg.classList.add("tn-nudge"); return; } close(s.kind === "alert"); });
     ov.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-r]"); if (!b) return; if (s.kind === "choose") return close(+b.dataset.r); if (b.dataset.r === "1" && s.kind === "prompt" && !input.value.trim() && s.required !== false) { input.focus(); return; } close(b.dataset.r === "1"); });
     requestAnimationFrame(function () { ov.classList.add("tn-in-open"); });
     (input || (s.danger && cancelBtn) || okBtn).focus();

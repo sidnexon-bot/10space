@@ -193,7 +193,7 @@ function dialog({ title, text, input, value = "", ok = "OK", danger = false, bod
     const get = () => (input ? $("#dk-in", o).value.trim() : true);
     const key = (e) => { if (e.key === "Escape") { e.stopPropagation(); done(null); } else if (e.key === "Enter" && input && e.target.id === "dk-in") { e.preventDefault(); const v = get(); if (v) done(v); } };
     document.addEventListener("keydown", key, true);
-    o.addEventListener("click", (e) => { if (e.target === o) return done(null); const b = e.target.closest("[data-x]"); if (!b) return; if (b.dataset.x === "0") return done(null); const v = get(); if (input && !v) { $("#dk-in", o).focus(); return; } done(typeof onMount?.result === "function" ? onMount.result(o) : v); });
+    o.addEventListener("click", (e) => { if (e.target === o) { if (!input && !body) return done(null); const m = o.querySelector(".modal"); m.classList.remove("tn-nudge"); void m.offsetWidth; m.classList.add("tn-nudge"); return; } const b = e.target.closest("[data-x]"); if (!b) return; if (b.dataset.x === "0") return done(null); const v = get(); if (input && !v) { $("#dk-in", o).focus(); return; } done(typeof onMount?.result === "function" ? onMount.result(o) : v); });
     onMount?.(o); (input ? $("#dk-in", o) : $("[data-x='1']", o))?.focus(); if (input) $("#dk-in", o).select();
   });
 }

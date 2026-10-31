@@ -179,3 +179,7 @@ body .bottom-sheet { z-index: 4001; }
 .ver-a .drive-toolbar-btn { padding: 5px 10px; font-size: 12px; }
 .ver-up { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair, rgba(128, 128, 128, 0.18)); }
 .ver-row.is-current .ver-t { color: var(--text, inherit); }
+
+/* okno s polem k vyplnění se klikem mimo nezavře (rozepsaný text by se ztratil), jen se zatřese */
+@keyframes tn-nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.tn-nudge { animation: tn-nudge .25s ease; }
