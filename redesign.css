@@ -207,32 +207,32 @@ html:not([data-platform="android"]) .bottom {
   position: relative; isolation: isolate; height: var(--h); width: min(100%, 420px); padding: 6px; gap: 0;
   border-radius: 999px; background: none; border: none;
   -webkit-backdrop-filter: none; backdrop-filter: none;
-  box-shadow: 0 12px 30px rgba(20, 24, 40, 0.14), 0 3px 8px rgba(20, 24, 40, 0.08), 0 0 0 0.5px rgba(20, 24, 40, 0.06);
+  box-shadow: 0 12px 30px rgba(20, 24, 40, 0.14), 0 3px 8px rgba(20, 24, 40, 0.08), 0 0 0 0.5px rgba(20, 24, 40, 0.10);
 }
 html:not([data-platform="android"]) .bottom::before, html:not([data-platform="android"]) .bottom::after { display: none; }
 html:not([data-platform="android"]) .bottom .lg { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
 /* základ: čiré sklo, jemné rozostření, zvýšená sytost barev pod ním */
 html:not([data-platform="android"]) .bottom .lg-blur {
   z-index: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.12) 55%, rgba(255, 255, 255, 0.20));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.10) 55%, rgba(255, 255, 255, 0.10));
   -webkit-backdrop-filter: blur(8px) saturate(1.55) brightness(1.04); backdrop-filter: blur(8px) saturate(1.55) brightness(1.04);
 }
 /* okraj čočky: na obvodu se barvy sytěji a jasněji vrství (3 pásy s klesající silou) */
 html:not([data-platform="android"]) .bottom .lg-edge {
   z-index: 0;
-  -webkit-backdrop-filter: blur(1px) saturate(1.25) brightness(1.07); backdrop-filter: blur(1px) saturate(1.25) brightness(1.07);
+  -webkit-backdrop-filter: blur(1px) saturate(1.3) brightness(0.98); backdrop-filter: blur(1px) saturate(1.3) brightness(0.98);
   -webkit-mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box; mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box;
   -webkit-mask-composite: xor; mask-composite: exclude; padding: 4px; opacity: 0.85;
 }
 /* odlesk: tenká světlá hrana, nejjasnější vlevo nahoře a vpravo dole, a vnitřní záře */
 html:not([data-platform="android"]) .bottom .lg-spec {
   z-index: 2;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 0.95), inset 0 -1.5px 1px -0.5px rgba(255, 255, 255, 0.55),
-    inset 0 0 14px rgba(255, 255, 255, 0.28), inset 0 -8px 14px -10px rgba(20, 24, 40, 0.10);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.18), inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.55), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.25),
+    inset 0 0 10px rgba(255, 255, 255, 0.10), inset 0 -8px 14px -10px rgba(20, 24, 40, 0.08);
 }
 html:not([data-platform="android"]) .bottom .lg-spec::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
-  background: conic-gradient(from 200deg at 50% 50%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.0) 22%, rgba(255, 255, 255, 0.0) 44%, rgba(255, 255, 255, 0.85) 62%, rgba(255, 255, 255, 0.0) 84%, rgba(255, 255, 255, 1));
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+  background: conic-gradient(from 200deg at 50% 50%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.0) 22%, rgba(255, 255, 255, 0.0) 44%, rgba(255, 255, 255, 0.5) 62%, rgba(255, 255, 255, 0.0) 84%, rgba(255, 255, 255, 0.7));
   -webkit-mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box; mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box;
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
