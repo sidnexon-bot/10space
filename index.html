@@ -2473,6 +2473,10 @@ window.switchTab = (tab) => {
   const pageTitle = document.getElementById("pageTitle");
   if (pageTitle) pageTitle.textContent = title;
   
+  { // přepnutí záložky: jemné vyjetí obsahu zdola (stejně jako v 10base a 10korun)
+    const ca = document.getElementById("content-area");
+    if (ca) { ca.classList.remove("page-in"); void ca.offsetWidth; ca.classList.add("page-in"); }
+  }
   renderTab();
 };
   

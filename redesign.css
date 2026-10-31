@@ -343,3 +343,11 @@ html[data-platform="android"] body.dark .bottom button:active .icon::before { ba
   .topbar { background: color-mix(in srgb, var(--bg) 93%, #000); }
   body.dark .topbar { background: color-mix(in srgb, #000000 93%, #fff); }
 }
+
+/* Přepnutí stránky: jemné vyjetí zdola, stejné ve všech třech aplikacích */
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+#content-area.page-in { animation: pageIn 0.25s ease; }
+@media (prefers-reduced-motion: reduce) { #content-area.page-in { animation: none; } }
+/* najetí na akci v panelu: stejná plocha jako u položek */
+body.dark .sidebar-action:hover { background: #1d1d20; }
+.sidebar-tab, .sidebar-action { transition: background 0.14s ease, color 0.14s ease; }
