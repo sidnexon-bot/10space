@@ -3,8 +3,15 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.1.1 (1. 11. 2026)
+Vzhled Androidu podle Material Design 3 (Apple se nemění) a nové formuláře.
+- Spodní lišta na Androidu jde od kraje ke kraji a navazuje na spodní hranu; odsazení pro systémová tlačítka a gesta řeší aplikace sama.
+- Prostředí jako od Googlu: písmo Roboto / Google Sans, ploché plochy bez stínů a rámečků, bílé pozadí a světle šedé karty, zaoblení karet 28 px, tlačítka a pole jako pilulky, nové dialogy.
+- Formuláře v oknech: popisek je zástupný text přímo v poli s ikonou, pole za sebou tvoří jeden souvislý blok, výběry a soubory jsou samostatné pilulky; čára se objeví až po ťuknutí do pole.
+- Okna s formulářem se klikem mimo nezavírají (rozepsaná práce se neztratí), jen se zatřesou.
+
 ## 3.0.1 (30. 10. 2026)
-Aktuální vydání. Číslování verzí bylo sjednoceno na 3.0.1 (dřívější záznamy 1.0.0 a 1.1.0 níže jsou jeho historií).
+Číslování verzí bylo sjednoceno na 3.0.1 (dřívější záznamy 1.0.0 a 1.1.0 níže jsou jeho historií).
 
 Verze dokumentů.
 - Karta Verze v podrobnostech souboru: historie úprav (datum, autor, velikost), Otevřít, Stáhnout, Obnovit starší verzi jako aktuální, Nahrát novou verzi.

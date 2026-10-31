@@ -12,7 +12,8 @@
    iOS Safari to jinak nepřebírá). Tagy s media="(prefers-color-scheme…)" se odstraní, protože by přebíjely ruční přepnutí
    režimu, když se liší od nastavení systému. Volá se i z aplikace: window.tenChrome(true|false). */
 (function () {
-  var LIGHT = '#f2f2f7', DARK = '#000000';
+  var AND = document.documentElement.getAttribute('data-platform') === 'android';
+  var LIGHT = AND ? '#ffffff' : '#f2f2f7', DARK = AND ? '#131314' : '#000000';
   function one(name) {
     var all = document.querySelectorAll('meta[name="' + name + '"]'), keep = null, i;
     for (i = 0; i < all.length; i++) { if (!keep && !all[i].hasAttribute('media')) keep = all[i]; }
@@ -61,3 +62,92 @@ document.addEventListener('DOMContentLoaded', function () {
   new MutationObserver(function () { place(true); }).observe(bar, { subtree: true, attributes: true, attributeFilter: ['class'] });
   if (window.ResizeObserver) new ResizeObserver(function () { place(false); }).observe(bar); else window.addEventListener('resize', function () { place(false); });
 });
+
+/* Android (Material 3): formuláře v oknech. Nadpis pole se stane zástupným textem uvnitř pole a před něj přijde ikona;
+   za sebou jdoucí textová pole tvoří jeden souvislý blok bez dělicích čar (čára se objeví až po ťuknutí do pole),
+   výběry a soubory jsou samostatné „pilulky“. Na Applu se nic nemění. Popisek zůstává jako aria-label. */
+(function () {
+  if (document.documentElement.getAttribute('data-platform') !== 'android') return;
+  var P = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; };
+  var ICONS = {
+    cal: P('<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+    clock: P('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+    note: P('<path d="M5 6h14M5 12h14M5 18h9"/>'),
+    cash: P('<rect x="3" y="6.5" width="18" height="11" rx="3"/><circle cx="12" cy="12" r="2.5"/>'),
+    tag: P('<path d="M3.5 12.2V5.5a2 2 0 0 1 2-2h6.7l8.3 8.3a2 2 0 0 1 0 2.8l-6.4 6.4a2 2 0 0 1-2.8 0z"/><circle cx="8.3" cy="8.3" r="1.2"/>'),
+    folder: P('<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>'),
+    person: P('<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.7-3.6 3.6-5.4 7-5.4s6.3 1.8 7 5.4"/>'),
+    pin: P('<path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 0 0-13 0c0 5.4 6.5 11 6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'),
+    flag: P('<path d="M5.5 21V4M5.5 5h11l-2.2 3.5 2.2 3.5h-11"/>'),
+    route: P('<circle cx="6.5" cy="17.5" r="2.3"/><circle cx="17.5" cy="6.5" r="2.3"/><path d="M8.8 17.5H15a3 3 0 0 0 0-6h-6a3 3 0 0 1 0-6h6.2"/>'),
+    gauge: P('<path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l3.5-4"/>'),
+    fuel: P('<path d="M5 20.5V5.5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v15M4 20.5h11M14 9h2.2a1.8 1.8 0 0 1 1.8 1.8v5a1.4 1.4 0 0 0 2.8 0V8.5L18.5 6"/>'),
+    clip: P('<path d="M20 11.5l-7.6 7.6a4.6 4.6 0 0 1-6.5-6.5l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.1-2.1L16 7.8"/>'),
+    mail: P('<rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M4 7.5l8 6 8-6"/>'),
+    phone: P('<path d="M6.5 3.5h3l1.5 4-2 1.3a10 10 0 0 0 5.2 5.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/>'),
+    build: P('<path d="M4.5 20.5v-15a1.5 1.5 0 0 1 1.5-1.5h7a1.5 1.5 0 0 1 1.5 1.5v15M14.5 9.5H18a1.5 1.5 0 0 1 1.5 1.5v9.5M3 20.5h18M8 8h2M8 12h2M8 16h2"/>'),
+    hash: P('<path d="M9 4L7.5 20M16.5 4L15 20M4.5 9h15.5M4 15h15.5"/>'),
+    pen: P('<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/>')
+  };
+  var MAP = [[/datum|termin|splatn|vystaven|narozen/, 'cal'], [/cas |cas$|zacat|konec|od$|do$|hodin/, 'clock'], [/popis|poznamk|text|nazev|poznam|zprav|komentar|duvod/, 'note'],
+    [/misto|adres|mesto|ulice/, 'pin'], [/projekt|kod\b|slozk/, 'folder'], [/spotreb/, 'gauge'], [/castk|cena|platb|kc\b|sazb|odmen|zaloh/, 'cash'], [/kategor|typ |druh|stav|skupin|akce$/, 'tag'], [/protistran|dodavat|odberat|jmeno|ridic|clen|osoba|kontakt/, 'person'],
+    [/ucel/, 'flag'], [/\bkm\b|ujet|vzdalen/, 'route'], [/palivo/, 'fuel'], [/uctenk|soubor|priloh|foto|pdf/, 'clip'],
+    [/mail/, 'mail'], [/telefon|mobil/, 'phone'], [/ico|dic|firma|organiz|spolek/, 'build'], [/variabil|cislo|symbol|cis\./, 'hash']];
+  function iconFor(t) {
+    var s = (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') + ' ';
+    for (var i = 0; i < MAP.length; i++) if (MAP[i][0].test(s)) return ICONS[MAP[i][1]];
+    return ICONS.pen;
+  }
+  var ROOTS = '.modal, .modal-content, .acct-form, #formModalBody, #eventFormModalBody, #programEditorModalBody';
+  var SKIP_TYPES = /^(checkbox|radio|hidden|range|button|submit|color)$/;
+  function ctrlOf(unit) {
+    var c = unit.querySelector('input, select, textarea');
+    return c && !SKIP_TYPES.test(c.type || '') ? c : null;
+  }
+  function labelText(unit) {
+    var l = unit.tagName === 'LABEL' ? unit : unit.querySelector(':scope > label, :scope > .detail-label');
+    if (!l) return '';
+    var t = '';
+    l.childNodes.forEach(function (n) { if (n.nodeType === 3) t += n.textContent; else if (n.nodeType === 1 && !/^(INPUT|SELECT|TEXTAREA|BR|SVG)$/i.test(n.tagName) && !n.classList.contains('and-ico') && !n.classList.contains('and-cap')) t += n.textContent; });
+    return t.replace(/\s+/g, ' ').trim();
+  }
+  function build(unit) {
+    if (unit.classList.contains('and-unit') || unit.dataset.andSkip) return;
+    var c = ctrlOf(unit); if (!c) return;
+    // jedna jednotka = jedno pole
+    if (unit.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea').length !== 1) return;
+    var txt = labelText(unit); if (!txt) return;
+    var type = (c.type || '').toLowerCase(), tag = c.tagName;
+    var pill = tag === 'SELECT' || type === 'file', floating = pill || c.readOnly || /^(date|time|datetime-local|month|week)$/.test(type);
+    if (!c.getAttribute('aria-label')) c.setAttribute('aria-label', txt);
+    if (!floating) { if (c.placeholder && c.placeholder !== txt) c.setAttribute('title', c.placeholder); c.placeholder = txt; }
+    unit.classList.add('and-unit', pill ? 'and-pill' : 'and-text'); if (floating) unit.classList.add('and-float');
+    if (tag === 'TEXTAREA') unit.classList.add('and-area');
+    var ico = document.createElement('i'); ico.className = 'and-ico'; ico.innerHTML = iconFor(txt); unit.insertBefore(ico, unit.firstChild);
+    if (floating) { var cap = document.createElement('span'); cap.className = 'and-cap'; cap.textContent = txt; unit.insertBefore(cap, ico.nextSibling); }
+  }
+  function group(parent) {
+    var kids = Array.prototype.slice.call(parent.children), i = 0;
+    kids.forEach(function (k) { k.classList.remove('and-g1', 'and-gf', 'and-gm', 'and-gl'); });
+    while (i < kids.length) {
+      if (!kids[i].classList.contains('and-text') || kids[i].offsetParent === null && getComputedStyle(kids[i]).display === 'none') { i++; continue; }
+      var j = i; while (j + 1 < kids.length && kids[j + 1].classList.contains('and-text')) j++;
+      if (i === j) kids[i].classList.add('and-g1');
+      else for (var k = i; k <= j; k++) kids[k].classList.add(k === i ? 'and-gf' : k === j ? 'and-gl' : 'and-gm');
+      i = j + 1;
+    }
+  }
+  function run() {
+    document.querySelectorAll(ROOTS).forEach(function (root) {
+      root.querySelectorAll('.field, label, .detail-field').forEach(build);
+    });
+    var parents = new Set();
+    document.querySelectorAll('.and-unit').forEach(function (u) { parents.add(u.parentElement); });
+    parents.forEach(group);
+  }
+  var t = 0;
+  function sched() { if (t) return; t = requestAnimationFrame(function () { t = 0; run(); }); }
+  document.addEventListener('DOMContentLoaded', function () {
+    run(); new MutationObserver(sched).observe(document.body, { childList: true, subtree: true });
+  });
+})();

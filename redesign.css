@@ -358,3 +358,228 @@ body.dark .sidebar-action:hover { background: #1d1d20; }
    ════════════════════════════════════════════════════════════════════ */
 html, body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button, input, select, textarea { font-family: inherit; }
+
+/* barva aplikace pro Android */
+html[data-platform="android"] { --and-accent: #D3180A; --and-accent-dk: #ff8a80; }
+
+/* ═══ ANDROID: prostředí podle Material Design 3 (Google) ═══════════════════
+   Platí jen pro Android (html[data-platform="android"]); Apple se nemění.
+   Roboto/Google Sans, ploché plochy bez stínů, karty s tenkým obrysem, plná zaoblená tlačítka,
+   pole s ostřejšími rohy, dialogy 28 px a spodní lišta od kraje ke kraji. */
+html[data-platform="android"] {
+  --and-font: "Google Sans Text", Roboto, "Noto Sans", system-ui, sans-serif;
+  --and-bg: #ffffff; --and-card: #f0f4f9; --and-outline: #e1e3e1; --and-field: #747775; --and-fieldbg: #f0f4f9; --and-fieldbg-card: #ffffff;
+  --and-text: #1f1f1f; --and-muted: #5f6368; --and-bar: #f0f4f9; --and-tonal: #dde4ee;
+  --and-accent-c: color-mix(in srgb, var(--and-accent) 14%, #ffffff);
+  --and-on-accent-c: var(--and-accent);
+  --r-card: 28px; --r-ctl: 4px; --shadow-card: none; --shadow-modal: none;
+  --bg: var(--and-bg); --card: var(--and-card); --raised: #ffffff; --text: var(--and-text); --muted: var(--and-muted);
+  --hair: var(--and-outline); --border: var(--and-outline); --btn-bg: var(--and-tonal); --btn-color: var(--and-text);
+  --field-bg: var(--and-fieldbg); --input-bg: var(--and-fieldbg); --input-border: transparent; --surface-2: #f0f4f9;
+  background: var(--and-bg);
+}
+html[data-platform="android"] body.dark {
+  --and-bg: #131314; --and-card: #1e1f20; --and-outline: #444746; --and-field: #8e918f;
+  --and-text: #e3e3e3; --and-muted: #a8abb0; --and-bar: #1e1f20; --and-tonal: #2d2f31; --and-fieldbg: #2d2f31; --and-fieldbg-card: #2d2f31;
+  --and-accent: var(--and-accent-dk);
+  --and-accent-c: color-mix(in srgb, var(--and-accent-dk) 26%, #1e1f20);
+  --and-on-accent-c: var(--and-accent-dk);
+  --bg: var(--and-bg); --card: var(--and-card); --raised: #2b2d30; --text: var(--and-text); --muted: var(--and-muted);
+  --hair: #333537; --border: #333537; --btn-bg: var(--and-tonal); --btn-color: var(--and-text);
+  --field-bg: var(--and-fieldbg); --input-bg: var(--and-fieldbg); --input-border: transparent; --surface-2: #2d2f31;
+}
+html[data-platform="android"]:has(body.dark) { background: #131314; }
+html[data-platform="android"], html[data-platform="android"] body, html[data-platform="android"] button,
+html[data-platform="android"] input, html[data-platform="android"] select, html[data-platform="android"] textarea { font-family: var(--and-font); }
+html[data-platform="android"] body { background: var(--and-bg); color: var(--and-text); letter-spacing: 0; }
+
+/* nadpisy: Material 3 (title large 22/400, bez záporného prostrkání) */
+html[data-platform="android"] h1, html[data-platform="android"] .topbar-left h1, html[data-platform="android"] header h1,
+html[data-platform="android"] .view-title, html[data-platform="android"] .dashboard-greeting { font-weight: 400; font-size: 22px; letter-spacing: 0; }
+html[data-platform="android"] .section-title, html[data-platform="android"] .exp-group-title, html[data-platform="android"] .stat-card h3,
+html[data-platform="android"] .card h3, html[data-platform="android"] .dashboard-card h3, html[data-platform="android"] .dashboard-card-title, html[data-platform="android"] .event-label, html[data-platform="android"] .projekt-sekce-title, html[data-platform="android"] .stat-label {
+  text-transform: none; letter-spacing: .01em; font-size: 14px; font-weight: 500; color: var(--and-muted);
+}
+
+/* horní lišta: plochá, plná barva, bez rozmazání */
+html[data-platform="android"] header, html[data-platform="android"] .topbar, html[data-platform="android"] .view-header {
+  background: var(--and-bg); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 0;
+}
+html[data-platform="android"] header::after { display: none; }
+
+/* karty: ploché, obrys 1 px (tmavý režim bez obrysu, odliší je odstín) */
+html[data-platform="android"] :is(.card, .event-card, .swipe-card, #detail-panel, .stat-card, .transit-row, .ledger, .acct-card, .bal-table, .settings-group,
+  .inv-card, .exp-card, .rep-scroll, .dashboard-card, .projekt-card, .projekt-sekce, .login-card, .upload-progress-panel, .acct-switch) {
+  border-radius: 28px; box-shadow: none; border: 0; background: var(--and-card);
+}
+html[data-platform="android"] body.dark :is(.card, .event-card, .swipe-card, #detail-panel, .stat-card, .transit-row, .ledger, .acct-card, .bal-table, .settings-group,
+  .inv-card, .exp-card, .rep-scroll, .dashboard-card, .projekt-card, .projekt-sekce, .login-card, .upload-progress-panel, .acct-switch) { border-color: transparent; background: var(--and-card); }
+html[data-platform="android"] :is(.projekt-card, .dashboard-card):hover { box-shadow: none; }
+
+/* tlačítka: plná (výplň) a tonální, kapsle 40 px, bez stínu */
+html[data-platform="android"] :is(button, .btn-group button, .attendance-buttons button, .btn-secondary, .btn-primary, .btn-danger, .modal-btn, .filter-btn,
+  .projekt-card-btn, .projekt-wiki-btn, .detail-save-btn, .detail-cancel-btn, .drive-toolbar-btn, .multi-toolbar-btn, .upload-btn, .primary-btn, .modal-skupina-btn) {
+  border-radius: 999px; box-shadow: none; font-size: 14px; font-weight: 500; letter-spacing: .01em; min-height: 40px; text-transform: none;
+}
+html[data-platform="android"] :is(.btn-primary, .modal-btn-primary, .drive-toolbar-btn.primary, .upload-btn, .projekt-card-btn.primary, .detail-save-btn, .primary-btn) {
+  background: var(--and-accent); color: #fff; border: 0;
+}
+html[data-platform="android"] body.dark :is(.btn-primary, .modal-btn-primary, .drive-toolbar-btn.primary, .upload-btn, .projekt-card-btn.primary, .detail-save-btn, .primary-btn) { color: #0b0b0c; }
+html[data-platform="android"] :is(.btn-secondary, .modal-btn-secondary, .filter-btn, .projekt-card-btn, .projekt-wiki-btn, .detail-cancel-btn, .drive-toolbar-btn, .multi-toolbar-btn, .modal-skupina-btn) {
+  background: var(--and-tonal); color: var(--and-text); border: 0;
+}
+html[data-platform="android"] :is(.filter-btn.active, .modal-skupina-btn.selected, .drive-toolbar-btn.active-filter) { background: var(--and-accent-c); color: var(--and-on-accent-c); }
+html[data-platform="android"] :is(.btn-primary, .modal-btn-primary, .btn-secondary, .modal-btn-secondary):active { filter: brightness(.92); transform: none; }
+html[data-platform="android"] .modal-btn-ghost { background: transparent; color: var(--and-accent); }
+
+/* pole: vyplněná bez rámečku (jako ve formulářích Google), po zaostření podtržení v barvě aplikace */
+html[data-platform="android"] :is(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), select, textarea, input.field, select.field, textarea.field, .detail-input, .ios-textarea) {
+  border-radius: 999px; background: var(--and-fieldbg); border: 0; box-shadow: none; padding-left: 18px; padding-right: 18px; min-height: 48px;
+}
+html[data-platform="android"] textarea { border-radius: 24px; padding-top: 14px; }
+html[data-platform="android"] :is(.card, .event-card, .swipe-card, #detail-panel, .stat-card, .transit-row, .ledger, .acct-card, .settings-group, .inv-card, .exp-card, .dashboard-card, .projekt-card, .projekt-sekce) :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea, input.field, .detail-input) { background: var(--and-fieldbg-card); }
+html[data-platform="android"] body.dark :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea, input.field, select.field, textarea.field, .detail-input) { background: var(--and-fieldbg); border: 0; }
+html[data-platform="android"] :is(input, select, textarea, .detail-input):focus { outline: none; border: 0; box-shadow: inset 0 -2px 0 var(--and-accent); }
+html[data-platform="android"] .field label, html[data-platform="android"] label { color: var(--and-muted); font-weight: 500; font-size: 12px; letter-spacing: .02em; }
+html[data-platform="android"] :is(input[type=checkbox], input[type=radio], input[type=range], progress) { accent-color: var(--and-accent); }
+html[data-platform="android"] body.dark :is(.modal, .tn-dlg, .modal-content) :is(input, select, textarea) { background: #383b3e; }
+
+/* dialogy a okna: 28 px, plochá, hlavička vlevo, tlačítka vpravo jako v Material 3 */
+html[data-platform="android"] :is(.modal:not(:has(> .modal-backdrop)), .modal-content) { border-radius: 28px; box-shadow: none; background: var(--and-card); border: 0; }
+html[data-platform="android"] body:not(.dark) :is(.modal:not(:has(> .modal-backdrop)), .modal-content) { background: #ffffff; }
+html[data-platform="android"] body:not(.dark) :is(.modal, .modal-content, .tn-dlg) :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) { background: #f0f4f9; }
+html[data-platform="android"] body.dark :is(.modal:not(:has(> .modal-backdrop)), .modal-content) { background: #2b2d30; }
+html[data-platform="android"] :is(.modal-overlay, .modal-backdrop, .tn-ov) { background: rgba(0, 0, 0, .32); -webkit-backdrop-filter: none; backdrop-filter: none; }
+html[data-platform="android"] :is(.modal-title, .modal-header, .tn-dlg h2, .modal h2) { font-size: 24px; font-weight: 400; letter-spacing: 0; line-height: 1.3; color: var(--and-text); }
+html[data-platform="android"] .modal .modal-header, html[data-platform="android"] .modal-content .modal-header { background: transparent; text-align: left; }
+html[data-platform="android"] .modal-close { background: transparent; color: var(--and-muted); }
+html[data-platform="android"] :is(.modal-footer, .btn-group) { gap: 8px; }
+html[data-platform="android"] .modal-footer { justify-content: flex-end; }
+html[data-platform="android"] .modal-footer > :is(button, .modal-btn):not(.modal-footer-stack *) { flex: 0 0 auto; padding-left: 24px; padding-right: 24px; }
+html[data-platform="android"] .modal-footer-stack > * { flex: none; width: 100%; }
+html[data-platform="android"] .modal-footer .btn-secondary, html[data-platform="android"] .modal-footer .modal-btn-secondary { background: transparent; color: var(--and-accent); }
+
+/* menu a nabídky: plochý povrch, 12 px */
+html[data-platform="android"] :is(.pmenu, .profile-menu, .menu, .inv-menu, .context-menu, .desktop-profile-menu, .mobile-profile-menu, .autocomplete-dropdown, .search-results) {
+  border-radius: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, .18), 0 4px 8px 3px rgba(0, 0, 0, .09); border: 0;
+}
+html[data-platform="android"] body.dark :is(.pmenu, .profile-menu, .menu, .inv-menu, .context-menu, .desktop-profile-menu, .mobile-profile-menu) { box-shadow: none; background: #2b2d30; }
+
+/* odznaky a štítky: 8 px, bez velkých písmen */
+html[data-platform="android"] :is(.badge, .chip, .tag, .status, .pill, .doc-type, .profile-menu-role, .profile-menu-voice, .pm-role, .exp-status) { border-radius: 8px; letter-spacing: .01em; text-transform: none; }
+
+/* profilové tlačítko, oznámení, přepínač záložek */
+html[data-platform="android"] .profile-btn { background: var(--and-accent); box-shadow: none; }
+html[data-platform="android"] body.dark .profile-btn { color: #0b0b0c; }
+html[data-platform="android"] .tn-toast, html[data-platform="android"] #toast, html[data-platform="android"] .toast {
+  background: #313033; color: #f4eff4; border-radius: 4px; box-shadow: none; font-size: 14px;
+}
+
+/* ── spodní lišta: od kraje ke kraji, navazuje na spodní hranu ────────────────
+   Lišta má vlastní barvu až do dolního okraje obrazovky a pod ikonami si ponechává odsazení
+   pro systémová tlačítka (env(safe-area-inset-bottom): u gest i u tří tlačítek se doplní samo,
+   u prohlížeče, který si lištu systému řeší sám, je odsazení 0 a lišta těsně sedí nad ní). */
+html[data-platform="android"] .bottom-wrap { padding: 0; bottom: 0; left: 0; right: 0; display: block; }
+html[data-platform="android"] .bottom {
+  width: 100%; max-width: none; margin: 0; gap: 0; border-radius: 0; border: 0;
+  padding: 12px 8px calc(16px + env(safe-area-inset-bottom));
+  background: var(--and-bar); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html[data-platform="android"] .bottom button { padding: 0 2px; gap: 4px; min-height: 0; border-radius: 16px; background: transparent !important; color: var(--and-muted); font-size: 12px; font-weight: 500; letter-spacing: .02em; }
+html[data-platform="android"] .bottom button small { font-size: 12px; font-weight: 500; letter-spacing: .02em; }
+html[data-platform="android"] .bottom button .icon { height: 32px; }
+html[data-platform="android"] .bottom button .icon::before { width: 64px; background: var(--and-accent-c); }
+html[data-platform="android"] .bottom button.active { color: var(--and-text); }
+html[data-platform="android"] .bottom button.active small { font-weight: 600; }
+html[data-platform="android"] .bottom button.active .icon svg { stroke: var(--and-on-accent-c); }
+html[data-platform="android"] .bottom button:not(.active) .icon svg { stroke: var(--and-muted); }
+html[data-platform="android"] body.dark .bottom { background: var(--and-bar); box-shadow: none; }
+html[data-platform="android"] body.dark .bottom button { color: var(--and-muted); }
+html[data-platform="android"] body.dark .bottom button.active { color: var(--and-text); }
+html[data-platform="android"] body.dark .bottom button .icon::before { background: var(--and-accent-c); }
+html[data-platform="android"] body.dark .bottom button.active .icon svg { stroke: var(--and-on-accent-c); }
+
+/* systémové dialogy (10space) a vyhledávací pole */
+html[data-platform="android"] .tn-dlg { border-radius: 28px; box-shadow: none; padding: 24px 24px 16px; background: var(--and-card); }
+html[data-platform="android"] body.dark .tn-dlg { background: #2b2d30; }
+html[data-platform="android"] .tn-dlg h2 { font-size: 24px; font-weight: 400; letter-spacing: 0; }
+html[data-platform="android"] .tn-btn { min-height: 40px; border-radius: 20px; flex: 0 0 auto; padding: 0 20px; font-size: 14px; font-weight: 500; letter-spacing: .01em; background: transparent; color: var(--and-accent); }
+html[data-platform="android"] body.dark .tn-btn:not(.tn-primary):not(.tn-danger) { background: transparent; }
+html[data-platform="android"] .tn-btn.tn-primary, html[data-platform="android"] .tn-btn.tn-danger { background: var(--and-accent); color: #fff; }
+html[data-platform="android"] body.dark :is(.tn-btn.tn-primary, .tn-btn.tn-danger) { color: #0b0b0c; }
+html[data-platform="android"] .tn-actions { gap: 8px; }
+html[data-platform="android"] .search-bar { border-radius: 28px; border: 0; box-shadow: none; background: var(--and-tonal); }
+html[data-platform="android"] .search-bar :is(input, select) { border: 0; background: transparent !important; }
+html[data-platform="android"] .modal-backdrop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: rgba(0, 0, 0, .32) !important; }
+
+/* popisky bez velkých písmen (Material 3 používá běžnou velikost písmen) */
+html[data-platform="android"] :is(.ob-step-label, .rep-controls label, .rep-table th, .acct-table th, .stat-label, .kd-sum-row.head, .bal-table caption, .group-title, table.rep th, .exp-group-title, .section-title,
+  .modal-section-title, .detail-label, .sidebar-section-title, .event-label, .projekt-sekce-title, .dashboard-card-title, h3, .info-label) { text-transform: none; letter-spacing: .01em; }
+html[data-platform="android"] .modal .modal-header .modal-title, html[data-platform="android"] .modal .modal-title { font-size: 24px; font-weight: 400; letter-spacing: 0; }
+
+/* tlačítka na šedé kartě se od ní musí odlišit */
+html[data-platform="android"] :is(.card, .event-card, .swipe-card, #detail-panel, .stat-card, .transit-row, .ledger, .acct-card, .settings-group, .inv-card, .exp-card, .dashboard-card, .projekt-card, .projekt-sekce, .modal-content, .modal, .tn-dlg) { --btn-bg: var(--and-tonal); }
+html[data-platform="android"] body.dark :is(.card, .event-card, .swipe-card, #detail-panel, .modal-content) { --btn-bg: var(--and-tonal); }
+html[data-platform="android"] body:not(.dark) :is(.card, .event-card, .swipe-card, #detail-panel) button:not(.btn-primary):not([style*="background"]) { background: var(--and-tonal); }
+
+/* dialog s polem: okno a pole se od sebe a od okolí musí odlišit v obou režimech */
+html[data-platform="android"] body:not(.dark) .tn-dlg { background: #ffffff; }
+html[data-platform="android"] body:not(.dark) :is(.tn-dlg, .modal, .modal-content) :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) { background: #eef1f6; }
+html[data-platform="android"] body.dark .tn-dlg { background: #2b2d30; }
+html[data-platform="android"] body.dark :is(.tn-dlg, .modal, .modal-content) :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) { background: #3c4043; }
+html[data-platform="android"] :is(.tn-dlg, .modal) :is(input, select, textarea):focus { box-shadow: inset 0 -2px 0 var(--and-accent); }
+html[data-platform="android"] .tn-dlg input { border-radius: 999px; min-height: 48px; padding: 0 14px; border: 0; width: 100%; box-sizing: border-box; }
+
+/* ── formuláře: blok polí s ikonou a zástupným textem, výběry jako pilulky ───────── */
+html[data-platform="android"] { --and-unit: #eef1f6; }
+html[data-platform="android"] body.dark { --and-unit: #3c4043; }
+html[data-platform="android"] .and-unit { position: relative; display: block; margin: 0 !important; background: var(--and-unit); border-radius: 0; min-height: 56px; box-sizing: border-box; }
+html[data-platform="android"] .and-unit.and-g1, html[data-platform="android"] .and-unit.and-pill { border-radius: 999px; margin-bottom: 12px !important; }
+html[data-platform="android"] .and-unit.and-g1.and-area { border-radius: 28px; }
+html[data-platform="android"] .and-unit.and-gf { border-radius: 28px 28px 0 0; }
+html[data-platform="android"] .and-unit.and-gl { border-radius: 0 0 28px 28px; margin-bottom: 12px !important; }
+html[data-platform="android"] .and-unit.and-gm { border-radius: 0; }
+html[data-platform="android"] .and-unit:not(.and-g1):not(.and-gf):not(.and-gm):not(.and-gl):not(.and-pill) { border-radius: 999px; margin-bottom: 12px !important; }
+html[data-platform="android"] .and-unit > label:not(.and-wrap), html[data-platform="android"] .and-unit > .detail-label { display: none; }
+html[data-platform="android"] label.and-unit { font-size: 0; line-height: 0; }
+html[data-platform="android"] .and-unit :is(input, select, textarea) {
+  width: 100%; min-height: 56px; box-sizing: border-box; background: transparent !important; border: 0 !important; border-radius: inherit !important;
+  padding: 0 18px 0 56px !important; font-size: 16px; line-height: 1.4; box-shadow: none !important; margin: 0; color: var(--and-text);
+}
+html[data-platform="android"] .and-unit textarea { padding-top: 16px !important; padding-bottom: 12px !important; min-height: 96px; }
+html[data-platform="android"] .and-unit.and-float :is(input, select) { padding-top: 20px !important; padding-bottom: 4px !important; }
+html[data-platform="android"] .and-unit input[type=file] { padding-top: 22px !important; font-size: 14px; }
+html[data-platform="android"] .and-unit input[type=file]::file-selector-button { margin-right: 10px; }
+html[data-platform="android"] .and-ico { position: absolute; left: 18px; top: 16px; width: 24px; height: 24px; color: var(--and-muted); pointer-events: none; line-height: 0; z-index: 1; }
+html[data-platform="android"] .and-ico svg { width: 24px; height: 24px; display: block; }
+html[data-platform="android"] .and-cap { position: absolute; left: 56px; top: 8px; font-size: 12px; line-height: 1; color: var(--and-muted); letter-spacing: .02em; pointer-events: none; z-index: 1; }
+/* čára se objeví až po ťuknutí do pole */
+html[data-platform="android"] .and-unit:focus-within { box-shadow: inset 0 -2px 0 var(--and-accent); }
+html[data-platform="android"] .and-unit:focus-within .and-ico { color: var(--and-accent); }
+html[data-platform="android"] .and-unit.and-gl, html[data-platform="android"] .and-unit.and-g1 { overflow: hidden; }
+html[data-platform="android"] .and-cap { right: 48px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-platform="android"] :is(.card, .event-card, .swipe-card, .inv-card, .exp-card, .settings-group) .and-unit { background: var(--and-fieldbg-card); }
+html[data-platform="android"] body:not(.dark) .acct-form { background: #ffffff; }
+html[data-platform="android"] body.dark .acct-form { background: #2b2d30; }
+html[data-platform="android"] .acct-form-head { background: transparent; }
+
+/* formulář v okně není obalen další kartou: bloky polí leží přímo v okně */
+html[data-platform="android"] :is(.modal-content, .modal) .card { background: transparent !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; border: 0 !important; margin: 0 !important; }
+html[data-platform="android"] :is(.modal-content, .modal) .card .and-unit { background: var(--and-unit); }
+html[data-platform="android"] label.and-unit > span:not(.and-cap) { display: none; }
+html[data-platform="android"] label.and-unit > br { display: none; }
+html[data-platform="android"] :is(.modal-content, .modal) label:has(> input[type=checkbox]) { margin: 4px 0 14px 8px !important; }
+
+/* jemné doladění: text pole se opticky zarovná na střed ikony, šipka výběru má odstup od kraje */
+html[data-platform="android"] .and-unit:not(.and-float) :is(input, select) { padding-top: 3px !important; }
+html[data-platform="android"] .and-unit:not(.and-float) textarea { padding-top: 19px !important; }
+html[data-platform="android"] .and-unit select {
+  -webkit-appearance: none; appearance: none; padding-right: 52px !important;
+  background-color: transparent !important; background-repeat: no-repeat !important; background-position: right 22px center !important; background-size: 14px 14px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E") !important;
+}
+html[data-platform="android"] body.dark .and-unit select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c4c7c5' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E") !important;
+}
+html[data-platform="android"] .and-unit input[type=date], html[data-platform="android"] .and-unit input[type=time] { padding-right: 14px !important; }
+html[data-platform="android"] .and-unit ::-webkit-calendar-picker-indicator { margin-right: 6px; }
