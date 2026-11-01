@@ -1,7 +1,7 @@
 /* Verze aplikace (MAJOR.MINOR.PATCH). Při každém vydání:
    1) zvýšit číslo a datum níže, 2) doplnit CHANGELOG.md, 3) po nasazení označit commit tagem vX.Y.Z (git tag -a vX.Y.Z -m "…").
    Aplikace si tento soubor čas od času stáhne ze serveru; je-li tam vyšší verze než ta, která právě běží, nabídne obnovení. */
-globalThis.TEN_VERSION = { app: "10space", version: "3.1.6", date: "2026-11-01" };
+globalThis.TEN_VERSION = { app: "10space", version: "3.1.7", date: "2026-11-01" };
 
 (function () {
   if (typeof window === "undefined" || !window.document) return;   // v service workeru se jen nastaví číslo verze

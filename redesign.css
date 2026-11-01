@@ -716,3 +716,20 @@ body.dark .pj-seg button.on { background: color-mix(in srgb, var(--accent) 22%, 
 html[data-platform="android"] .pj-seg { border-radius: 999px; background: var(--and-card); box-shadow: none; }
 html[data-platform="android"] .pj-seg button { border-radius: 999px; }
 html[data-platform="android"] .pj-seg button.on { background: var(--and-accent-c); color: var(--and-on-accent-c); }
+
+/* ═══ Podrobnosti / Verze / Náhled: stejný segmentovaný přepínač jako Akce / Kódy (a Pokladna / Bankovní účet v 10korun) ═══ */
+html .detail-tabs { display: flex; gap: 4px; padding: 4px; margin: 12px 12px 4px; border: 0; border-radius: 14px; background: var(--surface-2, #f2f2f7); flex-shrink: 0; }
+html .mobile-detail-modal-tabs { position: relative; display: flex; gap: 4px; padding: 4px; margin: 12px 52px 4px 12px; border: 0; border-radius: 14px; background: var(--surface-2, #f2f2f7); flex-shrink: 0; }
+html .detail-tab, html .mobile-detail-modal-tab {
+  flex: 1; padding: 9px 6px; font: inherit; font-size: 14px; font-weight: 600; border: 0; border-bottom: 0; border-radius: 10px;
+  background: transparent; color: var(--muted, #6e6e73); text-align: center; cursor: pointer; transition: background .2s ease, color .2s ease;
+}
+html .detail-tab.active, html .mobile-detail-modal-tab.active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); border-bottom: 0; }
+body.dark .detail-tabs, body.dark .mobile-detail-modal-tabs { background: #2a2a2e; }
+body.dark .detail-tab, body.dark .mobile-detail-modal-tab { background: transparent; color: #8e8e93; border-bottom: 0; }
+body.dark .detail-tab.active, body.dark .mobile-detail-modal-tab.active { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+html .mobile-detail-modal-tabs .mobile-detail-modal-close { position: absolute; right: -44px; top: 50%; transform: translateY(-50%); padding: 8px; flex: none; border-radius: 50%; }
+html[data-platform="android"] .detail-tabs, html[data-platform="android"] .mobile-detail-modal-tabs { border-radius: 999px; background: var(--and-card); }
+html[data-platform="android"] .detail-tab, html[data-platform="android"] .mobile-detail-modal-tab { border-radius: 999px; background: transparent; color: var(--and-muted); }
+html[data-platform="android"] .detail-tab.active, html[data-platform="android"] .mobile-detail-modal-tab.active { background: var(--and-accent-c); color: var(--and-on-accent-c); }
+@media (min-width: 769px) { html .detail-tab { font-size: 13px; padding: 7px 4px; } }
