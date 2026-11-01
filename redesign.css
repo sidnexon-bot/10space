@@ -675,3 +675,44 @@ html[data-platform="android"] body.dark .projekt-overlay { background: var(--and
   .dots-btn { min-width: 40px; min-height: 40px; }
   .kd-add, .a-neutral, .exp-actions button { min-height: 32px; }
 }
+
+/* ═══ APPLE: profilové menu ve stylu Liquid Glass (jako spodní lišta) ═══════════
+   Průsvitné sklo s rozostřením a sytostí pod ním, světlá hrana s odleskem; vnitřek menu je průhledný.
+   Android tím není dotčen. */
+html:not([data-platform="android"]) :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(246, 247, 252, 0.93)) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.04); backdrop-filter: blur(30px) saturate(1.8) brightness(1.04);
+  border: none !important; isolation: isolate;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.55), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 0.95), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.4),
+    inset 0 0 16px rgba(255, 255, 255, 0.25), 0 18px 44px rgba(20, 24, 40, 0.20), 0 3px 10px rgba(20, 24, 40, 0.10), 0 0 0 0.5px rgba(20, 24, 40, 0.10) !important;
+}
+html:not([data-platform="android"]) :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu)::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 5;
+  background: conic-gradient(from 200deg at 50% 50%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 22%, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.55) 62%, rgba(255, 255, 255, 0) 84%, rgba(255, 255, 255, 0.75));
+  -webkit-mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box; mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) content-box;
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+html:not([data-platform="android"]) :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.mobile-profile-menu-header, .pm-info, .profile-menu-info, .desktop-profile-menu-header, .pm-item, .pm-group, .profile-menu-item, .desktop-profile-menu-item, .mobile-profile-menu-item) { background-color: transparent; }
+html:not([data-platform="android"]) :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.pm-item, .profile-menu-item, .desktop-profile-menu-item, .mobile-profile-menu-item):hover { background: rgba(255, 255, 255, 0.45); }
+html:not([data-platform="android"]) :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.pm-item, .profile-menu-item, .desktop-profile-menu-item, .mobile-profile-menu-item):active { background: rgba(255, 255, 255, 0.6); }
+html:not([data-platform="android"]) :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.pm-icon, .pm-ic) { background-color: rgba(255, 255, 255, 0.55); }
+/* tmavý režim */
+html:not([data-platform="android"]) body.dark :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) {
+  background: linear-gradient(180deg, rgba(68, 68, 74, 0.97), rgba(46, 46, 51, 0.94)) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.5) brightness(1.0); backdrop-filter: blur(30px) saturate(1.5) brightness(1.0);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1.5px 1px -0.5px rgba(255, 255, 255, 0.4), inset 0 -1.5px 1px -0.5px rgba(255, 255, 255, 0.18),
+    inset 0 0 18px rgba(255, 255, 255, 0.06), 0 20px 54px rgba(0, 0, 0, 0.6), 0 3px 10px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.08) !important;
+}
+html:not([data-platform="android"]) body.dark :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.pm-item, .profile-menu-item, .desktop-profile-menu-item, .mobile-profile-menu-item):hover { background: rgba(255, 255, 255, 0.12); }
+html:not([data-platform="android"]) body.dark :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.pm-item, .profile-menu-item, .desktop-profile-menu-item, .mobile-profile-menu-item):active { background: rgba(255, 255, 255, 0.18); }
+html:not([data-platform="android"]) body.dark :is(.pmenu, .profile-menu, .mobile-profile-menu, .desktop-profile-menu) :is(.pm-icon, .pm-ic) { background-color: rgba(255, 255, 255, 0.10); }
+
+/* ═══ Přepínač Akce / Kódy: stejný vzhled jako Pokladna / Bankovní účet v 10korun ═══ */
+html .pj-seg { display: flex; gap: 4px; padding: 4px; margin: 12px 16px 4px; width: auto; box-sizing: border-box; border-radius: 14px; background: var(--card); border: 0; box-shadow: var(--shadow-card, none); }
+html .pj-seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; padding: 9px 6px; border-radius: 10px; cursor: pointer; box-shadow: none; text-align: center; transition: background .2s ease, color .2s ease; }
+html .pj-seg button.on { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); box-shadow: none; }
+body.dark .pj-seg button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+@media (min-width: 769px) { html .pj-seg { display: inline-flex; min-width: 300px; margin: 16px 24px 4px; } }
+html[data-platform="android"] .pj-seg { border-radius: 999px; background: var(--and-card); box-shadow: none; }
+html[data-platform="android"] .pj-seg button { border-radius: 999px; }
+html[data-platform="android"] .pj-seg button.on { background: var(--and-accent-c); color: var(--and-on-accent-c); }
