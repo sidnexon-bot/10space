@@ -242,3 +242,53 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+
+/* Postupné zobrazení karet: po přepnutí sekce se karty objeví jedna po druhé od nejvyšší dolů,
+   karty pod okrajem obrazovky naskočí, až se při scrollování dostanou do zorného pole.
+   Spouští se jen přepnutím sekce (změna třídy na navigaci nebo stránce), ne každým překreslením dat. Při „omezit pohyb“ se nic nedělá. */
+(function () {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var CARDS = '.dashboard-card, .projekt-card, .projekt-sekce, .dk-card';
+  var NAV = '.bottom button, .sidebar-nav-item, .sidebar-tab, [data-view], [data-tab]';
+  var EXCL = '.modal, .modal-overlay, .modal-content, .tn-ov, .bottom-sheet, header, .sidebar, .bottom, .pmenu, .profile-menu, .context-menu, .month-slider, [data-no-reveal]';
+  var seen = (typeof WeakSet !== 'undefined') ? new WeakSet() : null, armedUntil = 0, io = null, working = false;
+  function arm(ms) { armedUntil = Date.now() + (ms || 1800); run(); }
+  function outer() {
+    return [].filter.call(document.querySelectorAll(CARDS), function (c) {
+      if (c.closest(EXCL) || (c.parentElement && c.parentElement.closest(CARDS))) return false;
+      var r = c.getBoundingClientRect(); return r.width > 20 && r.height > 12;
+    });
+  }
+  function done(c) { setTimeout(function () { c.classList.remove('rv', 'rv-in'); c.classList.add('rv-done'); c.style.removeProperty('--rvd'); }, 1500); }
+  function show(c, d) { c.style.setProperty('--rvd', d + 'ms'); void c.offsetWidth; c.classList.add('rv-in'); done(c); }
+  function run() {
+    if (working || Date.now() > armedUntil || !seen) return; working = true;
+    try {
+      var vh = window.innerHeight || 800, list = outer().filter(function (c) { return !seen.has(c); });
+      list.sort(function (a, b) { return a.getBoundingClientRect().top - b.getBoundingClientRect().top; });
+      var k = 0;
+      list.forEach(function (c) {
+        seen.add(c); c.classList.add('rv');
+        if (c.getBoundingClientRect().top < vh * 0.97) { show(c, Math.min(k, 9) * 70); k++; }
+        else if (io) io.observe(c); else show(c, 0);
+      });
+    } catch (e) { /* karty se prostě zobrazí bez animace */ }
+    working = false;
+  }
+  function init() {
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver(function (es) {
+        var vis = es.filter(function (e) { return e.isIntersecting; }).sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; });
+        vis.forEach(function (e, i) { io.unobserve(e.target); show(e.target, Math.min(i, 6) * 60); });
+      }, { rootMargin: '0px 0px -5% 0px', threshold: 0.04 });
+    }
+    new MutationObserver(function (ms) {
+      var nav = ms.some(function (m) { return m.type === 'attributes' && m.target.nodeType === 1 && !m.target.classList.contains('rv') && !m.target.classList.contains('rv-in') && m.target.matches && m.target.matches(NAV + ', .view, #content-area, #screen-app, #main, .page-in'); });
+      if (nav) { armedUntil = Date.now() + 1800; seen = new WeakSet(); }   // každé přepnutí sekce animuje karty znovu
+      run();
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    arm(2200);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  window.tenReveal = arm;
+})();

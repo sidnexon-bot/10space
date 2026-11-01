@@ -74,3 +74,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { box-shadow: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
 }
+
+/* ---- Rozbalovací nabídky: roleta shora ---- */
+.context-menu:not(.hidden), .desktop-profile-menu:not(.hidden), .search-results:not(.hidden) { animation: mBlind 0.36s var(--m-ease) both; }
