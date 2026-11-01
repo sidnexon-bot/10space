@@ -838,3 +838,13 @@ html[data-platform="apple"] .btn-group:has(> .type-btn) { border-radius: 999px !
 @keyframes mSheetUp { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes mFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; } }
+
+/* Nabídka „Jak chcete dokument otevřít?“ – řádky seznamu, ne tlačítka (stejně na Androidu i iOS) */
+.vw-modal .vw-opt { display: flex !important; align-items: center !important; justify-content: flex-start !important; text-align: left !important; width: 100% !important; min-height: 64px !important; height: auto !important; padding: 10px 14px !important; gap: 14px !important; margin: 8px 0 0 !important; box-sizing: border-box; white-space: normal; order: 0 !important; background: var(--btn-bg, var(--surface-2, #f2f2f7)) !important; color: var(--text, #1c1c1e) !important; border: 0 !important; box-shadow: none !important; border-radius: 18px !important; font-size: 15px !important; }
+.vw-modal .vw-opt .vw-opt-t { flex: 1; align-items: flex-start; text-align: left; }
+.vw-modal .vw-opt .vw-opt-t b { font-size: 15px !important; font-weight: 600 !important; color: inherit; }
+.vw-modal .vw-opt .vw-opt-t small { color: var(--muted, #8e8e93) !important; font-weight: 400 !important; }
+html[data-platform="android"] .vw-modal .vw-opt { border-radius: 16px !important; }
+html[data-platform="android"] body.dark .vw-modal .vw-opt, html[data-platform="android"] .vw-modal .vw-opt { color: var(--text, #1c1c1e) !important; }
+body.dark .vw-modal .vw-opt { background: rgba(255,255,255,.09) !important; }
+.vw-modal .vw-opt, html[data-platform="android"] .vw-modal .vw-opt { border-radius: 999px !important; padding-left: 12px !important; padding-right: 20px !important; }
