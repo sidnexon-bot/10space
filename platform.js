@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
   bar.insertAdjacentHTML('afterbegin', '<i class="lg lg-blur" aria-hidden="true"></i><i class="lg lg-edge" aria-hidden="true"></i><i class="lg lg-spec" aria-hidden="true"></i><i class="lg-pill" aria-hidden="true"></i>');
   var pill = bar.querySelector('.lg-pill');
   function place(animate) {
+    if (bar.classList.contains('lg-drag')) return;
     var b = bar.querySelector('button.active');
     if (!b || !b.offsetWidth) { pill.style.opacity = 0; return; }
     pill.style.opacity = 1;
@@ -58,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pill.style.transform = 'translateX(' + b.offsetLeft + 'px)'; pill.style.width = b.offsetWidth + 'px';
     if (!animate) { void pill.offsetWidth; pill.style.transition = ''; }
   }
+  bar._lgPlace = place;
   place(false);
   new MutationObserver(function () { place(true); }).observe(bar, { subtree: true, attributes: true, attributeFilter: ['class'] });
   if (window.ResizeObserver) new ResizeObserver(function () { place(false); }).observe(bar); else window.addEventListener('resize', function () { place(false); });
@@ -320,3 +322,61 @@ document.addEventListener('DOMContentLoaded', function () {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.tenReveal = arm;
 })();
+
+/* Spodní lišta (Apple): 1) při posunu stránky dolů se lišta zmenší a schová popisky, při posunu nahoru se vrátí;
+   2) vybranou záložku (kapku skla) jde chytit a přetáhnout prstem na jinou záložku, po pustění se přepne.
+   Na Androidu se nic nemění. */
+document.addEventListener('DOMContentLoaded', function () {
+  var bar = document.querySelector('.bottom');
+  if (!bar || document.documentElement.getAttribute('data-platform') === 'android') return;
+  var mqm = window.matchMedia('(max-width: 768px)'), drag = null, pill = null;
+  var last = new WeakMap();
+  function setMin(on) { bar.classList.toggle('lg-min', !!on); }
+  document.addEventListener('scroll', function (e) {
+    if (!mqm.matches || drag) return;
+    var t = e.target, el = t === document ? document.scrollingElement : t;
+    if (!el || (t.closest && t.closest('.bottom, .modal-overlay, .modal, .bottom-sheet, .tn-ov, .tn-dlg, textarea'))) return;
+    if (el !== document.scrollingElement && el.clientHeight < window.innerHeight * 0.4) return;
+    var y = el.scrollTop, d = y - (last.has(el) ? last.get(el) : y);
+    if (y <= 8) { setMin(false); last.set(el, y); return; }
+    if (Math.abs(d) < 8) return;
+    last.set(el, y); setMin(d > 0 && y > 48);
+  }, true);
+  bar.addEventListener('click', function () { setMin(false); });
+
+  function btns() { return [].filter.call(bar.querySelectorAll('button'), function (b) { return b.offsetWidth > 0; }); }
+  function hot(b) { [].forEach.call(bar.querySelectorAll('button.lg-hot'), function (x) { if (x !== b) x.classList.remove('lg-hot'); }); if (b) b.classList.add('lg-hot'); }
+  bar.addEventListener('pointerdown', function (e) {
+    if (!mqm.matches || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    pill = bar.querySelector('.lg-pill'); var act = bar.querySelector('button.active');
+    if (!pill || !act) return;
+    drag = { id: e.pointerId, x0: e.clientX, left0: act.offsetLeft, act: act, on: false, hover: act };
+  });
+  bar.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var dx = e.clientX - drag.x0;
+    if (!drag.on) {
+      if (Math.abs(dx) < 8) return;
+      drag.on = true; bar.classList.add('lg-drag'); pill.style.transition = 'none';
+      try { bar.setPointerCapture(e.pointerId); } catch (x) { /* bez zachycení se táhne dál po liště */ }
+    }
+    var list = btns(), w = drag.act.offsetWidth;
+    var min = list[0].offsetLeft, max = list[list.length - 1].offsetLeft + list[list.length - 1].offsetWidth - w;
+    var x = Math.max(min, Math.min(max, drag.left0 + dx)), mid = x + w / 2;
+    pill.style.transform = 'translateX(' + x + 'px) scale(1.12)';
+    var h = list.filter(function (b) { return mid >= b.offsetLeft && mid < b.offsetLeft + b.offsetWidth; })[0] || drag.hover;
+    drag.hover = h; hot(h);
+  });
+  function end(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var d = drag; drag = null;
+    if (!d.on) return;
+    var cancel = e.type === 'pointercancel';
+    bar.classList.remove('lg-drag'); hot(null); pill.style.transition = '';
+    var swallow = function (ev) { ev.stopPropagation(); ev.preventDefault(); };
+    if (!cancel && d.hover && d.hover !== d.act) d.hover.click();
+    bar.addEventListener('click', swallow, true); setTimeout(function () { bar.removeEventListener('click', swallow, true); }, 450);
+    if (bar._lgPlace) bar._lgPlace(true);
+  }
+  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+});

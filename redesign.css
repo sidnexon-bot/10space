@@ -850,3 +850,21 @@ html[data-platform="android"] .vw-modal .vw-opt { border-radius: 16px !important
 html[data-platform="android"] body.dark .vw-modal .vw-opt, html[data-platform="android"] .vw-modal .vw-opt { color: var(--text, #1c1c1e) !important; }
 body.dark .vw-modal .vw-opt { background: rgba(255,255,255,.09) !important; }
 .vw-modal .vw-opt, html[data-platform="android"] .vw-modal .vw-opt { border-radius: 999px !important; padding-left: 12px !important; padding-right: 20px !important; }
+
+/* Spodní lišta, Apple: zmenšení při posunu dolů (schované popisky) a přetahovatelná kapka vybrané záložky (viz platform.js) */
+html:not([data-platform="android"]) .bottom { touch-action: pan-y; transition: height 0.38s cubic-bezier(0.3, 0.9, 0.3, 1), width 0.38s cubic-bezier(0.3, 0.9, 0.3, 1); }
+html:not([data-platform="android"]) .bottom button small { max-height: 14px; overflow: hidden; transition: opacity 0.2s ease, max-height 0.32s ease, margin 0.32s ease; }
+html:not([data-platform="android"]) .bottom button { transition: color 0.25s ease, transform 0.15s ease, min-height 0.38s ease, padding 0.38s ease, gap 0.38s ease; }
+html:not([data-platform="android"]) .bottom.lg-min { --h: 46px; width: min(78%, 300px); }
+html:not([data-platform="android"]) .bottom.lg-min button { min-height: 34px; padding-top: 5px; padding-bottom: 5px; gap: 0; }
+html:not([data-platform="android"]) .bottom.lg-min button small { opacity: 0; max-height: 0; margin: 0; }
+html:not([data-platform="android"]) .bottom.lg-drag button { transition: color 0.12s ease; }
+html:not([data-platform="android"]) .bottom.lg-drag button.active:not(.lg-hot) { color: #3c3c43; }
+html:not([data-platform="android"]) .bottom.lg-drag button.active:not(.lg-hot) .icon svg { stroke: currentColor; }
+html:not([data-platform="android"]) .bottom button.lg-hot { color: var(--lg-accent); }
+html:not([data-platform="android"]) .bottom button.lg-hot .icon svg { stroke: var(--lg-accent); }
+body.dark .bottom.lg-drag button.active:not(.lg-hot) { color: #c7c7cc; }
+html:not([data-platform="android"]) .bottom.lg-drag .lg-pill { background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.32)); }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-platform="android"]) .bottom, html:not([data-platform="android"]) .bottom button, html:not([data-platform="android"]) .bottom button small { transition: none !important; }
+}
