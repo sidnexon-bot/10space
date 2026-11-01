@@ -3,6 +3,14 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.1.5 (1. 11. 2026)
+Designový audit všech obrazovek (iPhone, Android, tablet, počítač).
+- Počítač: ikonová tlačítka (křížek v detailu projektu) se po zhuštění už nesmršťují.
+- Mobilní nabídky: místo tlustých šedých pruhů jemné oddělovací čáry.
+- Android: detail projektu s bílým pozadím a šedými kartami; správná ikona u čísla faktury.
+- 10base: tmavé textové pole poznámky, menší popisky ve formuláři na telefonu, větší šipky měsíců.
+- Dotyková zařízení: větší klikací plochy (zavírací křížek, tři tečky, drobná tlačítka).
+
 ## 3.1.3 (1. 11. 2026)
 Kompaktní prostředí na počítači (myš, okno od 768 px; telefony a tablety se nemění).
 - Menší písmo a pole (výška 32 px), užší okna a formuláře ve dvou až třech sloupcích, hustší tabulky a karty.

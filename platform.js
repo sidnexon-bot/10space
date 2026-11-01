@@ -90,9 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
     pen: P('<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/>')
   };
   var MAP = [[/datum|termin|splatn|vystaven|narozen/, 'cal'], [/cas |cas$|zacat|konec|od$|do$|hodin/, 'clock'], [/popis|poznamk|text|nazev|poznam|zprav|komentar|duvod/, 'note'],
-    [/misto|adres|mesto|ulice/, 'pin'], [/projekt|kod\b|slozk/, 'folder'], [/spotreb/, 'gauge'], [/castk|cena|platb|kc\b|sazb|odmen|zaloh/, 'cash'], [/kategor|typ |druh|stav|skupin|akce$/, 'tag'], [/protistran|dodavat|odberat|jmeno|ridic|clen|osoba|kontakt/, 'person'],
+    [/misto|adres|mesto|ulice/, 'pin'], [/projekt|kod\b|slozk/, 'folder'], [/spotreb/, 'gauge'], [/castk|cena|platb|kc\b|sazb|odmen|zaloh/, 'cash'], [/kategor|typ |druh|stav|skupin|akce$/, 'tag'], [/cislo|symbol|variabil|cis\./, 'hash'], [/protistran|dodavat|odberat|jmeno|ridic|clen|osoba|kontakt/, 'person'],
     [/ucel/, 'flag'], [/\bkm\b|ujet|vzdalen/, 'route'], [/palivo/, 'fuel'], [/uctenk|soubor|priloh|foto|pdf/, 'clip'],
-    [/mail/, 'mail'], [/telefon|mobil/, 'phone'], [/ico|dic|firma|organiz|spolek/, 'build'], [/variabil|cislo|symbol|cis\./, 'hash']];
+    [/mail/, 'mail'], [/telefon|mobil/, 'phone'], [/ico|dic|firma|organiz|spolek/, 'build']];
   function iconFor(t) {
     var s = (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') + ' ';
     for (var i = 0; i < MAP.length; i++) if (MAP[i][0].test(s)) return ICONS[MAP[i][1]];
