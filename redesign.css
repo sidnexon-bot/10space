@@ -815,3 +815,9 @@ html[data-platform="apple"] :is(.stat-value, .rep-table td, .acct-table td, td.r
   html[data-platform] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn):not(.ar-x):not(.modal-close) { min-height: 38px !important; }
   html[data-platform] :is(.drive-toolbar-btn, .kd-add, .st-add) { min-height: 38px; }
 }
+
+/* Apple (iOS 26): přepínače (segmentované volby, záložky, filtry, typ příjem/výdaj) jsou pilulky, i jejich vnitřní tlačítka */
+html[data-platform="apple"] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg, .doc-filters, .tabs, .type-toggle),
+html[data-platform="apple"] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg, .tabs, .type-toggle) > :is(button, a, .tab),
+html[data-platform="apple"] :is(.type-btn, .filter-btn, .doc-filters > button),
+html[data-platform="apple"] .btn-group:has(> .type-btn) { border-radius: 999px !important; }
