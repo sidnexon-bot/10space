@@ -3,6 +3,11 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.1.8 (1. 11. 2026)
+- Tlačítka na mobilu: jednotná mřížka (1 = celá šířka, 2 = vedle sebe, 3 = hlavní nahoře a pod ním dvě, 4 = dvě a dvě, 5 = hlavní nahoře a pod ním dvě a dvě).
+- Android: hlavní tlačítko je plná pilulka, ostatní jsou textová tlačítka (jako u Google).
+- Spodní lišta oken má barvu okna i v tmavém režimu; Stáhnout PDF: popisek „Bez anotací“.
+
 ## 3.1.7 (1. 11. 2026)
 - Záložky Podrobnosti / Verze / Náhled mají stejný segmentovaný přepínač jako Akce / Kódy (na počítači, Androidu i iPhonu).
 - Dialog s polem: když je v něm rozepsaný text, první Esc jen upozorní a teprve druhý okno zavře.

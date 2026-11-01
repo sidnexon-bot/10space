@@ -733,3 +733,32 @@ html[data-platform="android"] .detail-tabs, html[data-platform="android"] .mobil
 html[data-platform="android"] .detail-tab, html[data-platform="android"] .mobile-detail-modal-tab { border-radius: 999px; background: transparent; color: var(--and-muted); }
 html[data-platform="android"] .detail-tab.active, html[data-platform="android"] .mobile-detail-modal-tab.active { background: var(--and-accent-c); color: var(--and-on-accent-c); }
 @media (min-width: 769px) { html .detail-tab { font-size: 13px; padding: 7px 4px; } }
+
+/* ===== Tlačítka akcí na mobilu: mřížka 1 / 2 / hlavní + 2 / 2+2 / hlavní + 2+2 (viz platform.js) ===== */
+@media (max-width: 768px) {
+  [data-ar-n] { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; justify-content: stretch !important; }
+  [data-ar-n] > :not(button):not(a):not(input) { display: contents !important; }
+  [data-ar-n] button, [data-ar-n] a[class*="btn"], [data-ar-n] input[type="button"], [data-ar-n] input[type="submit"] {
+    width: auto !important; min-width: 0; max-width: none !important; margin: 0 !important; flex: none !important;
+    white-space: normal; text-align: center; justify-content: center; overflow-wrap: anywhere; }
+  [data-ar-n="1"] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]), [data-ar-n] [data-ar-main] { grid-column: 1 / -1; }
+  [data-ar-n] [data-ar-main] { order: -1; }
+}
+
+/* Android (Material 3): hlavní tlačítko je plná pilulka, ostatní jsou čistě textová tlačítka bez pozadí.
+   Přepínače voleb (typ příjem/výdaj, filtry) si nechávají vlastní vzhled s označenou volbou. */
+@media (max-width: 768px) {
+  :where(html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn)) {
+    border-radius: 999px !important; min-height: 44px; font-size: 14px; font-weight: 600; letter-spacing: .01em; box-shadow: none !important; border: 0 !important;
+    background: transparent !important; color: var(--and-accent) !important; }
+  html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"]):not(.type-btn):not(.filter-btn):is(:active, :focus-visible):not([data-ar-main]):not(.btn-primary):not(.modal-btn-primary) { background: color-mix(in srgb, var(--and-accent) 12%, transparent) !important; }
+  html[data-platform="android"] [data-ar-n] :is(button, a, input):is(.btn-danger, .modal-btn-danger, .a-no, .tn-danger):not(.tn-primary):not(.type-btn) { color: #b3261c !important; }
+  html[data-platform="android"] body.dark [data-ar-n] :is(button, a, input):is(.btn-danger, .modal-btn-danger, .a-no):not(.type-btn) { color: #f2b8b5 !important; }
+  html[data-platform="android"] [data-ar-n] :is(button, a, input):is(.btn-primary, .modal-btn-primary, .tn-primary, .primary-btn, .detail-save-btn, .ar-primary, [data-ar-main]),
+  html[data-platform="android"] [data-ar-n="1"] :is(button, a, input):not(.type-btn):not(.filter-btn) { background: var(--and-accent) !important; color: #ffffff !important; }
+  html[data-platform="android"] body.dark [data-ar-n] :is(button, a, input):is(.btn-primary, .modal-btn-primary, .tn-primary, .primary-btn, .detail-save-btn, .ar-primary, [data-ar-main]),
+  html[data-platform="android"] body.dark [data-ar-n="1"] :is(button, a, input):not(.type-btn):not(.filter-btn) { color: #0b0b0c !important; }
+  html[data-platform="android"] [data-ar-n] :is(button, a):is(.tn-danger) { background: #b3261c !important; color: #ffffff !important; }
+  html[data-platform="android"] body.dark [data-ar-n] :is(button, a):is(.tn-danger) { background: #f2b8b5 !important; color: #601410 !important; }
+  html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"]):disabled { opacity: .38; }
+}

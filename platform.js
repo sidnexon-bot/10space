@@ -151,3 +151,55 @@ document.addEventListener('DOMContentLoaded', function () {
     run(); new MutationObserver(sched).observe(document.body, { childList: true, subtree: true });
   });
 })();
+
+/* Tlačítka akcí na mobilu (do 768 px) – jednotná mřížka ve všech aplikacích 10men:
+   1 tlačítko = celá šířka, 2 = vedle sebe, 3 = hlavní přes celou šířku a pod ním dvě vedle sebe,
+   4 = dvě a dvě, 5 = hlavní přes celou šířku a pod ním dvě a dvě (dál stejně: sudý počet po dvojicích, lichý s hlavním nahoře).
+   Hlavní je tlačítko s třídou *primary*, jinak první, které není nebezpečné (Smazat, Stornovat…).
+   Tlačítka se nepřesouvají ani neskrývají, mění se jen jejich rozložení (CSS, atribut data-ar-n a data-ar-main).
+   Skupinu, která je přepínačem voleb (např. Přijdu / Možná / Nepřijdu), vyloučí atribut data-ar-skip. */
+(function () {
+  var SEL = '.modal-footer, .tn-actions, .projekt-wiki-actions, .st-foot, .dk-foot';
+  var mq = window.matchMedia('(max-width: 768px)');
+  var BTN = 'button, a.btn, a[class*="btn"], input[type="button"], input[type="submit"]';
+  var busy = false, queued = false, mo = null;
+
+  function hiddenByApp(el) {
+    if (el.hidden || el.style.display === 'none' || el.classList.contains('hidden')) return true;
+    var r = el.getBoundingClientRect(); return !r.width && !r.height && !el.hasAttribute('data-ar-seen');
+  }
+  function mine(box) {
+    return [].filter.call(box.querySelectorAll(BTN), function (b) { return b.closest(SEL) === box; });
+  }
+  function isPrimary(b) { return /(^|[\s-])primary([\s-]|$)|tn-primary|modal-btn-primary/.test(b.className); }
+  function isDanger(b) { return /danger|(^|\s)a-no(\s|$)/.test(b.className) || /^(smazat|stornovat|deaktivovat|odstranit)/i.test((b.textContent || '').trim()); }
+
+  function clear(box) {
+    box.removeAttribute('data-ar-n');
+    [].forEach.call(box.querySelectorAll('[data-ar-main]'), function (b) { b.removeAttribute('data-ar-main'); });
+  }
+  function build(box) {
+    if (!mq.matches || box.hasAttribute('data-ar-skip')) { clear(box); return; }
+    var all = mine(box).filter(function (b) { return !hiddenByApp(b); });
+    var n = all.length;
+    if (n < 1) { clear(box); return; }
+    [].forEach.call(box.querySelectorAll('[data-ar-main]'), function (b) { b.removeAttribute('data-ar-main'); });
+    box.setAttribute('data-ar-n', String(n));
+    if (n >= 3 && n % 2 === 1) {
+      var main = all.filter(isPrimary).pop() || all.filter(function (b) { return !isDanger(b); })[0] || all[0];
+      main.setAttribute('data-ar-main', '');
+    }
+  }
+  function run() {
+    queued = false; if (busy) return; busy = true; if (mo) mo.disconnect();
+    try { [].forEach.call(document.querySelectorAll(SEL), build); } catch (e) { /* skupina se přeskočí */ }
+    if (mo) mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+    busy = false;
+  }
+  function schedule() { if (queued) return; queued = true; (window.requestAnimationFrame || setTimeout)(run); }
+  function init() {
+    mo = new MutationObserver(schedule); run();
+    (mq.addEventListener ? mq.addEventListener('change', run) : mq.addListener(run));
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

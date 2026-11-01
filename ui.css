@@ -164,7 +164,7 @@ body .bottom-sheet { z-index: 4001; }
 
 /* Dlouhá okna (např. evidenční číslo) na malém displeji: tlačítka zůstanou vidět dole, i když se obsah posouvá */
 @media (max-width: 900px) {
-  .modal-overlay .modal > .modal-footer { position: sticky; bottom: -20px; margin: 12px -20px -20px; padding: 12px 20px 20px; background: var(--surface, var(--raised, #fff)); border-radius: 0 0 16px 16px; z-index: 1; }
+  .modal-overlay .modal > .modal-footer { position: sticky; bottom: -20px; margin: 12px -20px -20px; padding: 12px 20px 20px; background: inherit; border-radius: 0 0 16px 16px; z-index: 1; }
 }
 
 /* Karta Verze v podrobnostech souboru */
