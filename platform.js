@@ -210,12 +210,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
   /* Samostatné tlačítko (v řádku je samo, širší než 110 px, s popiskem) = jedno tlačítko → celá šířka */
-  var EXCL = '.bottom, nav, header, .sidebar, .st-seg, .pj-seg, .prog-seg, .doc-filters, .acct-switch, .mobile-detail-modal-tabs, .bottom-sheet, [role="tablist"], .type-btn, .filter-btn, .ar-x, .modal-close, .prog-ico, .prog-grip, .prog-badge, .st-ic, .st-grip, .dots-btn, .pc-more, .pdf-btn, .mobile-avatar-btn, .pmenu, .profile-menu, table, .ar-menu, .transit-edit, .search-bar, .drive-toolbar';
+  var EXCL = '.bottom, nav, header, .sidebar, .st-seg, .pj-seg, .prog-seg, .doc-filters, .acct-switch, .mobile-detail-modal-tabs, .bottom-sheet, [role="tablist"], .type-btn, .filter-btn, .ar-x, .modal-close, .prog-ico, .prog-grip, .prog-badge, .st-ic, .st-grip, .dots-btn, .pc-more, .pdf-btn, .mobile-avatar-btn, .pmenu, .profile-menu, table, .ar-menu, .transit-edit, .search-bar, .drive-toolbar, .kl-table, .kl-row, .kt-table, .kd-list, .kd-code, .kt-copy, .kd-more, [role="row"], [role="table"], [role="listbox"], [role="menu"]';
   function soloPass() {
     var list = [].slice.call(document.querySelectorAll('button, a[class*="btn"]')).slice(0, 600);
     list.forEach(function (b) {
       var ok = false;
-      if (mq.matches && !b.closest(SEL) && !b.closest(EXCL) && !b.disabled) {
+      if (mq.matches && !b.closest(SEL) && !b.closest(EXCL) && !b.disabled && b.children.length < 2 + (b.querySelector('svg') ? 1 : 0)) {
         var r = b.getBoundingClientRect(), t = (b.textContent || '').replace(/\s+/g, ' ').trim();
         if (r.width >= 110 && r.height >= 24 && t.length >= 3 && b.parentElement) {
           ok = [].every.call(b.parentElement.children, function (s) {
