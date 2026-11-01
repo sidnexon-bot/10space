@@ -821,3 +821,11 @@ html[data-platform="apple"] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-m
 html[data-platform="apple"] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg, .tabs, .type-toggle) > :is(button, a, .tab),
 html[data-platform="apple"] :is(.type-btn, .filter-btn, .doc-filters > button),
 html[data-platform="apple"] .btn-group:has(> .type-btn) { border-radius: 999px !important; }
+
+/* přepínače (segmenty, záložky, filtry, typ příjem/výdaj) jsou menší než tlačítka: 30 px */
+@media (max-width: 768px) {
+  html[data-platform] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg) { padding: 3px !important; gap: 2px !important; }
+  html[data-platform] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg) > :is(button, a) {
+    min-height: 30px !important; height: 30px; padding-top: 0 !important; padding-bottom: 0 !important; font-size: 13px !important; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  html[data-platform] :is(.doc-filters > button, .type-btn, .filter-btn) { min-height: 30px !important; height: 30px; padding-top: 0 !important; padding-bottom: 0 !important; font-size: 13px !important; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+}

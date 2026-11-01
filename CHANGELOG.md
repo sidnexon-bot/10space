@@ -3,6 +3,9 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.2.1 (1. 11. 2026)
+- Přepínače (Akce / Kódy, záložky detailu souboru) jsou menší než tlačítka: 30 px.
+
 ## 3.2.0 (1. 11. 2026)
 - Oprava: tabulka kódů v Projektech → Kódy se po úpravě tlačítek rozhodila; pravidlo pro samostatná tlačítka nově přeskakuje řádky tabulek a seznamů.
 
