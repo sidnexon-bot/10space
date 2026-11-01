@@ -5,6 +5,7 @@ Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor,
 
 ## 3.1.7 (1. 11. 2026)
 - Záložky Podrobnosti / Verze / Náhled mají stejný segmentovaný přepínač jako Akce / Kódy (na počítači, Androidu i iPhonu).
+- Dialog s polem: když je v něm rozepsaný text, první Esc jen upozorní a teprve druhý okno zavře.
 
 ## 3.1.6 (1. 11. 2026)
 - Apple: profilové menu ve stylu Liquid Glass (jako spodní lišta); Android beze změny.

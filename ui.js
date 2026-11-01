@@ -58,8 +58,9 @@
       ov.classList.add("tn-out");
       setTimeout(function () { ov.remove(); dBusy = false; try { if (prev && prev.focus && document.contains(prev)) prev.focus(); } catch (e) { /* prvek zmizel */ } job.resolve(result(yes)); dNext(); }, reduced() ? 0 : 150);
     }
+    var escWarned = false; // rozepsaný text: první Esc jen upozorní, druhý zavře
     function key(e) {
-      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(s.kind === "alert"); }
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (s.kind === "prompt" && input && input.value !== (s.value || "") && !escWarned) { escWarned = true; dlg.classList.remove("tn-nudge"); void dlg.offsetWidth; dlg.classList.add("tn-nudge"); return; } close(s.kind === "alert"); }
       else if (e.key === "Enter" && s.kind === "choose") { e.preventDefault(); e.stopPropagation(); var f = document.activeElement; close(f && f.dataset && f.dataset.r != null ? +f.dataset.r : 0); }
       else if (e.key === "Enter" && !(e.target && e.target.matches && e.target.matches('[data-r="0"]'))) { e.preventDefault(); e.stopPropagation(); if (s.kind === "prompt" && !input.value.trim() && s.required !== false) { input.focus(); return; } close(true); }
       else if (e.key === "Tab") {
