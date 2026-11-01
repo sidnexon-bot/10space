@@ -736,12 +736,14 @@ html[data-platform="android"] .detail-tab.active, html[data-platform="android"] 
 
 /* ===== Tlačítka akcí na mobilu: mřížka 1 / 2 / hlavní + 2 / 2+2 / hlavní + 2+2 (viz platform.js) ===== */
 @media (max-width: 768px) {
-  [data-ar-n] { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; justify-content: stretch !important; }
+  [data-ar-n] { --ar-g: 8px; display: flex !important; flex-direction: row !important; flex-wrap: wrap; gap: var(--ar-g); align-items: stretch; justify-content: stretch !important; }
   [data-ar-n] > :not(button):not(a):not(input) { display: contents !important; }
   [data-ar-n] button, [data-ar-n] a[class*="btn"], [data-ar-n] input[type="button"], [data-ar-n] input[type="submit"] {
-    width: auto !important; min-width: 0; max-width: none !important; margin: 0 !important; flex: none !important;
+    width: auto !important; min-width: 0; max-width: none !important; margin: 0 !important; flex: 1 1 calc(50% - var(--ar-g) / 2) !important;
     white-space: normal; text-align: center; justify-content: center; overflow-wrap: anywhere; }
-  [data-ar-n="1"] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]), [data-ar-n] [data-ar-main] { grid-column: 1 / -1; }
+  [data-ar-n="1"] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]), [data-ar-n] [data-ar-main] { flex: 1 1 100% !important; }
+  /* dvojice s nestejnou šířkou: kratší text = užší tlačítko, delší se nemusí zalamovat (viz fit() v platform.js) */
+  [data-ar-n] [data-ar-f] { flex: 0 0 calc((100% - var(--ar-g)) * var(--ar-f)) !important; }
   [data-ar-n] [data-ar-main] { order: -1; }
 }
 
@@ -768,7 +770,7 @@ html[data-platform="android"] .detail-tab.active, html[data-platform="android"] 
   html[data-platform="apple"] { --r-card: 26px; --r-ctl: 18px; }
   html[data-platform="apple"] :is(.modal:not(:has(> .modal-backdrop)), .modal-content, .tn-dlg) { border-radius: 34px !important; }
   html[data-platform="apple"] .bottom-sheet { border-radius: 34px 34px 0 0; }
-  html[data-platform="apple"] [data-ar-n] { gap: 10px; }
+  html[data-platform="apple"] [data-ar-n] { --ar-g: 10px; gap: 10px; }
   html[data-platform="apple"] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn) {
     border-radius: 999px !important; min-height: 38px; font-size: 14px; font-weight: 600; padding-left: 14px; padding-right: 14px; }
   html[data-platform="apple"] :is(.modal-footer, .tn-actions, .rep-actions, .st-foot, .dk-foot)[data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn) { min-height: 38px; }

@@ -3,6 +3,9 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.4.0 (1. 11. 2026)
+- Tlačítka ve dvojicích na mobilu: výchozí je půl na půl, ale když by se delší text zalomil, kratší tlačítko se zúží na šířku svého textu. Platí i pro dialogy sestavené za běhu.
+
 ## 3.3.1 (1. 11. 2026)
 - Nabídka „Jak chcete dokument otevřít?“: řádky jsou na Androidu i iOS jednotné pilulky s ikonou vlevo a zarovnaným textem (dřív se na Androidu zobrazovaly jako červená tlačítka).
 

@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var SEL = '.modal-footer, .tn-actions, .projekt-wiki-actions, .st-foot, .dk-foot';
   var mq = window.matchMedia('(max-width: 768px)');
   var BTN = 'button, a.btn, a[class*="btn"], input[type="button"], input[type="submit"]';
-  var busy = false, queued = false, mo = null;
+  var busy = false, queued = false, mo = null, ft = null, follow = false;
 
   function hiddenByApp(el) {
     if (el.hidden || el.style.display === 'none' || el.classList.contains('hidden')) return true;
@@ -227,17 +227,45 @@ document.addEventListener('DOMContentLoaded', function () {
       if (ok) b.setAttribute('data-ar-solo', ''); else if (b.hasAttribute('data-ar-solo')) b.removeAttribute('data-ar-solo');
     });
   }
+  /* Dvojice: výchozí je půl na půl; když by se delší text zalomil, dostane kratší tlačítko jen tolik místa, kolik potřebuje */
+  function nat(el) {
+    var st = el.getAttribute('style'), s = el.style;
+    s.setProperty('white-space', 'nowrap', 'important'); s.setProperty('flex', '0 0 auto', 'important'); s.setProperty('width', 'auto', 'important');
+    var w = el.offsetWidth;
+    if (st === null) el.removeAttribute('style'); else el.setAttribute('style', st);
+    return w;
+  }
+  function fit(box) {
+    [].forEach.call(box.querySelectorAll('[data-ar-f]'), function (b) { b.removeAttribute('data-ar-f'); b.style.removeProperty('--ar-f'); });
+    if (!mq.matches || !box.hasAttribute('data-ar-n') || box.hasAttribute('data-ar-skip')) return;
+    var rest = mine(box).filter(function (b) { return !b.hasAttribute("data-ar-main") && b.offsetWidth > 0; });
+    var W = box.clientWidth - (parseFloat(getComputedStyle(box).getPropertyValue('--ar-g')) || 8);
+    if (W <= 0) return;
+    for (var i = 0; i + 1 < rest.length; i += 2) {
+      var a = rest[i], b = rest[i + 1], na = nat(a), nb = nat(b), f = 0.5;
+      if (na > W / 2 || nb > W / 2 || na + nb > W) f = na >= nb ? Math.max(0.5, 1 - (nb + 2) / W) : Math.min(0.5, (na + 2) / W);
+      if (Math.abs(f - 0.5) < 0.01) continue;
+      a.setAttribute('data-ar-f', ''); a.style.setProperty('--ar-f', f.toFixed(4));
+      b.setAttribute('data-ar-f', ''); b.style.setProperty('--ar-f', (1 - f).toFixed(4));
+    }
+  }
   function run() {
     queued = false; if (busy) return; busy = true; if (mo) mo.disconnect();
     if (!mq.matches) { [].forEach.call(document.querySelectorAll('.ar-x'), function (x) { x.remove(); }); [].forEach.call(document.querySelectorAll('[data-ar-icon]'), function (b) { b.removeAttribute('data-ar-icon'); }); }
     try { [].forEach.call(document.querySelectorAll(SEL), build); } catch (e) { /* skupina se přeskočí */ }
+    try { [].forEach.call(document.querySelectorAll(SEL), fit); } catch (e) { /* dvojice zůstanou půl na půl */ }
     try { soloPass(); } catch (e) { /* samostatná tlačítka se přeskočí */ }
     if (mo) mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
     busy = false;
+    /* po animaci okna a načtení písma se dvojice přeměří ještě jednou */
+    if (!follow) { clearTimeout(ft); ft = setTimeout(function () { follow = true; run(); follow = false; }, 500); }
   }
   function schedule() { if (queued) return; queued = true; (window.requestAnimationFrame || setTimeout)(run); }
   function init() {
     mo = new MutationObserver(schedule); run();
+    window.addEventListener('resize', schedule);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', schedule);
     (mq.addEventListener ? mq.addEventListener('change', run) : mq.addListener(run));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
