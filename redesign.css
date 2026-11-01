@@ -749,7 +749,7 @@ html[data-platform="android"] .detail-tab.active, html[data-platform="android"] 
    Přepínače voleb (typ příjem/výdaj, filtry) si nechávají vlastní vzhled s označenou volbou. */
 @media (max-width: 768px) {
   :where(html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn)) {
-    border-radius: 999px !important; min-height: 44px; font-size: 14px; font-weight: 600; letter-spacing: .01em; box-shadow: none !important; border: 0 !important;
+    border-radius: 999px !important; min-height: 38px; font-size: 14px; font-weight: 600; letter-spacing: .01em; box-shadow: none !important; border: 0 !important;
     background: transparent !important; color: var(--and-accent) !important; }
   html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"]):not(.type-btn):not(.filter-btn):is(:active, :focus-visible):not([data-ar-main]):not(.btn-primary):not(.modal-btn-primary) { background: color-mix(in srgb, var(--and-accent) 12%, transparent) !important; }
   html[data-platform="android"] [data-ar-n] :is(button, a, input):is(.btn-danger, .modal-btn-danger, .a-no, .tn-danger):not(.tn-primary):not(.type-btn) { color: #b3261c !important; }
@@ -761,4 +761,57 @@ html[data-platform="android"] .detail-tab.active, html[data-platform="android"] 
   html[data-platform="android"] [data-ar-n] :is(button, a):is(.tn-danger) { background: #b3261c !important; color: #ffffff !important; }
   html[data-platform="android"] body.dark [data-ar-n] :is(button, a):is(.tn-danger) { background: #f2b8b5 !important; color: #601410 !important; }
   html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"]):disabled { opacity: .38; }
+}
+
+/* Apple (iOS 26): větší zaoblení, pilulková tlačítka, vzdušnější rozestupy, zavírání ikonou ✕ ve skleněném kruhu */
+@media (max-width: 768px) {
+  html[data-platform="apple"] { --r-card: 26px; --r-ctl: 18px; }
+  html[data-platform="apple"] :is(.modal:not(:has(> .modal-backdrop)), .modal-content, .tn-dlg) { border-radius: 34px !important; }
+  html[data-platform="apple"] .bottom-sheet { border-radius: 34px 34px 0 0; }
+  html[data-platform="apple"] [data-ar-n] { gap: 10px; }
+  html[data-platform="apple"] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn) {
+    border-radius: 999px !important; min-height: 38px; font-size: 14px; font-weight: 600; padding-left: 14px; padding-right: 14px; }
+  html[data-platform="apple"] :is(.modal-footer, .tn-actions, .rep-actions, .st-foot, .dk-foot)[data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn) { min-height: 38px; }
+    html[data-platform="apple"] :is(.modal-footer, .tn-actions, .rep-actions) { padding-top: 14px; padding-bottom: 22px; }
+  html[data-platform="apple"] .tn-btn { border-radius: 999px; min-height: 38px; }
+  html[data-platform="apple"] [data-ar-n] .tn-btn:not(.tn-primary):not(.tn-danger) { background: rgba(120, 120, 128, .16); }
+  /* nadpisy sekcí: větný tvar a o trochu větší, ne VELKÁ PÍSMENA (iOS 26) */
+  html[data-platform="apple"] :is(.modal-section-title, .detail-label, .projekt-sekce-title, .dashboard-card-title, .prog-add-title, .stat-label, .exp-group-title, .group-title, .rep-controls label, .section-title, .season-title, .event-label, .bal-table caption) {
+    text-transform: none !important; letter-spacing: 0 !important; font-size: 13px; font-weight: 600; }
+  html[data-platform="apple"] body h3 { text-transform: none !important; letter-spacing: 0 !important; }
+  /* víceřádková pole v oknech: stejné zaoblení a výplň jako ostatní pole, bez tvrdého rámečku */
+  html[data-platform="apple"] :is(.modal-content, .modal) textarea { border: 0 !important; border-radius: var(--r-ctl, 18px) !important; background: rgba(120, 120, 128, .14) !important; padding: 12px 14px !important; }
+  html[data-platform="apple"] [data-ar-icon] { display: none !important; }
+  html[data-platform="apple"] [data-ar-n][data-ar-empty] { display: none !important; }
+  html[data-platform="apple"] :is(.modal-content, .modal, .tn-dlg):has(> .ar-x) { position: relative; }
+  html[data-platform="apple"] :is(.ar-x, .modal-close) {
+    width: 38px; height: 38px; min-height: 0; padding: 0; border: 0; border-radius: 50%; flex: none;
+    display: inline-flex; align-items: center; justify-content: center; color: inherit; cursor: pointer;
+    background: color-mix(in srgb, currentColor 8%, rgba(255, 255, 255, .55)); -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, .14), inset 0 0 0 .5px rgba(255, 255, 255, .6); }
+  html[data-platform="apple"] .ar-x { position: absolute; top: 14px; right: 14px; z-index: 6; }
+  html[data-platform="apple"] body.dark :is(.ar-x, .modal-close) { background: rgba(120, 120, 128, .32); box-shadow: 0 1px 8px rgba(0, 0, 0, .4), inset 0 0 0 .5px rgba(255, 255, 255, .14); }
+  html[data-platform="apple"] .modal-close { font-size: 18px; line-height: 1; }
+}
+
+/* Apple: systémové písmo SF Pro (na iPhonu, iPadu a Macu se načte samo, soubor písma se nevkládá), optická velikost, těsnější velké nadpisy, částky číslicemi stejné šířky */
+html[data-platform="apple"] body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", system-ui, sans-serif; font-optical-sizing: auto; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+html[data-platform="apple"] :is(.view-title, header h1, .modal h2, .modal-title, .tn-dlg h2, h1) { letter-spacing: -0.022em; }
+html[data-platform="apple"] :is(.stat-value, .rep-table td, .acct-table td, td.r, th.r, .amount, .tx-amount, .bal-table td) { font-variant-numeric: tabular-nums; }
+
+/* samostatné tlačítko = celá šířka; pole na Apple zaoblená; odkazy-tlačítka v mřížce přebíjí vložené styly */
+@media (max-width: 768px) {
+  [data-ar-solo] { display: flex !important; align-items: center; justify-content: center; width: 100% !important; box-sizing: border-box; margin-left: 0 !important; margin-right: 0 !important; white-space: normal; text-align: center; }
+  html[data-platform="apple"] [data-ar-solo] { min-height: 38px !important; border-radius: 999px !important; font-size: 14px !important; font-weight: 600; }
+  html[data-platform="apple"] [data-ar-n] a[class*="btn"] { min-height: 38px !important; border: 0 !important; font-size: 14px !important; }
+  html[data-platform="apple"] :is(input, select, textarea):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=search]):not(.search-select):not(#progSearch) { border-radius: 18px !important; }
+  html[data-platform="apple"] textarea { border-radius: 18px !important; }
+  html[data-platform="android"] [data-ar-solo] { min-height: 38px !important; border-radius: 999px !important; border: 0 !important; background: var(--and-accent) !important; color: #ffffff !important; font-size: 14px !important; font-weight: 600; box-shadow: none !important; }
+  html[data-platform="android"] body.dark [data-ar-solo] { color: #0b0b0c !important; }
+}
+
+/* jednotná výška tlačítek na mobilu: 38 px (Apple i Android) */
+@media (max-width: 768px) {
+  html[data-platform] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn):not(.ar-x):not(.modal-close) { min-height: 38px !important; }
+  html[data-platform] :is(.drive-toolbar-btn, .kd-add, .st-add) { min-height: 38px; }
 }

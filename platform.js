@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
    4 = dvě a dvě, 5 = hlavní přes celou šířku a pod ním dvě a dvě (dál stejně: sudý počet po dvojicích, lichý s hlavním nahoře).
    Hlavní je tlačítko s třídou *primary*, jinak první, které není nebezpečné (Smazat, Stornovat…).
    Tlačítka se nepřesouvají ani neskrývají, mění se jen jejich rozložení (CSS, atribut data-ar-n a data-ar-main).
+   Výjimka jen na Apple: Zavřít / Hotovo se skryje a okno dostane kulaté tlačítko ✕ (klikne původní tlačítko).
    Skupinu, která je přepínačem voleb (např. Přijdu / Možná / Nepřijdu), vyloučí atribut data-ar-skip. */
 (function () {
   var SEL = '.modal-footer, .tn-actions, .projekt-wiki-actions, .st-foot, .dk-foot';
@@ -175,14 +176,32 @@ document.addEventListener('DOMContentLoaded', function () {
   function isDanger(b) { return /danger|(^|\s)a-no(\s|$)/.test(b.className) || /^(smazat|stornovat|deaktivovat|odstranit)/i.test((b.textContent || '').trim()); }
 
   function clear(box) {
-    box.removeAttribute('data-ar-n');
+    box.removeAttribute('data-ar-n'); box.removeAttribute('data-ar-empty');
     [].forEach.call(box.querySelectorAll('[data-ar-main]'), function (b) { b.removeAttribute('data-ar-main'); });
+  }
+  /* Apple (iOS 26): Zavřít / Hotovo se nahradí kulatým skleněným tlačítkem ✕ v rohu okna */
+  var X_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var CHECK_SVG = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function iconClose(box) {
+    if (document.documentElement.getAttribute('data-platform') !== 'apple') return;
+    var host = box.closest('.modal-content, .modal, .tn-dlg');
+    if (!host) return;
+    mine(box).forEach(function (b) {
+      if (!/^(zavřít|hotovo)$/i.test((b.textContent || '').trim()) || b.hasAttribute('data-ar-icon')) return;
+      b.setAttribute('data-ar-icon', '');
+      if (host.querySelector('.modal-close, .ar-x')) return;
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'ar-x'; var done = /^hotovo$/i.test((b.textContent || '').trim()); x.setAttribute('aria-label', done ? 'Hotovo' : 'Zavřít'); x.innerHTML = done ? CHECK_SVG : X_SVG;
+      x.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); b.click(); });
+      host.appendChild(x);
+    });
   }
   function build(box) {
     if (!mq.matches || box.hasAttribute('data-ar-skip')) { clear(box); return; }
+    iconClose(box);
     var all = mine(box).filter(function (b) { return !hiddenByApp(b); });
     var n = all.length;
-    if (n < 1) { clear(box); return; }
+    if (n < 1) { clear(box); if (box.querySelector('[data-ar-icon]')) box.setAttribute('data-ar-empty', ''); return; }
+    box.removeAttribute('data-ar-empty');
     [].forEach.call(box.querySelectorAll('[data-ar-main]'), function (b) { b.removeAttribute('data-ar-main'); });
     box.setAttribute('data-ar-n', String(n));
     if (n >= 3 && n % 2 === 1) {
@@ -190,9 +209,29 @@ document.addEventListener('DOMContentLoaded', function () {
       main.setAttribute('data-ar-main', '');
     }
   }
+  /* Samostatné tlačítko (v řádku je samo, širší než 110 px, s popiskem) = jedno tlačítko → celá šířka */
+  var EXCL = '.bottom, nav, header, .sidebar, .st-seg, .pj-seg, .prog-seg, .doc-filters, .acct-switch, .mobile-detail-modal-tabs, .bottom-sheet, [role="tablist"], .type-btn, .filter-btn, .ar-x, .modal-close, .prog-ico, .prog-grip, .prog-badge, .st-ic, .st-grip, .dots-btn, .pc-more, .pdf-btn, .mobile-avatar-btn, .pmenu, .profile-menu, table, .ar-menu, .transit-edit, .search-bar, .drive-toolbar';
+  function soloPass() {
+    var list = [].slice.call(document.querySelectorAll('button, a[class*="btn"]')).slice(0, 600);
+    list.forEach(function (b) {
+      var ok = false;
+      if (mq.matches && !b.closest(SEL) && !b.closest(EXCL) && !b.disabled) {
+        var r = b.getBoundingClientRect(), t = (b.textContent || '').replace(/\s+/g, ' ').trim();
+        if (r.width >= 110 && r.height >= 24 && t.length >= 3 && b.parentElement) {
+          ok = [].every.call(b.parentElement.children, function (s) {
+            if (s === b) return true; var q = s.getBoundingClientRect();
+            return !q.width || !q.height || q.bottom <= r.top + 4 || q.top >= r.bottom - 4;
+          });
+        }
+      }
+      if (ok) b.setAttribute('data-ar-solo', ''); else if (b.hasAttribute('data-ar-solo')) b.removeAttribute('data-ar-solo');
+    });
+  }
   function run() {
     queued = false; if (busy) return; busy = true; if (mo) mo.disconnect();
+    if (!mq.matches) { [].forEach.call(document.querySelectorAll('.ar-x'), function (x) { x.remove(); }); [].forEach.call(document.querySelectorAll('[data-ar-icon]'), function (b) { b.removeAttribute('data-ar-icon'); }); }
     try { [].forEach.call(document.querySelectorAll(SEL), build); } catch (e) { /* skupina se přeskočí */ }
+    try { soloPass(); } catch (e) { /* samostatná tlačítka se přeskočí */ }
     if (mo) mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
     busy = false;
   }
