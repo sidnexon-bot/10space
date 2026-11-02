@@ -946,3 +946,57 @@ html[data-platform="apple"] :is(.sidebar-nav-item, .sidebar-action) { border-rad
   .modal-overlay[data-pres="sheet"] > .modal .sheet-x ~ :is(h2, h3, .modal-header, .modal-title) { padding-right: 44px; }
 }
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) { .modal-overlay:not([data-pres="sheet"]) > .modal, .modal-overlay[data-pres="sheet"] > .modal, .modal-overlay { transition-duration: 0s !important; } }
+
+/* ── 3.11.1: sheet má pevné záhlaví (nadpis + jednotný křížek jako v přidání dokladu v 10korun); obsah se posouvá pod ním ── */
+@media (max-width: 768px) {
+  .modal-overlay[data-pres="sheet"] > .modal { padding: 0 20px max(20px, env(safe-area-inset-bottom)) !important; }
+  .modal-overlay[data-pres="sheet"] > .modal > .modal-header, .modal-overlay[data-pres="sheet"] > .modal > .sheet-head { position: sticky; top: 0; z-index: 8; background: inherit; }
+  .modal-overlay[data-pres="sheet"] > .modal > .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -20px 6px; padding: 14px 20px 8px; font-size: 16px; font-weight: 700; color: var(--text, inherit); }
+  .modal-overlay[data-pres="sheet"] > .modal > .sheet-head .sheet-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .modal-overlay[data-pres="sheet"] > .modal .sheet-src { display: none !important; }
+}
+
+/* ── 3.11.2: sjednocený nadpis a oddělení pevného záhlaví od posouvaného obsahu ── */
+@media (max-width: 768px) {
+  html[data-platform] .modal-overlay[data-pres="sheet"] > .modal :is(.modal-title, .sheet-title) { font-size: 16px !important; font-weight: 700 !important; letter-spacing: 0 !important; line-height: 1.3 !important; color: var(--text, inherit) !important; text-align: left; }
+  .modal-overlay[data-pres="sheet"] > .modal > :is(.modal-header, .sheet-head) { padding-bottom: 12px; transition: box-shadow .15s ease; }
+  .modal-overlay[data-pres="sheet"] > .modal.is-scrolled > :is(.modal-header, .sheet-head) { box-shadow: 0 1px 0 rgba(60, 60, 67, .16); }
+  body.dark .modal-overlay[data-pres="sheet"] > .modal.is-scrolled > :is(.modal-header, .sheet-head) { box-shadow: 0 1px 0 rgba(255, 255, 255, .12); }
+}
+@media (max-width: 768px) {
+  .modal-overlay[data-pres="sheet"] > .modal > .modal-footer { box-shadow: 0 -1px 0 rgba(60, 60, 67, .12); }
+  body.dark .modal-overlay[data-pres="sheet"] > .modal > .modal-footer { box-shadow: 0 -1px 0 rgba(255, 255, 255, .1); }
+}
+
+/* ── 3.12.0: sjednocení tlačítek: Apple (iPhone, iPad, desktop) jedna sada, Android (telefon, tablet) jedna sada; barvy jen z akcentu aplikace ── */
+html[data-platform] .sheet-head, html[data-platform] .sheet-x { display: none !important; }   /* záhlaví sheetu jen na telefonu */
+@media (max-width: 768px) {
+  html[data-platform] .modal-overlay[data-pres="sheet"] > .modal > .sheet-head { display: flex !important; }
+  html[data-platform] .modal-overlay[data-pres="sheet"] > .modal > .sheet-head .sheet-x { display: block !important; }
+}
+/* hlavní tlačítka: stejná výška, nezalamovat (kromě rozložení z platform.js, které si šířky hlídá samo) */
+:is(.btn-primary, .btn-secondary, .btn-danger, .modal-btn, .tn-btn, .modal-footer button, .modal-skupina-btn, .upload-btn, .primary-btn, .detail-save-btn, .detail-cancel-btn, .projekt-card-btn):not([data-ar-n] *) { box-sizing: border-box !important; height: 38px !important; min-height: 38px !important; white-space: nowrap; }
+html[data-platform="apple"] :is(.btn-primary, .btn-secondary, .btn-danger, .modal-btn, .tn-btn, .modal-footer button, .modal-skupina-btn, .upload-btn, .primary-btn, .detail-save-btn, .detail-cancel-btn, .projekt-card-btn):not(.filter-btn):not(.type-btn) { font-weight: 600 !important; }
+html[data-platform="android"] :is(.btn-primary, .btn-secondary, .btn-danger, .modal-btn, .tn-btn, .modal-footer button, .modal-skupina-btn, .upload-btn, .primary-btn, .detail-save-btn, .detail-cancel-btn, .projekt-card-btn):not(.filter-btn):not(.type-btn) { font-weight: 500 !important; }
+/* zavírací křížek: Apple skleněné kolečko 34 px, Android samotný křížek (dotyková plocha 40 px); kříž kreslený čarami, vždy na středu */
+html[data-platform] :is(.modal-close, .ar-x, .sheet-x) { box-sizing: border-box; flex: none; margin: 0; padding: 0 !important; min-width: 0 !important; min-height: 0 !important; border: 0 !important; font-size: 0 !important; line-height: 0 !important; cursor: pointer; overflow: visible; -webkit-tap-highlight-color: transparent; display: block !important; }
+html[data-platform] :is(.modal-close, .sheet-x) { position: relative !important; }
+html[data-platform] :is(.modal-close, .ar-x, .sheet-x) > * { display: none !important; }
+html[data-platform] :is(.modal-close, .ar-x, .sheet-x)::before, html[data-platform] :is(.modal-close, .ar-x, .sheet-x)::after { content: "" !important; position: absolute; left: 50%; top: 50%; border-radius: 2px; background: currentColor; }
+html[data-platform] :is(.modal-close, .ar-x, .sheet-x)::before { transform: translate(-50%, -50%) rotate(45deg); }
+html[data-platform] :is(.modal-close, .ar-x, .sheet-x)::after { transform: translate(-50%, -50%) rotate(-45deg); }
+html[data-platform="apple"] :is(.modal-close, .ar-x, .sheet-x) { width: 34px !important; height: 34px !important; border-radius: 50% !important; color: var(--text, #1c1c1e) !important;
+  background: color-mix(in srgb, currentColor 8%, rgba(255, 255, 255, .55)) !important; -webkit-backdrop-filter: blur(14px) saturate(1.6) !important; backdrop-filter: blur(14px) saturate(1.6) !important;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, .14), inset 0 0 0 .5px rgba(255, 255, 255, .6) !important; }
+html[data-platform="apple"] body.dark :is(.modal-close, .ar-x, .sheet-x) { background: rgba(120, 120, 128, .32) !important; box-shadow: 0 1px 8px rgba(0, 0, 0, .4), inset 0 0 0 .5px rgba(255, 255, 255, .14) !important; }
+html[data-platform="apple"] :is(.modal-close, .ar-x, .sheet-x)::before, html[data-platform="apple"] :is(.modal-close, .ar-x, .sheet-x)::after { width: 13px; height: 2px; }
+html[data-platform="android"] :is(.modal-close, .ar-x, .sheet-x) { width: 40px !important; height: 40px !important; border-radius: 50% !important; background: transparent !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; color: var(--and-muted, var(--muted, #5f6368)) !important; }
+html[data-platform="android"] :is(.modal-close, .ar-x, .sheet-x)::before, html[data-platform="android"] :is(.modal-close, .ar-x, .sheet-x)::after { width: 16px; height: 2px; }
+
+html[data-platform="android"] .modal-skupina-btn { height: 38px !important; min-height: 38px !important; }
+html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"], input[type="button"], input[type="submit"]):not(.type-btn):not(.filter-btn) { padding-left: 12px !important; padding-right: 12px !important; }   /* dlouhý popisek se vejde do poloviny řádku bez zalomení */
+/* tablet a počítač: tlačítka v liště okna jsou kompaktní vpravo (na telefonu se dělí o šířku) */
+@media (min-width: 769px) {
+  html[data-platform] :is(.modal-footer, .modal-content .btn-group) > :is(button, .btn-primary, .btn-secondary, .btn-danger, .modal-btn) { flex: 0 0 auto !important; }
+  html[data-platform] .modal-footer { justify-content: flex-end; }
+}

@@ -389,20 +389,36 @@ document.addEventListener('DOMContentLoaded', function () {
   var OV = '.modal-overlay';                 // obal okna (překryv)
   var CHILD = '.modal';           // vlastní okno uvnitř obalu
   var SHEET = '#evid-modal, #download-choice-modal, #share-modal, #share-manage-modal, #move-modal, #acl-modal, .kl-ov, .vw-choice';           // okna, která jsou vždy sheet (seznamy, menu)
-  var FIELDS = 'input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, .modal-option, .pair-list > *, .modal-list > *';
+  var FIELDS = 'input:not([type=hidden]), select, textarea, .modal-option, .pair-list > *, .modal-list > *';
   function isOpen(o) { return o.classList.contains('active'); }
   function close(o) {
     o.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   }
   function classify(o, upgradeOnly) {
     var p = o.querySelector(':scope > ' + CHILD); if (!p) return;
-    var sheet = o.matches(SHEET) || p.querySelectorAll(FIELDS).length >= 3;
+    var sheet = o.hasAttribute('data-sheet') || (!o.hasAttribute('data-dialog') && (o.matches(SHEET) || p.querySelectorAll(FIELDS).length >= 3));   // data-sheet / data-dialog vynutí formu ručně
     if (sheet) o.setAttribute('data-pres', 'sheet'); else if (!upgradeOnly) o.removeAttribute('data-pres');
-    if (sheet && !p.querySelector('.modal-close, .sheet-x')) {
-      var x = document.createElement('button'); x.type = 'button'; x.className = 'sheet-x'; x.setAttribute('aria-label', 'Zavřít'); x.textContent = '✕';
-      x.addEventListener('click', function (e) { e.stopPropagation(); close(o); });
-      p.insertBefore(x, p.firstChild);
-    }
+    if (sheet && !p.__pres) { p.__pres = 1; p.addEventListener('scroll', function () { p.classList.toggle('is-scrolled', p.scrollTop > 2); }, { passive: true }); }   // stín pod pevným záhlavím, až když se obsah posouvá
+    if (!sheet || p.querySelector(':scope > .modal-header .modal-close')) return;   // vlastní záhlaví s křížkem (10korun) se jen přilepí CSS
+    // záhlaví sheetu: nadpis + křížek, celé zůstává nahoře a obsah se posouvá pod ním
+    var bar = p.querySelector(':scope > .sheet-head');
+    if (!bar) {
+      bar = document.createElement('div'); bar.className = 'sheet-head';
+      bar.innerHTML = '<span class="sheet-title"></span>';
+      var x = p.querySelector(':scope > .ar-x') || p.querySelector('.ar-x');   // křížek z Apple stylu (býval na konci okna)
+      if (!x) {
+        x = document.createElement('button'); x.type = 'button'; x.className = 'sheet-x'; x.setAttribute('aria-label', 'Zavřít'); x.textContent = '✕';
+        x.addEventListener('click', function (e) { e.stopPropagation(); close(o); });
+      }
+      bar.appendChild(x); p.insertBefore(bar, p.firstChild);
+    } else if (bar !== p.firstChild) p.insertBefore(bar, p.firstChild);
+    var ax = p.querySelector('.ar-x'); if (ax && ax.parentNode !== bar) bar.appendChild(ax);   // Apple křížek přidaný později
+    // nadpis: první nadpis okna se zkopíruje do záhlaví a původní se skryje (bez tlačítek uvnitř, aby zůstaly funkční)
+    var src = p.querySelector('.sheet-src') || [].filter.call(p.querySelectorAll('h2, h3, .modal-title, .modal-header'), function (h) { return !bar.contains(h); })[0];
+    var t = bar.querySelector('.sheet-title');
+    var title = '';
+    if (src && !src.querySelector('button, a, input, select')) { src.classList.add('sheet-src'); title = (src.textContent || '').replace(/\s+/g, ' ').trim(); }
+    if (t.textContent !== title) t.textContent = title;   // jen při změně, jinak by změna sama spouštěla pozorovatele dokola
   }
   function scan(n) {
     if (n.nodeType !== 1) return;
