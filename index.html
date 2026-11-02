@@ -4269,10 +4269,10 @@ async function renderProjekty() {
   if (probehle.length > 0) {
     html += `
       <div class="projekty-archiv-toggle" id="archiv-toggle" onclick="toggleArchiv()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="archiv-icon"><polyline points="6 9 12 15 18 9"/></svg>
+        <i class="acc-chev" id="archiv-icon" data-side="start" data-acc="${archivOtevren ? "open" : "closed"}"></i>
         <span id="archiv-label">Starší projekty (${probehle.length})</span>
       </div>
-      <div class="projekty-archiv-sekce ${archivOtevren ? "open" : ""}" id="archiv-sekce">
+      <div class="projekty-archiv-sekce ${archivOtevren ? "open" : ""}" id="archiv-sekce" data-acc="${archivOtevren ? "open" : "closed"}">
         ${probehle.map(p => projektCard(p, true)).join("")}
       </div>
     `;
@@ -4304,8 +4304,7 @@ window.toggleArchiv = () => {
   const label = document.getElementById("archiv-label");
   const probehleCount = document.querySelectorAll(".projekty-archiv-sekce .projekt-card").length;
   
-  sekce.classList.toggle("open", archivOtevren);
-  icon.style.transform = archivOtevren ? "rotate(180deg)" : "";
+  tenAcc.set(sekce, archivOtevren, { chevs: [icon] });   // roleta
   label.textContent = archivOtevren 
     ? "Skrýt starší projekty" 
     : `Starší projekty (${probehleCount})`;

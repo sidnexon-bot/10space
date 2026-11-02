@@ -997,3 +997,14 @@ html[data-platform="android"] [data-ar-n] :is(button, a[class*="btn"], input[typ
   html[data-platform] :is(.modal-footer, .modal-content .btn-group) > :is(button, .btn-primary, .btn-secondary, .btn-danger, .modal-btn) { flex: 0 0 auto !important; }
   html[data-platform] .modal-footer { justify-content: flex-end; }
 }
+/* ── 3.13.0: rozbalovací bloky jako roleta (platform.js, tenAcc) a výrazná šipka: v zavřeném stavu míří na text, v otevřeném dolů ── */
+.acc-chev {
+  display: inline-block; flex: none; box-sizing: border-box; width: 10px; height: 10px; margin: 0 7px; padding: 0; vertical-align: middle;
+  border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; border-radius: 1.5px;
+  color: var(--text, #1c1c1e); opacity: .85; font-size: 0 !important; line-height: 0 !important; transform: rotate(135deg);
+  transition: transform .34s cubic-bezier(.32, .72, 0, 1), color .2s ease, opacity .2s ease;
+}
+.acc-chev[data-side="start"], .acc-chev[data-side="start"] { transform: rotate(-45deg); }
+.acc-chev[data-acc="open"] { transform: rotate(45deg) translate(-1px, -1px); color: var(--accent, currentColor); opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .acc-chev { transition: none; } }
+

@@ -437,3 +437,56 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
+
+/* Rozbalovací bloky (accordion) jako roleta: tělo se odvíjí shora dolů (výška a vnitřní okraje z nuly na naměřenou hodnotu),
+   při sbalení se stejně svine. Stav nese atribut data-acc="open|closed" (podle něj se otáčí šipka v CSS).
+   tenAcc.set(holder, open?, { body, display, chevs }) — holder nese stav a třídu .open (CSS ji může používat k zobrazení),
+   body je animovaný prvek (výchozí holder), display ("block", "flex"…) pro bloky skrývané přes style.display, chevs = šipky, které dostanou stejný stav.
+   tenAcc.toggle(holder, opts) přepne podle aktuálního stavu. Respektuje „omezit pohyb“. */
+(function () {
+  var DUR = 340, EASE = 'cubic-bezier(.32, .72, 0, 1)';
+  var reduced = function () { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; };
+  function clean(b) { b.style.height = ''; b.style.overflow = ''; b.style.transition = ''; b.style.paddingTop = ''; b.style.paddingBottom = ''; b.style.boxSizing = ''; b.style.opacity = ''; }
+  function isOpen(h, o) {
+    var a = h.getAttribute('data-acc'); if (a) return a === 'open';
+    var b = (o && o.body) || h;   // bez atributu (blok vykreslený hned otevřený): zjistí se z vzhledu
+    return o && o.display ? getComputedStyle(b).display !== 'none' : h.classList.contains('open');
+  }
+  function set(holder, open, o) {
+    if (!holder) return;
+    o = o || {};
+    var body = o.body || holder;
+    if (open === undefined) open = !isOpen(holder, o);
+    var state = open ? 'open' : 'closed';
+    holder.setAttribute('data-acc', state);
+    (o.chevs || []).forEach(function (c) { if (c) c.setAttribute('data-acc', state); });
+    var trig = o.trigger; if (trig) { trig.setAttribute('data-acc', state); trig.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    var token = body.__accT = (body.__accT || 0) + 1;
+    var show = function () { if (o.display) body.style.display = o.display; holder.classList.add('open'); };
+    var hide = function () { if (o.display) body.style.display = 'none'; holder.classList.remove('open'); };
+    if (reduced()) { clean(body); open ? show() : hide(); return; }
+    var running = body.style.overflow === 'hidden';
+    var from = running ? body.getBoundingClientRect().height : null;
+    if (open) {
+      show();
+      clean(body);
+      var cs = getComputedStyle(body), pt = cs.paddingTop, pb = cs.paddingBottom, full = body.getBoundingClientRect().height;
+      var start = from === null ? 0 : from;
+      body.style.boxSizing = 'border-box'; body.style.overflow = 'hidden';
+      body.style.height = start + 'px'; if (!start) { body.style.paddingTop = '0px'; body.style.paddingBottom = '0px'; }
+      void body.offsetHeight;
+      body.style.transition = 'height ' + DUR + 'ms ' + EASE + ', padding ' + DUR + 'ms ' + EASE;
+      body.style.height = full + 'px'; body.style.paddingTop = pt; body.style.paddingBottom = pb;
+      setTimeout(function () { if (body.__accT === token) clean(body); }, DUR + 40);
+    } else {
+      var h = from === null ? body.getBoundingClientRect().height : from;
+      if (!h) { hide(); clean(body); return; }
+      body.style.boxSizing = 'border-box'; body.style.overflow = 'hidden'; body.style.transition = 'none'; body.style.height = h + 'px';
+      void body.offsetHeight;
+      body.style.transition = 'height ' + DUR + 'ms ' + EASE + ', padding ' + DUR + 'ms ' + EASE;
+      body.style.height = '0px'; body.style.paddingTop = '0px'; body.style.paddingBottom = '0px';
+      setTimeout(function () { if (body.__accT === token) { hide(); clean(body); } }, DUR + 40);
+    }
+  }
+  window.tenAcc = { set: set, toggle: function (holder, o) { set(holder, undefined, o); }, isOpen: isOpen };
+})();
