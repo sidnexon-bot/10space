@@ -53,6 +53,7 @@ const ICON = {
   text: '<svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
   music: '<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
   select: '<svg viewBox="0 0 24 24"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>',
+  seltext: '<svg viewBox="0 0 24 24"><path d="M9 4h6"/><path d="M9 20h6"/><path d="M12 4v16"/><path d="M4 9h2"/><path d="M4 15h2"/><path d="M18 9h2"/><path d="M18 15h2"/></svg>',
   prev: '<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>',
   next: '<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>'
 };
@@ -119,6 +120,12 @@ const CSS = `
 .pdf2-root.chrome-hidden .pdf2-bottom{margin-bottom:-60px;opacity:0;pointer-events:none}
 .pdf2-root.hide-notes .pdf2-pagebox canvas.hl,.pdf2-root.hide-notes .pdf2-pagebox canvas.ink,.pdf2-root.hide-notes .pdf2-pagebox canvas.leg,.pdf2-root.hide-notes .pdf2-pagebox canvas.hi,.pdf2-root.hide-notes .pdf2-items{visibility:hidden}
 .pdf2-root.annotating .pdf2-viewport{cursor:crosshair}
+.pdf2-text{position:absolute;inset:0;overflow:hidden;line-height:1;display:none;z-index:5}
+.pdf2-root.selecting .pdf2-text{display:block}
+.pdf2-text>span,.pdf2-text>br{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%}
+.pdf2-root .pdf2-text,.pdf2-root .pdf2-text *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.pdf2-text ::selection,.pdf2-text::selection{background:rgba(10,132,255,.38)}
+.pdf2-root.selecting .pdf2-viewport{touch-action:auto;cursor:text}
 `;
 
 function el(tag, cls, parent) {
@@ -324,6 +331,7 @@ class PageView {
     this.inkC = el("canvas", "ink", this.box);
     this.hiC = el("canvas", "hi", this.box); this.hiC.width = this.hiC.height = 0;
     this.itemsEl = { public: el("div", "pdf2-items", this.box), personal: el("div", "pdf2-items", this.box) };
+    this.textEl = el("div", "pdf2-text", this.box); this.textKey = 0;   // průhledná textová vrstva pro výběr a kopírování
     this.ratio = reader.ratio;
     this.slotW = 0; this.slotH = 0; this.bw = 0; this.bh = 0;
     this.baseDone = false; this.destroyed = false; this.token = 0; this.region = null; this.hiToken = 0;
@@ -357,7 +365,23 @@ class PageView {
     if (this.destroyed || token !== this.token) return;
     this.baseDone = true;
     this.page = page;
+    if (this.r.selecting) this.buildText();
     await this.drawAnnots();
+  }
+  // — text pro výběr: průhledné řádky přesně nad písmem stránky (jen když je zapnutý režim Vybrat text) —
+  async buildText() {
+    const page = this.page; if (!page || this.destroyed) return;
+    const key = Math.round(this.bw * 100); if (this.textKey === key) return;
+    this.textKey = key; this.textEl.replaceChildren();
+    try {
+      const vp = page.getViewport({ scale: this.bw / page.getViewport({ scale: 1 }).width });
+      const content = await page.getTextContent();
+      if (this.destroyed || this.textKey !== key) return;
+      this.hasText = content.items.some((i) => i.str && i.str.trim());
+      this.textEl.style.setProperty("--scale-factor", vp.scale);
+      await this.r.env.pdfjsLib.renderTextLayer({ textContentSource: content, container: this.textEl, viewport: vp, textDivs: [] }).promise;
+    } catch { this.textKey = 0; }
+    if (this.r.selecting) this.r.noTextHint();
   }
   // — poznámky —
   async drawAnnots() {
@@ -487,7 +511,7 @@ class Reader {
     this.env = env; this.fileId = fileId; this.title = title || "Dokument";
     this.views = new Map(); this.cur = 0; this.z = 1; this.tx = 0; this.ty = 0;
     this.ptrs = new Map(); this.gesture = null; this.flip = null; this.flipping = false;
-    this.ratio = 595 / 842; this.annotating = false; this.tool = "pen"; this.layer = "personal";
+    this.ratio = 595 / 842; this.annotating = false; this.selecting = false; this.tool = "pen"; this.layer = "personal";
     this.penWidth = "medium"; this.history = []; this.redo = []; this.closed = false;
     this.fingerMode = lsGet("pdf2.fingerMode", "auto"); // auto | draw | nav
     this.penSeen = lsGet("pdf2.penSeen") === "1"; this.penDownUntil = 0; this.penDown = false;
@@ -553,6 +577,7 @@ class Reader {
         <button class="pdf2-btn" data-act="prev" aria-label="Předchozí">${ICON.prev}</button>
         <div class="pdf2-pageinfo" data-role="pageinfo">– / –</div>
         <button class="pdf2-btn" data-act="next" aria-label="Další">${ICON.next}</button>
+        <button class="pdf2-btn" data-act="seltext" aria-label="Vybrat text" title="Vybrat text (kopírování)">${ICON.seltext}</button>
         <button class="pdf2-btn" data-act="notes" aria-label="Skrýt/zobrazit poznámky" title="Skrýt/zobrazit poznámky">${ICON.eye}</button>
         <button class="pdf2-btn" data-act="download" aria-label="Stáhnout" title="Stáhnout">${ICON.download}</button>
         <button class="pdf2-btn" data-act="annotate" aria-label="Poznámky" title="Poznámky">${ICON.pencil}</button>
@@ -844,6 +869,7 @@ class Reader {
   }
 
   onDown(e) {
+    if (this.selecting) return;   // režim výběru textu: gesta stránky vypnutá, výběr řeší prohlížeč
     if (this.panel || e.button > 0 && e.pointerType === "mouse") return;
     e.preventDefault();
     if (e.pointerType === "pen") { this.penSeen = true; lsSet("pdf2.penSeen", "1"); this.penDown = true; if (this.fingerMode === "auto") this.updateAnnotUi(); }
@@ -1226,7 +1252,24 @@ class Reader {
 
   // — panel nástrojů —
   setTool(t) { this.tool = t; this.clearSelection(); this.updateAnnotUi(); }
+  toggleSelectText() {
+    if (!this.selecting && this.annotating) this.toggleAnnotate();
+    this.selecting = !this.selecting;
+    this.root.classList.toggle("selecting", this.selecting);
+    const b = this.root.querySelector('[data-act="seltext"]');
+    b.classList.toggle("active", this.selecting);
+    if (this.selecting) {
+      if (this.z > 1.02) { this.z = 1; this.tx = this.ty = 0; this.settleZoom(); }
+      for (const v of this.views.values()) v.buildText();
+      this.toast("Označ text prstem nebo myší a zvol Kopírovat. Hotovo = tlačítko nahoře.");
+    } else getSelection()?.removeAllRanges();
+  }
+  noTextHint() {
+    const v = [...this.views.values()].filter((x) => x.baseDone && x.textKey);
+    if (v.length && v.every((x) => x.hasText === false)) this.toast("Tato stránka nemá textovou vrstvu (je to sken), text jde jen opsat.");
+  }
   toggleAnnotate() {
+    if (this.selecting) this.toggleSelectText();
     this.annotating = !this.annotating;
     this.root.classList.toggle("annotating", this.annotating);
     this.annotBar.classList.toggle("hidden", !this.annotating);
@@ -1290,6 +1333,7 @@ class Reader {
       case "prev": return this.turn(-1);
       case "next": return this.turn(1);
       case "annotate": return this.toggleAnnotate();
+      case "seltext": return this.toggleSelectText();
       case "notes": this.root.classList.toggle("hide-notes"); return this.toast(this.root.classList.contains("hide-notes") ? "Poznámky skryté" : "Poznámky zobrazeny", 1200);
       case "download": return this.openDownload();
       case "undo": return this.doUndo();

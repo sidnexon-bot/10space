@@ -103,3 +103,4 @@ body.dark .kd-general { background: var(--raised, #1c1c1e); }
 .ko-code { flex: none; width: 66px; }
 .ko-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ko-more { padding-top: 6px; font-size: 12px; color: var(--muted, #8e8e93); }
+.kd-del { color: #EE220C !important; }

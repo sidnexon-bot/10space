@@ -15,6 +15,7 @@
   var COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
   var MORE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>';
   var ICON = { plus: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>', edit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    trash: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
     lock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
     unlock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1.8"/></svg>' };
 
@@ -118,7 +119,7 @@
       (items || '<div class="kt-empty">Žádné položky.</div>') + "</div>" +
       (admin ? "" : '<p class="kd-hint" style="margin-top:12px">Položky a jejich uzavírání spravuje administrátor.</p>') +
       '<div class="modal-footer kl-foot">' + (rec.akceId ? '<button type="button" class="modal-btn modal-btn-secondary" data-go-projekt="' + esc(rec.akceId) + '">Otevřít projekt</button>' : "") +
-      (admin ? '<button type="button" class="modal-btn modal-btn-secondary" data-add="' + esc(c) + '">+ Přidat položku</button>' : "") +
+      (admin ? '<button type="button" class="modal-btn modal-btn-secondary" data-add="' + esc(c) + '">+ Přidat položku</button><button type="button" class="modal-btn modal-btn-secondary kd-del" data-del-code="' + esc(c) + '">Smazat kód</button>' : "") +
       '<button type="button" class="modal-btn modal-btn-primary" data-close-code="1">Zavřít</button></div>';
   }
   function closeCode() {
@@ -160,14 +161,26 @@
   }
   var ask = function (title, value, ph) { return window.tenDialog.prompt(title, value || "", { title: title, ok: "Uložit", placeholder: ph || "" }); };
 
+  // Mazání chybných kódů: server smaže jen to, na co se v 10korun zatím neúčtovalo (jinak vrátí důvod); položka -001 jde pryč jen s celým kódem
+  function delPolozka(cislo, k, p) {
+    return window.tenDialog.confirm("Smazat položku " + p.kod + " (" + p.nazev + ")? Jde to jen u položky, na kterou se zatím neúčtovalo. Číslo položky se už nepoužije znovu.", { title: "Smazat položku", ok: "Smazat", danger: true })
+      .then(function (y) { if (y) return run({ action: "polozka_delete", cislo: cislo, poradi: k }, "Položka smazána."); });
+  }
+  function delKod(cislo) {
+    var rec = S.cisla[cislo] || {}, n = sorted(cislo).length;
+    return window.tenDialog.confirm("Smazat celý kód " + cislo + " (" + (rec.nazev || "—") + ") se všemi položkami (" + n + ")? Jde to jen tehdy, když se na něj zatím neúčtovalo. Číslo kódu se už nikdy nepoužije znovu" + (rec.akceId ? "; projektu pak půjde přidělit nový kód." : "."), { title: "Smazat kód", ok: "Smazat", danger: true })
+      .then(function (y) { if (y) { closeCode(); return run({ action: "kod_delete", cislo: cislo }, "Kód smazán."); } });
+  }
+
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-copy],[data-more],[data-manage],[data-add],[data-assign],[data-gnew],[data-grename],[data-open-code],[data-close-code],[data-go-projekt],[data-toggle]"); if (!t) return;
+    var t = e.target.closest && e.target.closest("[data-copy],[data-more],[data-manage],[data-add],[data-assign],[data-gnew],[data-grename],[data-open-code],[data-close-code],[data-go-projekt],[data-toggle],[data-del-code]"); if (!t) return;
     e.stopPropagation();
     if (t.dataset.copy) return copy(t.dataset.copy);
     if (t.dataset.openCode) return openCode(t.dataset.openCode);
     if (t.dataset.closeCode) return closeCode();
     if (t.dataset.goProjekt) { closeCode(); return window.otevritProjekt && window.otevritProjekt(t.dataset.goProjekt); }
     if (!isAdmin()) return;
+    if (t.dataset.delCode) return delKod(t.dataset.delCode);
     if (t.dataset.toggle) {
       var tp = t.dataset.toggle.split("|"), tc = tp[0], tk = tp[1], pp = (S.polozky[tc] || {})[tk]; if (!pp) return;
       if (pp.stav === "uzavrena") return run({ action: "polozka_update", cislo: tc, poradi: tk, stav: "aktivni" }, "Položka znovu otevřena.");
@@ -184,7 +197,9 @@
         items.push({ label: "Přejmenovat " + p.kod, icon: ICON.edit, onClick: function () { ask("Přejmenovat položku " + p.kod, p.nazev).then(function (n) { if (n && n !== p.nazev) run({ action: "polozka_update", cislo: mc, poradi: k, nazev: n }, "Přejmenováno."); }); } });
         items.push(closed ? { label: "Znovu otevřít " + p.kod, icon: ICON.unlock, onClick: function () { run({ action: "polozka_update", cislo: mc, poradi: k, stav: "aktivni" }, "Položka znovu otevřena."); } }
           : { label: "Uzavřít " + p.kod, icon: ICON.lock, onClick: function () { window.tenDialog.confirm("Uzavřít položku " + p.kod + "? Kód zůstane, jen se na ni přestanou nabízet nové platby.", { title: "Uzavřít položku", ok: "Uzavřít", danger: false }).then(function (y) { if (y) run({ action: "polozka_update", cislo: mc, poradi: k, stav: "uzavrena" }, "Položka uzavřena."); }); } });
+        if (k !== "001") items.push({ label: "Smazat " + p.kod, icon: ICON.trash, danger: true, onClick: function () { delPolozka(mc, k, p); } });
       });
+      items.push({ label: "Smazat celý kód " + mc, icon: ICON.trash, danger: true, onClick: function () { delKod(mc); } });
       return window.openBottomSheet("Kód " + mc, items);
     }
     if (t.dataset.more) {
@@ -193,7 +208,8 @@
       return window.openBottomSheet(p.kod, [
         { label: "Přejmenovat", icon: ICON.edit, onClick: function () { ask("Přejmenovat položku " + p.kod, p.nazev).then(function (n) { if (n && n !== p.nazev) run({ action: "polozka_update", cislo: cislo, poradi: poradi, nazev: n }, "Přejmenováno."); }); } },
         closed ? { label: "Znovu otevřít", icon: ICON.unlock, onClick: function () { run({ action: "polozka_update", cislo: cislo, poradi: poradi, stav: "aktivni" }, "Položka znovu otevřena."); } }
-          : { label: "Uzavřít položku", icon: ICON.lock, onClick: function () { window.tenDialog.confirm("Uzavřít položku " + p.kod + "? Kód zůstane, jen se na ni přestanou nabízet nové platby.", { title: "Uzavřít položku", ok: "Uzavřít", danger: false }).then(function (y) { if (y) run({ action: "polozka_update", cislo: cislo, poradi: poradi, stav: "uzavrena" }, "Položka uzavřena."); }); } }
+          : { label: "Uzavřít položku", icon: ICON.lock, onClick: function () { window.tenDialog.confirm("Uzavřít položku " + p.kod + "? Kód zůstane, jen se na ni přestanou nabízet nové platby.", { title: "Uzavřít položku", ok: "Uzavřít", danger: false }).then(function (y) { if (y) run({ action: "polozka_update", cislo: cislo, poradi: poradi, stav: "uzavrena" }, "Položka uzavřena."); }); } },
+        poradi !== "001" ? { label: "Smazat položku", icon: ICON.trash, danger: true, onClick: function () { delPolozka(cislo, poradi, p); } } : { label: "Smazat celý kód " + cislo, icon: ICON.trash, danger: true, onClick: function () { delKod(cislo); } }
       ]);
     }
   }
