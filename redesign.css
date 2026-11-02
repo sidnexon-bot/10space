@@ -941,9 +941,6 @@ html[data-platform="apple"] :is(.sidebar-nav-item, .sidebar-action) { border-rad
   .modal-overlay.active[data-pres="sheet"] > .modal { transform: none; animation: presSheetIn .34s cubic-bezier(.32, .72, 0, 1) backwards !important; }
   html[data-platform="android"] .modal-overlay[data-pres="sheet"] > .modal { border-radius: 28px 28px 0 0 !important; }
   /* křížek doplněný do oken, která ho nemají (platform.js) */
-  .sheet-x { position: sticky; top: 10px; display: grid; place-items: center; width: 32px; height: 32px; margin: 10px 14px -42px auto; padding: 0 !important; min-height: 0 !important; border: 0; border-radius: 50% !important; background: rgba(120, 120, 128, .16); color: inherit; font: 600 15px/1 inherit; cursor: pointer; z-index: 6; }
-  body.dark .sheet-x { background: rgba(235, 235, 245, .16); }
-  .modal-overlay[data-pres="sheet"] > .modal .sheet-x ~ :is(h2, h3, .modal-header, .modal-title) { padding-right: 44px; }
 }
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) { .modal-overlay:not([data-pres="sheet"]) > .modal, .modal-overlay[data-pres="sheet"] > .modal, .modal-overlay { transition-duration: 0s !important; } }
 
