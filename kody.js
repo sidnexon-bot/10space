@@ -125,7 +125,7 @@
   function closeCode() {
     var el = M.el; if (!el) return; M.el = null; M.cislo = null;
     document.removeEventListener("keydown", onKey, true);
-    el.classList.remove("active"); setTimeout(function () { el.remove(); }, 240);
+    el.classList.remove("active"); setTimeout(function () { el.remove(); }, 380);
   }
   function onKey(e) { if (e.key === "Escape") { e.stopPropagation(); closeCode(); } }
   function openCode(c) {

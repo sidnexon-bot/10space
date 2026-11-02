@@ -911,21 +911,38 @@ html[data-platform="apple"] :is(.sidebar-nav-item, .sidebar-action) { border-rad
   #exp-list > .exp-card, #exp-list > div:not(.exp-group-title) { margin: 0; }
 }
 
-/* ── 3.10.0: formuláře na mobilu jako bottom sheet (vysunuje se zespodu, držátko, tažením dolů se zavře) ── */
-@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes presSheetIn { from { transform: translateY(100%); } }
+@keyframes presDlgIn { from { transform: translateY(-18px) scale(.97); opacity: 0; } }
+/* ── 3.11.0: pravidla zobrazení oken na mobilu ──
+   • dialog (potvrzení, krátký formulář s jedním polem): nahoře nad klávesnicí, modální okno
+   • menu a formulář s mnoha kolonkami (data-pres="sheet" nastaví platform.js): bottom sheet jako přidání dokladu v 10korun,
+     bez držátka, jen křížek a tlačítka dole */
 @media (max-width: 768px) {
-  .modal-overlay { align-items: flex-end !important; justify-content: center !important; padding: 0 !important; }
-  .modal-overlay > .modal {
+  .modal-overlay { justify-content: center !important; padding: 0 !important; display: flex !important; visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s !important; }
+  .modal-overlay.active { visibility: visible; opacity: 1; pointer-events: auto; transition: opacity .3s ease, visibility 0s linear 0s !important; }
+  .modal-overlay:not([data-pres="sheet"]) { align-items: flex-start !important; padding: calc(env(safe-area-inset-top) + 9vh) 12px 0 !important; }
+  .modal-overlay[data-pres="sheet"] { align-items: flex-end !important; }
+  .modal-overlay:not([data-pres="sheet"]) > .modal {
+    width: 100% !important; max-width: 420px !important; margin: 0 !important;
+    max-height: calc(100vh - 9vh - 24px) !important; max-height: calc(100dvh - env(safe-area-inset-top) - 9vh - 16px) !important;
+    border-radius: 24px !important; animation: none !important; opacity: 0;
+    transform: translateY(-18px) scale(.97); transition: transform .3s cubic-bezier(.32, .72, 0, 1), opacity .22s ease;
+  }
+  .modal-overlay.active:not([data-pres="sheet"]) > .modal { transform: none; opacity: 1; animation: presDlgIn .3s cubic-bezier(.32, .72, 0, 1) backwards !important; }
+  html[data-platform="android"] .modal-overlay:not([data-pres="sheet"]) > .modal { border-radius: 28px !important; }
+  .modal-overlay[data-pres="sheet"] > .modal {
     width: 100% !important; max-width: none !important; margin: 0 !important;
     max-height: calc(100vh - 28px) !important; max-height: calc(100dvh - 28px) !important;
     border-radius: 34px 34px 0 0 !important; box-shadow: 0 -8px 40px rgba(0, 0, 0, .18);
     padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
-    overscroll-behavior: contain; transform: none; transition: none;
+    overscroll-behavior: contain; animation: none !important;
+    transform: translateY(100%); transition: transform .34s cubic-bezier(.32, .72, 0, 1);
   }
-  html[data-platform="android"] .modal-overlay > .modal { border-radius: 28px 28px 0 0 !important; }
-  .modal-overlay.active .modal-overlay > .modal { animation: sheetUp .34s cubic-bezier(.32, .72, 0, 1) both !important; }
-  .modal-overlay > .modal::before { content: ""; display: block; width: 36px; height: 5px; border-radius: 3px; margin: 8px auto 4px; background: rgba(60, 60, 67, .28); flex: none; }
-  body.dark .modal-overlay > .modal::before { background: rgba(235, 235, 245, .3); }
-  html[data-platform="android"] .modal-overlay > .modal::before { width: 32px; height: 4px; }
+  .modal-overlay.active[data-pres="sheet"] > .modal { transform: none; animation: presSheetIn .34s cubic-bezier(.32, .72, 0, 1) backwards !important; }
+  html[data-platform="android"] .modal-overlay[data-pres="sheet"] > .modal { border-radius: 28px 28px 0 0 !important; }
+  /* křížek doplněný do oken, která ho nemají (platform.js) */
+  .sheet-x { position: sticky; top: 10px; display: grid; place-items: center; width: 32px; height: 32px; margin: 10px 14px -42px auto; padding: 0 !important; min-height: 0 !important; border: 0; border-radius: 50% !important; background: rgba(120, 120, 128, .16); color: inherit; font: 600 15px/1 inherit; cursor: pointer; z-index: 6; }
+  body.dark .sheet-x { background: rgba(235, 235, 245, .16); }
+  .modal-overlay[data-pres="sheet"] > .modal .sheet-x ~ :is(h2, h3, .modal-header, .modal-title) { padding-right: 44px; }
 }
-@media (max-width: 768px) and (prefers-reduced-motion: reduce) { .modal-overlay.active .modal-overlay > .modal { animation: none !important; } }
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) { .modal-overlay:not([data-pres="sheet"]) > .modal, .modal-overlay[data-pres="sheet"] > .modal, .modal-overlay { transition-duration: 0s !important; } }

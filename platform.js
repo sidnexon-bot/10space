@@ -381,45 +381,43 @@ document.addEventListener('DOMContentLoaded', function () {
   bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
 });
 
-/* Formulář jako bottom sheet na mobilu: tažení za držátko (horní okraj okna) dolů okno zavře.
-   Zavření jde přes klik na pozadí, takže platí stejná ochrana rozepsaného formuláře jako jinde. */
+/* Pravidla zobrazení oken na mobilu (CSS je v redesign.css, blok „3.11.0“):
+   • dialog = potvrzení nebo krátký formulář s jedním polem → nahoře, modální okno (nezakryje ho klávesnice)
+   • menu a formulář s mnoha kolonkami → bottom sheet (data-pres="sheet" na obalu okna), bez držátka, s křížkem
+   Rozhoduje se při otevření okna: sheet je okno z výčtu SHEET níže, nebo s alespoň třemi poli či volbami. */
 (function () {
-  var MQ = window.matchMedia('(max-width: 768px)');
-  var PANEL = '.modal-overlay.active > .modal';
-  var st = null;
-  function openNow(ov) { return ov.classList.contains('active'); }
-  document.addEventListener('touchstart', function (e) {
-    st = null;
-    if (!MQ.matches || e.touches.length !== 1) return;
-    var p = e.target.closest && e.target.closest(PANEL);
-    if (!p || p.scrollTop > 0) return;
-    var y = e.touches[0].clientY;
-    if (y - p.getBoundingClientRect().top > 48) return;   // jen za držátko a horní okraj
-    st = { p: p, y0: y, dy: 0, t0: Date.now() };
-  }, { passive: true });
-  document.addEventListener('touchmove', function (e) {
-    if (!st) return;
-    var dy = e.touches[0].clientY - st.y0;
-    if (dy < 0) dy = 0;
-    st.dy = dy;
-    st.p.style.animation = 'none'; st.p.style.transition = 'none'; st.p.style.transform = 'translateY(' + dy + 'px)';
-    if (e.cancelable) e.preventDefault();
-  }, { passive: false });
-  function end() {
-    if (!st) return;
-    var s = st; st = null;
-    var fast = s.dy > 40 && (Date.now() - s.t0) < 250;
-    if (s.dy < 90 && !fast) { s.p.style.transition = 'transform .2s ease'; s.p.style.transform = ''; setTimeout(function () { s.p.style.cssText = s.p.style.cssText.replace(/(animation|transition|transform)[^;]*;?/g, ''); }, 230); return; }
-    var ov = s.p.parentElement, hit = ov;
-    s.p.style.transition = 'transform .2s ease'; s.p.style.transform = 'translateY(100%)';
-    setTimeout(function () {
-      hit.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      setTimeout(function () {
-        if (openNow(ov)) { s.p.style.transition = 'transform .2s ease'; s.p.style.transform = ''; }   // okno zůstalo otevřené (rozepsaný formulář)
-        setTimeout(function () { s.p.style.animation = ''; s.p.style.transition = ''; s.p.style.transform = ''; }, 260);
-      }, 60);
-    }, 190);
+  var OV = '.modal-overlay';                 // obal okna (překryv)
+  var CHILD = '.modal';           // vlastní okno uvnitř obalu
+  var SHEET = '#evid-modal, #download-choice-modal, #share-modal, #share-manage-modal, #move-modal, #acl-modal, .kl-ov, .vw-choice';           // okna, která jsou vždy sheet (seznamy, menu)
+  var FIELDS = 'input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, .modal-option, .pair-list > *, .modal-list > *';
+  function isOpen(o) { return o.classList.contains('active'); }
+  function close(o) {
+    o.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   }
-  document.addEventListener('touchend', end, { passive: true });
-  document.addEventListener('touchcancel', end, { passive: true });
+  function classify(o, upgradeOnly) {
+    var p = o.querySelector(':scope > ' + CHILD); if (!p) return;
+    var sheet = o.matches(SHEET) || p.querySelectorAll(FIELDS).length >= 3;
+    if (sheet) o.setAttribute('data-pres', 'sheet'); else if (!upgradeOnly) o.removeAttribute('data-pres');
+    if (sheet && !p.querySelector('.modal-close, .sheet-x')) {
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'sheet-x'; x.setAttribute('aria-label', 'Zavřít'); x.textContent = '✕';
+      x.addEventListener('click', function (e) { e.stopPropagation(); close(o); });
+      p.insertBefore(x, p.firstChild);
+    }
+  }
+  function scan(n) {
+    if (n.nodeType !== 1) return;
+    if (n.matches(OV)) { if (isOpen(n)) classify(n); }
+    else if (n.querySelectorAll) n.querySelectorAll(OV).forEach(function (o) { if (isOpen(o)) classify(o); });
+  }
+  function start() {
+    new MutationObserver(function (ms) {
+      for (var i = 0; i < ms.length; i++) {
+        var m = ms[i];
+        if (m.type === 'attributes') { if (m.target.matches(OV) && isOpen(m.target)) classify(m.target); }
+        else { m.addedNodes.forEach(scan); var host = m.target.closest && m.target.closest(OV); if (host && isOpen(host)) classify(host, true); }   // obsah doplněný až po otevření
+      }
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true, childList: true });
+    document.querySelectorAll(OV).forEach(function (o) { classify(o); });   // předem i zavřená okna, aby první otevření sheetu jelo zespodu
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();

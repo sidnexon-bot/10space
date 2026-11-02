@@ -3,6 +3,11 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.11.0 (2. 11. 2026)
+- Okna na mobilu mají pravidla: potvrzení a krátký formulář s jedním polem jsou nahoře jako modální okno (nezakryje je klávesnice), menu, seznamy a formuláře s mnoha kolonkami jsou bottom sheet bez držátka, s křížkem a tlačítky dole. Sheet vyjíždí zespodu a zajíždí dolů, dialog sjíždí shora.
+- Tažení okna dolů už nic nedělá (a v 10base nespouští obnovení stránky).
+- Potvrzovací dialogy a dialogy s polem jsou i na telefonu nahoře (dřív potvrzení vyjíždělo od spodu).
+
 ## 3.10.0 (2. 11. 2026)
 - Formuláře na mobilu jsou bottom sheet: okno se vysune zespodu, má držátko a zavře se tažením dolů (tablet a počítač beze změny).
 - Kódy projektů: administrátor smaže chybný kód nebo položku (-002 a výš), na které se zatím neúčtovalo; použitý kód server nesmaže (jen uzavření). Smazané číslo se nepoužije znovu.
