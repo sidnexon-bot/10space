@@ -868,3 +868,45 @@ html:not([data-platform="android"]) .bottom.lg-drag .lg-pill { background: linea
 @media (prefers-reduced-motion: reduce) {
   html:not([data-platform="android"]) .bottom, html:not([data-platform="android"]) .bottom button, html:not([data-platform="android"]) .bottom button small { transition: none !important; }
 }
+
+/* 3.6.0: Apple – tlačítka mají kapsli na všech velikostech (iOS/macOS 26), ne jen na mobilu; postranní panel má jednotné zaoblení */
+html[data-platform="apple"] :is(.btn-primary, .btn-secondary, .btn-danger, .modal-btn, .tn-btn, .drive-toolbar-btn, .multi-toolbar-btn, .projekt-card-btn, .projekt-wiki-btn, .detail-save-btn, .detail-cancel-btn, .modal-skupina-btn, .upload-btn) { border-radius: 999px; }
+html[data-platform="apple"] :is(.sidebar-nav-item, .sidebar-action) { border-radius: 12px; }
+
+/* 3.6.0: počítač a tablet po vzoru telefonu – tlačítka a pole 38 px (kapsle), přepínače 30 px, karty a okna se nemění, jen sidebar (bez spodní lišty) */
+@media (min-width: 769px) {
+  html[data-platform] :is(.btn-primary, .btn-secondary, .btn-danger, .modal-btn, .tn-btn, .drive-toolbar-btn, .multi-toolbar-btn, .projekt-card-btn, .projekt-wiki-btn, .detail-save-btn, .detail-cancel-btn, .modal-skupina-btn, .upload-btn) { min-height: 38px !important; font-size: 14px; padding: 0 18px; line-height: 1.2; }
+  html[data-platform] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg) { padding: 3px !important; gap: 2px !important; }
+  html[data-platform] :is(.st-seg, .pj-seg, .detail-tabs, .mobile-detail-modal-tabs, .acct-switch, .prog-seg) > :is(button, a) { min-height: 30px !important; height: 30px; padding-top: 0 !important; padding-bottom: 0 !important; font-size: 13px !important; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  html[data-platform] :is(.doc-filters > button, .type-btn, .filter-btn) { min-height: 30px !important; height: 30px; padding-top: 0 !important; padding-bottom: 0 !important; font-size: 13px !important; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  html[data-platform="android"] .bottom-wrap { display: none !important; }
+  .left-sidebar.collapsed .sidebar-logo { display: none; }
+  .left-sidebar.collapsed .sidebar-profile { margin-top: 22px; }
+}
+
+/* Android na počítači a tabletu: pole jsou ve více sloupcích, seskupení rohů z telefonu tam neplatí – každé pole je samostatná kapsle */
+@media (min-width: 769px) {
+  html[data-platform="android"] .and-unit { border-radius: 999px !important; margin-bottom: 8px !important; }
+  html[data-platform="android"] .and-unit.and-area { border-radius: 28px !important; }
+  #btn-ares, #btn-ares-edit, #btn-ares-fav, #btn-ares-contact { height: 38px !important; }
+}
+
+/* Apple na počítači a tabletu: pole formulářů jsou kapsle o výšce 38 px jako tlačítka; víceřádková pole mají měkčí zaoblení */
+@media (min-width: 769px) {
+  html[data-platform="apple"] :is(.field, .modal, .modal-content, .tn-dlg, .acct-form, .rep-controls, .transit-edit) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]):not([type=color]), select) { height: 38px !important; min-height: 38px !important; box-sizing: border-box; border-radius: 999px !important; padding: 0 16px !important; font-size: 14px; line-height: normal; }
+  html[data-platform="apple"] :is(.field, .modal, .modal-content, .tn-dlg, .acct-form, .rep-controls, .transit-edit) select { padding-right: 34px !important; }
+  html[data-platform="apple"] :is(.field, .modal, .modal-content, .tn-dlg, .acct-form, .rep-controls, .transit-edit) textarea { border-radius: 18px !important; font-size: 14px; }
+}
+
+/* Tablet (dotyk): karty vedle sebe všude, kde se vejdou (užší sloupec než na počítači s myší) */
+@media (min-width: 769px) and (pointer: coarse) {
+  .dashboard-grid { display: block !important; column-width: 320px; column-gap: 14px; }
+  .dashboard-grid > * { break-inside: avoid; margin: 0 0 14px; }
+  .dashboard-grid > .dashboard-empty { column-span: all; }
+  .projekty-grid { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px !important; align-items: stretch; }
+  .projekty-grid > * { margin: 0; min-width: 0; }
+  .doc-list { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px !important; align-items: start; }
+  #exp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+  #exp-list > .exp-group-title { grid-column: 1 / -1; margin: 6px 0 0; }
+  #exp-list > .exp-card, #exp-list > div:not(.exp-group-title) { margin: 0; }
+}
