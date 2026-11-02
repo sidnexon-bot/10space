@@ -3,6 +3,19 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.15.0 (3. 11. 2026)
+Písmo a typografie podle platformy.
+- Apple: zůstává systémové písmo (SF Pro). Zrušilo se ruční těsné prostrkání nadpisů, takže se uplatní vestavěné optické prostrkání SF Pro podle velikosti. Stupnice podle iOS: velký nadpis 28, nadpis obrazovky 22, nadpis okna 20, nadpis karty 17, popisek sekce 12, drobný text 13.
+- Android: písmo Google Sans Flex (písmo Pixelů, licence OFL, hostované v aplikaci, včetně české diakritiky), záloha Roboto. Stupnice Material 3: nadpis okna 24, nadpis obrazovky 22, nadpis karty 16 (500), popisek sekce 14 (500), drobný text 12, čísla 24.
+
+## 3.14.0 (3. 11. 2026)
+Nový vzhled tlačítek a kulatější tvary, na každé platformě podle jejích zvyklostí.
+- Apple (iPhone, iPad, Mac): tlačítka jako v iOS 26. Kapsle, průsvitné „sklo“ u vedlejších tlačítek, hlavní tlačítko v barvě aplikace, stisk tlačítko pružně zmenší (bez zdvihu při najetí). Výška 44 px na dotyku, 34 px s myší.
+- Apple: kulatější karty (26 px, na počítači 20 px), okna a spodní listy (34 px), nabídky (22 px).
+- Android: tlačítka podle Material 3. Hlavní akce jsou plná kapsle, vedlejší (Zrušit, Upravit, Otevřít…) jsou textová bez výplně; najetí a stisk ztmaví pozadí (stavová vrstva), vypnuté tlačítko má 38 % krytí.
+- Android: hlavní tlačítko je plné i uvnitř karet (dříve na tabletu splývalo se šedou).
+- Sjednocené třídy tlačítek (btn-primary, btn-secondary, btn-danger, btn-success, btn-info, btn-neutral) místo barev zapsaných přímo v kódu.
+
 ## 3.13.0 (3. 11. 2026)
 - Rozbalovací bloky (accordiony) se rozbalují a sbalují jako roleta: obsah se odvíjí shora dolů a stejně se svine. Respektuje nastavení „omezit pohyb“.
 - Výraznější šipka: v zavřeném stavu míří na text, v otevřeném dolů (otáčí se plynule).

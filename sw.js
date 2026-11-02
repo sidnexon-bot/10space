@@ -5,7 +5,7 @@
    Nová verze aplikace se projeví při příštím otevření (nejdřív síť, úložiště je záloha). */
 importScripts("version.js");   // TEN_VERSION: číslo vydání, podle něj se pojmenuje úložiště
 const VERSION = "10space-shell-" + globalThis.TEN_VERSION.version;
-const SHELL = ["./", "index.html", "redesign.css", "viewers.css", "decks.css", "ui.css", "kody.css", "motion.css", "settings.css", "settings.js", "version.js", "platform.js", "ui.js", "kody.js", "viewers.js", "decks.js", "repertoar.js", "pdf-reader.js?v=1", "manifest.json", "icon-192.png", "icon-512.png"];
+const SHELL = ["./", "index.html", "redesign.css", "viewers.css", "decks.css", "ui.css", "kody.css", "motion.css", "settings.css", "settings.js", "version.js", "platform.js", "ui.js", "kody.js", "viewers.js", "decks.js", "repertoar.js", "pdf-reader.js?v=1", "manifest.json", "fonts/google-sans-flex-latin.woff2", "fonts/google-sans-flex-latin-ext.woff2", "icon-192.png", "icon-512.png"];
 const CDN = /^https:\/\/(www\.gstatic\.com\/firebasejs|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net)\//;
 
 self.addEventListener("install", (e) => {

@@ -5,6 +5,12 @@
   var q = new URLSearchParams(location.search).get('platform');
   var android = q === 'android' || (q !== 'apple' && /Android/i.test(navigator.userAgent || ''));
   document.documentElement.setAttribute('data-platform', android ? 'android' : 'apple');
+  if (android) {   // Google Sans Flex se načte předem, ať se při prvním zobrazení nepřeblikne ze záložního písma
+    ['latin', 'latin-ext'].forEach(function (s) {
+      var l = document.createElement('link'); l.rel = 'preload'; l.as = 'font'; l.type = 'font/woff2'; l.crossOrigin = 'anonymous';
+      l.href = 'fonts/google-sans-flex-' + s + '.woff2'; document.head.appendChild(l);
+    });
+  }
 })();
 
 /* Barva lišty prohlížeče a stavového řádku (theme-color, color-scheme, pozadí html) sleduje režim aplikace:
