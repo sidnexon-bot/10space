@@ -3,6 +3,10 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.15.1 (3. 11. 2026)
+- iPhone: ve spodní liště se useknul spodek písmen (Platby, Zkušebna…); oprava výšky řádku popisků.
+- Hlavičky rozbalovacích bloků (10base) mají stejné odsazení nahoře i dole, text nesedí u spodní hrany kulaté karty.
+
 ## 3.15.0 (3. 11. 2026)
 Písmo a typografie podle platformy.
 - Apple: zůstává systémové písmo (SF Pro). Zrušilo se ruční těsné prostrkání nadpisů, takže se uplatní vestavěné optické prostrkání SF Pro podle velikosti. Stupnice podle iOS: velký nadpis 28, nadpis obrazovky 22, nadpis okna 20, nadpis karty 17, popisek sekce 12, drobný text 13.
