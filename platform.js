@@ -5,6 +5,12 @@
   var q = new URLSearchParams(location.search).get('platform');
   var android = q === 'android' || (q !== 'apple' && /Android/i.test(navigator.userAgent || ''));
   document.documentElement.setAttribute('data-platform', android ? 'android' : 'apple');
+  if (!android && /iPhone|iPod/.test(navigator.userAgent || '')) {   // poloměr rohu displeje iPhonu (pt) podle rozlišení: spodní lišta se s ním zaoblí soustředně
+    var sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+    var R = { '375x812': 39, '390x844': 47, '428x926': 47, '393x852': 55, '430x932': 55, '402x874': 62, '420x912': 62, '440x956': 62, '414x896': 41 }[sw + 'x' + sh];   // iPhone X až 17 Pro Max
+    if (!R) R = sh >= 874 ? 62 : sh >= 852 ? 55 : sh >= 844 ? 47 : sh >= 812 ? 39 : 0;
+    if (R) document.documentElement.style.setProperty('--screen-r', R + 'px');
+  }
   if (android) {   // Google Sans Flex se načte předem, ať se při prvním zobrazení nepřeblikne ze záložního písma
     ['latin', 'latin-ext'].forEach(function (s) {
       var l = document.createElement('link'); l.rel = 'preload'; l.as = 'font'; l.type = 'font/woff2'; l.crossOrigin = 'anonymous';
@@ -197,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
     mine(box).forEach(function (b) {
       if (!/^(zavřít|hotovo)$/i.test((b.textContent || '').trim()) || b.hasAttribute('data-ar-icon')) return;
       b.setAttribute('data-ar-icon', '');
-      if (host.querySelector('.modal-close, .ar-x')) return;
+      if (host.querySelector('.modal-close, .ar-x, .sheet-x')) return;
       var x = document.createElement('button'); x.type = 'button'; x.className = 'ar-x'; var done = /^hotovo$/i.test((b.textContent || '').trim()); x.setAttribute('aria-label', done ? 'Hotovo' : 'Zavřít'); x.innerHTML = done ? CHECK_SVG : X_SVG;
       x.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); b.click(); });
       host.appendChild(x);
@@ -404,9 +410,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var p = o.querySelector(':scope > ' + CHILD); if (!p) return;
     var apple = document.documentElement.getAttribute('data-platform') === 'apple';   // Apple (iOS 26): všechna okna jsou plovoucí karta nahoře, bottom sheet jen na Androidu
     var sheet = !apple && (o.hasAttribute('data-sheet') || (!o.hasAttribute('data-dialog') && (o.matches(SHEET) || p.querySelectorAll(FIELDS).length >= 3)));   // data-sheet / data-dialog vynutí formu ručně
-    if (sheet) o.setAttribute('data-pres', 'sheet'); else if (!upgradeOnly) o.removeAttribute('data-pres');
-    if (sheet && !p.__pres) { p.__pres = 1; p.addEventListener('scroll', function () { p.classList.toggle('is-scrolled', p.scrollTop > 2); }, { passive: true }); }   // stín pod pevným záhlavím, až když se obsah posouvá
-    if (!sheet || p.querySelector(':scope > .modal-header .modal-close')) return;   // vlastní záhlaví s křížkem (10korun) se jen přilepí CSS
+    var card = apple && !sheet;   // Apple: karta má záhlaví s názvem a křížkem jako sheet, jen se zobrazuje plovoucí
+    if (sheet) o.setAttribute('data-pres', 'sheet'); else if (card) o.setAttribute('data-pres', 'card'); else if (!upgradeOnly) o.removeAttribute('data-pres');
+    if (!p.__pres) { p.__pres = 1; p.addEventListener('scroll', function () { p.classList.toggle('is-scrolled', p.scrollTop > 2); }, { passive: true }); }   // stín pod pevným záhlavím, až když se obsah posouvá (sheet i karta)
+    if (!sheet) { var cs = getComputedStyle(p); p.style.setProperty('--card-pt', cs.paddingTop); p.style.setProperty('--card-pb', cs.paddingBottom); p.style.setProperty('--card-bg', cs.backgroundColor); }   // karta: pevné záhlaví a zápatí zahrnou odsazení okna
+    if (!(sheet || card) || p.querySelector(':scope > .modal-header .modal-close')) return;
+    if (card && !p.querySelector(':scope > .sheet-head') && p.querySelector('.modal-close, .ar-x, .sheet-x')) return;   // karta s vlastním křížkem záhlaví nepotřebuje   // vlastní záhlaví s křížkem (10korun) se jen přilepí CSS
     // záhlaví sheetu: nadpis + křížek, celé zůstává nahoře a obsah se posouvá pod ním
     var bar = p.querySelector(':scope > .sheet-head');
     if (!bar) {
@@ -419,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       bar.appendChild(x); p.insertBefore(bar, p.firstChild);
     } else if (bar !== p.firstChild) p.insertBefore(bar, p.firstChild);
-    var ax = p.querySelector('.ar-x'); if (ax && ax.parentNode !== bar) bar.appendChild(ax);   // Apple křížek přidaný později
+    var ax = p.querySelector('.ar-x'); if (ax && ax.parentNode !== bar) { bar.appendChild(ax); var sx0 = bar.querySelector('.sheet-x'); if (sx0) sx0.remove(); }   // Apple křížek přidaný později nahradí náš, ať nejsou dva
     // nadpis: první nadpis okna se zkopíruje do záhlaví a původní se skryje (bez tlačítek uvnitř, aby zůstaly funkční)
     var src = p.querySelector('.sheet-src') || [].filter.call(p.querySelectorAll('h2, h3, .modal-title, .modal-header'), function (h) { return !bar.contains(h); })[0];
     var t = bar.querySelector('.sheet-title');
@@ -466,6 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (open === undefined) open = !isOpen(holder, o);
     var state = open ? 'open' : 'closed';
     holder.setAttribute('data-acc', state);
+    if (holder.id) { var ctl = document.querySelectorAll('[aria-controls="' + holder.id + '"]'); for (var ci = 0; ci < ctl.length; ci++) ctl[ci].setAttribute('aria-expanded', open ? 'true' : 'false'); }
     (o.chevs || []).forEach(function (c) { if (c) c.setAttribute('data-acc', state); });
     var trig = o.trigger; if (trig) { trig.setAttribute('data-acc', state); trig.setAttribute('aria-expanded', open ? 'true' : 'false'); }
     var token = body.__accT = (body.__accT || 0) + 1;
@@ -496,4 +506,40 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
   window.tenAcc = { set: set, toggle: function (holder, o) { set(holder, undefined, o); }, isOpen: isOpen };
+})();
+
+/* Přístupnost rozbalovacích bloků: hlavička (div, řádek tabulky) dostane role="button", tabindex, aria-controls a aria-expanded
+   a jde ovládat Enterem a mezerníkem. Stav aria-expanded drží tenAcc.set podle atributu aria-controls. */
+(function () {
+  var seq = 0, t = 0;
+  function ensureId(el) { if (!el.id) el.id = 'acc-' + (++seq); return el.id; }
+  function wire(trigger, holder, isOpen) {
+    if (!trigger || !holder || trigger.__a11y) return;
+    trigger.__a11y = 1;
+    trigger.setAttribute('role', 'button');
+    if (!trigger.hasAttribute('tabindex')) trigger.setAttribute('tabindex', '0');
+    trigger.setAttribute('aria-controls', ensureId(holder));
+    trigger.setAttribute('aria-expanded', isOpen(holder) ? 'true' : 'false');
+    trigger.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === trigger) { e.preventDefault(); trigger.click(); }
+    });
+  }
+  var byAttr = function (h) { return h.getAttribute('data-acc') === 'open' || (!h.getAttribute('data-acc') && h.offsetParent !== null && getComputedStyle(h).display !== 'none'); };
+  var byClass = function (h) { return h.classList.contains('open') || h.getAttribute('data-acc') === 'open'; };
+  function scan() {
+    t = 0;
+    document.querySelectorAll('[onclick*="toggleDetailAccordion("], [onclick*="toggleAttendanceAccordion("], [onclick*="toggleRiderAccordion("], [onclick*="toggleEventFormExtra("]').forEach(function (el) {
+      var js = el.getAttribute('onclick'), m, id = null;
+      if ((m = /toggleDetailAccordion\('([^']+)'\)/.exec(js))) id = 'accBody_' + m[1];
+      else if ((m = /toggleAttendanceAccordion\('([^']+)'\)/.exec(js))) id = 'attendanceDetail_' + m[1];
+      else if (/toggleRiderAccordion/.test(js)) id = 'riderPanel';
+      else if (/toggleEventFormExtra/.test(js)) id = 'eventFormExtra';
+      wire(el, id && document.getElementById(id), byAttr);
+    });
+    document.querySelectorAll('tr.arow').forEach(function (r) { var a = r.nextElementSibling; if (a && a.classList.contains('aacc')) wire(r, a, byClass); });
+    document.querySelectorAll('.doc-row-main').forEach(function (r) { var a = r.nextElementSibling; if (a && a.classList.contains('doc-row-accordion')) wire(r, a, byClass); });
+  }
+  function sched() { if (!t) t = requestAnimationFrame(scan); }
+  function start() { scan(); new MutationObserver(sched).observe(document.body, { childList: true, subtree: true }); }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
