@@ -1835,11 +1835,14 @@ const db = getDatabase(app);
 const FUNCTIONS = {
   getFileUrl: "https://getfileurl-etp6s2ynnq-uc.a.run.app",
   uploadFile: "https://uploadfile-etp6s2ynnq-uc.a.run.app",
+  startResumableUpload: "https://us-central1-base-39f52.cloudfunctions.net/startResumableUpload",
+  finishResumableUpload: "https://us-central1-base-39f52.cloudfunctions.net/finishResumableUpload",
   deleteFile: "https://deletefile-etp6s2ynnq-uc.a.run.app",
   moveFile: "https://movefile-etp6s2ynnq-uc.a.run.app",
   listDriveFiles: "https://listdrivefiles-etp6s2ynnq-uc.a.run.app",
   indexDrive: "https://indexdrive-etp6s2ynnq-uc.a.run.app",
   getFileStream: "https://getfilestream-etp6s2ynnq-uc.a.run.app",
+  reserveEvidCislo: "https://us-central1-base-39f52.cloudfunctions.net/reserveEvidCislo",
   listFileRevisions: "https://listfilerevisions-etp6s2ynnq-uc.a.run.app",
   uploadFileVersion: "https://uploadfileversion-etp6s2ynnq-uc.a.run.app",
   restoreFileRevision: "https://restorefilerevision-etp6s2ynnq-uc.a.run.app",
@@ -3606,6 +3609,7 @@ async function renderPreview(fileId, item, content) {
     const token = await auth.currentUser.getIdToken();
     const url = `${FUNCTIONS.getFileStream}?driveFileId=${fileId}`;
     const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
     const blob = await res.blob();
     const blobUrl = URL.createObjectURL(blob);
     content.innerHTML = `<img src="${blobUrl}" style="width:100%;border-radius:8px;display:block" alt="${item.name}">`;
@@ -3623,16 +3627,15 @@ async function renderPreview(fileId, item, content) {
       content.innerHTML = `
         <div style="padding:8px 0">
           <div style="font-size:13px;color:#8e8e93;margin-bottom:12px;word-break:break-word">${item.name}</div>
-          <audio controls style="width:100%;border-radius:8px" preload="none">
-            <source src="${url}" type="${item.mimeType}">
-          </audio>
+          <audio controls style="width:100%;border-radius:8px" preload="none"></audio>
         </div>`;
       // Přidej auth header přes fetch — audio tag nepodporuje headers, použijeme blob
       const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      content.querySelector("audio source").src = blobUrl;
-      content.querySelector("audio").load();
+      const au = content.querySelector("audio");
+      au.src = URL.createObjectURL(blob);
+      au.load();
     } catch(err) {
       content.innerHTML = `<div class="detail-empty"><p>Nelze načíst audio</p></div>`;
     }
@@ -3939,22 +3942,59 @@ window.openVersionMenu = (e, docId, version) => {
 };
 
 // MULTI SELECT ACTIONS
-window.multiDownload = () => alert("Hromadné stažení — bude implementováno");
-// multiMove je definované u okna „Přesunout do...“ (openMoveModal / confirmMove)
-window.multiDelete = async () => {
-  if (!(await window.tenDialog.confirm(`Smazat ${selectedItems.size} položek?`, { ok: "Smazat" }))) return;
-  const token = await auth.currentUser.getIdToken();
-  for (const id of selectedItems) {
-    await fetch(FUNCTIONS.deleteFile, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ docId: id })
-    });
-    delete window.allDocs[id];
+// Hromadné stažení: soubory se stahují jeden po druhém (složky se přeskočí, Google dokumenty se převedou na Office)
+window.multiDownload = async () => {
+  const ids = Array.from(selectedItems);
+  const files = ids.map((id) => ({ id, f: window.driveFiles?.[id] })).filter((x) => x.f);
+  const skipped = ids.length - files.length;
+  if (!files.length) { (window.showToast || alert)("Vybrané položky jsou složky, ty se nestahují. Vyberte soubory."); return; }
+  if (files.length > 1 && !(await window.tenDialog.confirm(`Stáhnout ${files.length} souborů jeden po druhém?${skipped ? ` (${skipped} složek se přeskočí.)` : ""} Prohlížeč se může zeptat na povolení více stažení.`, { ok: "Stáhnout" }))) return;
+  const done = [], failed = [];
+  for (const { id, f } of files) {
+    try {
+      if (!window.tenViewers?.download) throw new Error("stahování není k dispozici");
+      await window.tenViewers.download(id, f.name);
+      done.push(id);
+    } catch (e) { failed.push(f.name); }
+    await new Promise((r) => setTimeout(r, 600)); // mezera, ať prohlížeč nehlásí nedovolená vícenásobná stažení
   }
-  selectedItems.clear();
+  (window.showToast || alert)(`Staženo: ${done.length}${failed.length ? `, nepovedlo se: ${failed.length}` : ""}${skipped ? `, složky přeskočeny: ${skipped}` : ""}.`);
+};
+
+// Hromadné smazání: položky jdou do koše na Disku (jde je tam obnovit), nejvýš 4 požadavky najednou, souhrn na konci.
+// Dřív se posílalo špatné ID (docId), server nic nesmazal a vrátil úspěch, takže se položky po obnovení vrátily.
+window.multiDelete = async () => {
+  const all = Array.from(selectedItems).filter((id) => window.driveFiles?.[id] || window.driveFolders?.[id]);
+  const allowed = all.filter((id) => canWrite(id));
+  if (!allowed.length) { (window.showToast || alert)("Vybrané položky nelze smazat (jsou jen pro čtení)."); return; }
+  const folders = allowed.filter((id) => window.driveFolders?.[id]).length;
+  const note = `${allowed.length < selectedItems.size ? ` (${selectedItems.size - allowed.length} položek nelze smazat, jsou jen pro čtení nebo mimo Disk)` : ""}${folders ? ` Složky se smažou i se vším uvnitř.` : ""}`;
+  if (!(await window.tenDialog.confirm(`Smazat ${allowed.length} položek do koše?${note}`, { ok: "Smazat" }))) return;
+  showSpinner("Mazání…");
+  const nameOf = (id) => (window.driveFiles?.[id] || window.driveFolders?.[id])?.name || id;
+  const removed = [], failed = [];
+  try {
+    const token = await auth.currentUser.getIdToken();
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, allowed.length) }, async () => {
+      while (next < allowed.length) {
+        const id = allowed[next++];
+        try {
+          const res = await fetch(FUNCTIONS.deleteFile, { method: "POST", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ driveFileId: id }) });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.success) { removed.push(id); delete window.driveFiles?.[id]; delete window.driveFolders?.[id]; selectedItems.delete(id); }
+          else failed.push([id, data.error || `HTTP ${res.status}`]);
+        } catch (err) { failed.push([id, err.message]); }
+      }
+    }));
+  } finally { hideSpinner(); }
   updateMultiToolbar();
   renderTab();
+  if (removed.length) (window.showToast || alert)(`Smazáno: ${removed.length} (v koši na Disku).`);
+  if (failed.length) {
+    const list = failed.slice(0, 5).map(([id, why]) => `${nameOf(id)} (${why})`).join("; ") + (failed.length > 5 ? `; … a ${failed.length - 5} dalších` : "");
+    alert(`Chyba: nepodařilo se smazat ${failed.length} položek: ${list}`);
+  }
 };
 
 window.createFolder = async () => {
@@ -4049,9 +4089,10 @@ function setUploadItemDone(i, interval) {
   document.getElementById(`upload-status-${i}`).className = "upload-progress-status done";
 }
 
-function setUploadItemError(i, interval) {
+function setUploadItemError(i, interval, reason) {
   clearInterval(interval);
-  document.getElementById(`upload-status-${i}`).textContent = "chyba";
+  const st = document.getElementById(`upload-status-${i}`);
+  st.textContent = reason ? `chyba: ${reason}` : "chyba"; st.title = reason || "";
   document.getElementById(`upload-status-${i}`).className = "upload-progress-status";
   document.getElementById(`upload-status-${i}`).style.color = "#EE220C";
 }
@@ -4127,12 +4168,9 @@ window.confirmEvid = async () => {
   // Existující dokument — ulož přímo
   if (evidIsExisting) {
     const kod = evidKategorie + evidSkupina;
-    const citaceRef = ref(db, `/citace/${kod}`);
-    const snap = await get(citaceRef);
-    const current = snap.val() || 0;
-    const next = current + 1;
-    await set(citaceRef, next);
-    const evidCislo = `${kod} ${String(next).padStart(3, "0")}`;
+    let evidCislo;
+    try { evidCislo = (await callFn(FUNCTIONS.reserveEvidCislo, { kod })).evidCislo; } // číslo přiděluje server atomicky
+    catch (e) { await window.tenDialog.alert("Číslo se nepodařilo přidělit: " + e.message); return; }
     await set(ref(db, `/dokumenty/${evidIsExisting}/evidCislo`), evidCislo);
     window.allDocs[evidIsExisting].evidCislo = evidCislo;
     document.getElementById("evid-modal").classList.remove("active");
@@ -4143,15 +4181,10 @@ window.confirmEvid = async () => {
   
   const kod = evidKategorie + evidSkupina;
   
-  // Atomicky incrementuj čítač v RTDB
-  const citaceRef = ref(db, `/citace/${kod}`);
-  const snap = await get(citaceRef);
-  const current = snap.val() || 0;
-  const next = current + 1;
-  await set(citaceRef, next);
-  
-  const cislo = String(next).padStart(3, "0");
-  const evidCislo = `${kod} ${cislo}`;
+  // Číslo přiděluje server atomicky (dřív se četlo a zapisovalo na klientu a při souběhu vznikala duplicitní čísla)
+  let evidCislo;
+  try { evidCislo = (await callFn(FUNCTIONS.reserveEvidCislo, { kod })).evidCislo; }
+  catch (e) { await window.tenDialog.alert("Číslo se nepodařilo přidělit: " + e.message); return; }
   
   evidResults.push({ file: evidPendingFiles[evidCurrentIndex], evidCislo });
   evidCurrentIndex++;
@@ -6615,12 +6648,22 @@ window.handleDrop = (e) => {
 };
 window.handleFileSelect = (e) => { processFiles(Array.from(e.target.files)); e.target.value = ""; };
 
+const RESUMABLE_FROM = 8 * 1024 * 1024;           // od této velikosti se nahrává po částech přímo na Disk (se skutečným průběhem a pokračováním po výpadku)
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024; // nejvýš 2 GB na soubor
+
 async function processFiles(files) {
   if (!window.currentFolder) {
     alert("Nejdřív vyber složku kam chceš nahrát.");
     return;
   }
   if (!writeGate()) return;
+  // soubory nad limit se nenahrávají (dřív selhaly bez vysvětlení)
+  const tooBig = files.filter((f) => f.size > MAX_UPLOAD_BYTES);
+  if (tooBig.length) {
+    await window.tenDialog.alert(`${tooBig.length === 1 ? "Tento soubor je" : "Tyto soubory jsou"} příliš velké (nejvýš 2 GB). Nahrajte ${tooBig.length === 1 ? "ho" : "je"} přímo na Google Disk:\n\n${tooBig.slice(0, 6).map((f) => `${f.name} (${(f.size / 1048576).toFixed(0)} MB)`).join("\n")}${tooBig.length > 6 ? `\n… a ${tooBig.length - 6} dalších` : ""}`, { title: "Nahrávání" });
+    files = files.filter((f) => f.size <= MAX_UPLOAD_BYTES);
+    if (!files.length) return;
+  }
   // Otevři dialog pro evidenční čísla
   openEvidModal(Array.from(files));
 }
@@ -6634,21 +6677,32 @@ async function processFilesWithEvid(fileResults) {
     const { file, evidCislo } = fileResults[i];
     const interval = setUploadItemActive(i);
     try {
-      const base64Data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const token = await auth.currentUser.getIdToken();
-      const response = await fetch(FUNCTIONS.uploadFile, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name, mimeType: file.type, base64Data, slozkaId: window.currentFolder })
-      });
-      const data = await response.json();
-      if (!data.driveFileId) throw new Error(data.error || "Upload selhal");
+      let data;
+      if (file.size > RESUMABLE_FROM) {
+        // velký soubor: po částech přímo na Disk, průběh podle skutečně odeslaných dat
+        const session = await callFn(FUNCTIONS.startResumableUpload, { fileName: file.name, mimeType: file.type, size: file.size, slozkaId: window.currentFolder });
+        clearInterval(interval);
+        const bar = document.getElementById(`upload-bar-${i}`), st = document.getElementById(`upload-status-${i}`);
+        const { resumableUpload } = await import("./resumable-upload.js");
+        const res = await resumableUpload({ file, session, onProgress: (p) => { bar.style.width = Math.round(p * 100) + "%"; st.textContent = `nahrávání ${Math.round(p * 100)} %`; } });
+        if (!res.id) throw new Error("Disk nevrátil soubor");
+        data = await callFn(FUNCTIONS.finishResumableUpload, { driveFileId: res.id, slozkaId: window.currentFolder });
+      } else {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch(FUNCTIONS.uploadFile, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: file.name, mimeType: file.type, base64Data, slozkaId: window.currentFolder })
+        });
+        data = await response.json().catch(() => ({}));
+        if (!data.driveFileId) throw new Error(data.error || (response.status === 413 ? "soubor je příliš velký" : `server vrátil ${response.status}`));
+      }
 
       // Zapiš evidenční číslo přímo k souboru v driveCache
       if (evidCislo) {
@@ -6678,7 +6732,7 @@ async function processFilesWithEvid(fileResults) {
 
       setUploadItemDone(i, interval);
     } catch(err) {
-      setUploadItemError(i, interval);
+      setUploadItemError(i, interval, String(err.message || "nahrání se nepodařilo").slice(0, 60));
       console.error(`Chyba: ${err.message}`);
     }
   }

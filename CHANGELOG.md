@@ -4,6 +4,10 @@ Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se oz
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
 ## 3.15.2 (3. 11. 2026)
+- Nahrávání: soubory nad 8 MB se nahrávají po částech přímo na Google Disk (až 2 GB), se skutečným průběhem a pokračováním po výpadku spojení. Menší soubory jdou jako dřív.
+- Hromadné mazání teď opravdu maže (do koše na Disku, jde vrátit) a ukáže souhrn. Hromadné stažení funguje.
+- Evidenční čísla přiděluje server, takže se při souběžném nahrávání nezdvojí.
+- Server: synchronizace s Diskem zpracuje všechny změny a koš, plný přepočet načte i velké složky, PIN odkazů se zamyká spolehlivě, stažení umí Range, právo na Disku platí jen 24 hodin.
 - Android: formuláře mají zase jen placeholdery místo popisků kolonek. Popisky se po změně písma (3.15.0) omylem ukázaly znovu vedle placeholderů.
 - Android: formulář skladby v Repertoáru má pole jako samostatné kapsle (dřív měla spojené čtvercové rohy s mezerou mezi poli).
 - Apple: všechna okna (formuláře, seznamy, volby) jsou plovoucí karta nahoře místo bottom sheetu, jako okno odškrtnutí docházky. Android zůstává u bottom sheetu.
