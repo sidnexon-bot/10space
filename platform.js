@@ -402,7 +402,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function classify(o, upgradeOnly) {
     var p = o.querySelector(':scope > ' + CHILD); if (!p) return;
-    var sheet = o.hasAttribute('data-sheet') || (!o.hasAttribute('data-dialog') && (o.matches(SHEET) || p.querySelectorAll(FIELDS).length >= 3));   // data-sheet / data-dialog vynutí formu ručně
+    var apple = document.documentElement.getAttribute('data-platform') === 'apple';   // Apple (iOS 26): všechna okna jsou plovoucí karta nahoře, bottom sheet jen na Androidu
+    var sheet = !apple && (o.hasAttribute('data-sheet') || (!o.hasAttribute('data-dialog') && (o.matches(SHEET) || p.querySelectorAll(FIELDS).length >= 3)));   // data-sheet / data-dialog vynutí formu ručně
     if (sheet) o.setAttribute('data-pres', 'sheet'); else if (!upgradeOnly) o.removeAttribute('data-pres');
     if (sheet && !p.__pres) { p.__pres = 1; p.addEventListener('scroll', function () { p.classList.toggle('is-scrolled', p.scrollTop > 2); }, { passive: true }); }   // stín pod pevným záhlavím, až když se obsah posouvá
     if (!sheet || p.querySelector(':scope > .modal-header .modal-close')) return;   // vlastní záhlaví s křížkem (10korun) se jen přilepí CSS

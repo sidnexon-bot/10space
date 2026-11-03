@@ -6,6 +6,7 @@ Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor,
 ## 3.15.2 (3. 11. 2026)
 - Android: formuláře mají zase jen placeholdery místo popisků kolonek. Popisky se po změně písma (3.15.0) omylem ukázaly znovu vedle placeholderů.
 - Android: formulář skladby v Repertoáru má pole jako samostatné kapsle (dřív měla spojené čtvercové rohy s mezerou mezi poli).
+- Apple: všechna okna (formuláře, seznamy, volby) jsou plovoucí karta nahoře místo bottom sheetu, jako okno odškrtnutí docházky. Android zůstává u bottom sheetu.
 
 ## 3.15.1 (3. 11. 2026)
 - iPhone: ve spodní liště se useknul spodek písmen (Platby, Zkušebna…); oprava výšky řádku popisků.
