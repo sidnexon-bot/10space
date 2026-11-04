@@ -5879,7 +5879,7 @@ async function downloadAnnotatedPdf() {
 // ── NOVÝ PDF PROHLÍŽEČ (pdf-reader.js) ─────────────────────────────────
 // Načítá se až při prvním otevření PDF. Kdyby se nenačetl (chybí soubor, starý prohlížeč),
 // otevře se původní prohlížeč. Ručně lze vynutit původní: localStorage.pdfViewer = "legacy".
-const PDF_READER_URL = "./pdf-reader.js?v=1";
+const PDF_READER_URL = "./pdf-reader.js?v=2";
 const PDF_CACHE = "pdf-v1", PDF_CACHE_MAX = 25;
 let pdfReaderApi = null;
 
@@ -6005,6 +6005,7 @@ function buildPdfReaderEnv() {
       } catch (e) { const c = await fromCache(); if (c) return c; throw e; }
     },
     deleteLegacyPage: (id, layerKey, page) => remove(annRef(id, layerKey, `pages/${page}`)),
+    archiveLegacyPage: (id, layerKey, page, data) => set(annRef(id, layerKey, `legacyBackup/${page}`), data), // záloha původní stránky před převodem na nový formát
     openLegacy: (id, title) => window.openPdfViewerLegacy(parts(id).fileId, title)
   };
 }

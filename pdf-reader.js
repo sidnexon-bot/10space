@@ -16,6 +16,8 @@
 // Poznámky se ukládají v normalizovaných souřadnicích stránky (0–1), takže nezávisí na velikosti
 // okna ani zařízení. Staré poznámky (Fabric JSON) se zobrazují jako podklad jen pro čtení.
 
+const FABRIC_URL = "https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js";
+const FABRIC_SRI = "sha384-K2R7AzsJQPCDnhTlIEZr5pifaODgyx7XqbqkZMtLKzGJNo/Irtg9yU85F+1YwL8X";
 const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
 const MAX_PX = 7e6; // strop plochy jednoho plátna (iOS Safari má limit ~16,7 Mpx)
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
@@ -229,6 +231,39 @@ function strokeHit(s, nx, ny, rx, ry) { // je bod (nx,ny) blíž než poloměr? 
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Převod starých poznámek (Fabric JSON jedné stránky) na tahy a položky nového formátu
+// ────────────────────────────────────────────────────────────────────────────
+// Fabric tahy pera jsou cesty M, Q…, L: Q má řídicí bod = zachycený bod a konec = střed mezi sousedními body, což je přesně
+// to, co vykresluje paintStroke (body jako řídicí body, kreslí do středů). Do tahu se proto berou řídicí body, ne konce.
+// Souřadnice se nepočítají ručně: Fabric načte stránku a podá matici objektu, takže měřítko i posun jsou přesně jako na obrazovce.
+async function legacyToV2(d, fabric) {
+  const W = d.width || 600, H = d.height || 800;
+  const sc = new fabric.StaticCanvas(null, { width: W, height: H });
+  try {
+    await new Promise(res => sc.loadFromJSON(d.json, res));
+    const strokes = [], items = []; let skipped = 0;
+    const r5 = (v) => Math.round(v * 1e5) / 1e5;
+    for (const o of sc.getObjects()) {
+      if (o.type === "path" && Array.isArray(o.path) && o.stroke) {
+        const m = o.calcTransformMatrix(), off = o.pathOffset || { x: 0, y: 0 }, p = [];
+        const put = (x, y) => { const q = fabric.util.transformPoint({ x: x - off.x, y: y - off.y }, m); p.push(r5(q.x / W), r5(q.y / H), 0.5); };
+        for (const c of o.path) {
+          if (c[0] === "Q") put(c[1], c[2]);
+          else if (c.length >= 3) put(c[c.length - 2], c[c.length - 1]);
+        }
+        if (!p.length) { skipped++; continue; }
+        const px = (o.strokeWidth || 1) * (o.strokeUniform ? 1 : (Math.abs(o.scaleX || 1) + Math.abs(o.scaleY || 1)) / 2);
+        strokes.push({ id: "lg" + strokes.length, t: o.globalCompositeOperation === "multiply" ? "h" : "p", c: o.stroke, w: r5(px / W), p, pv: false });
+      } else if (["textbox", "i-text", "text"].includes(o.type) && String(o.text || "").trim()) {
+        const pt = o.getPointByOrigin("left", "top");
+        items.push({ id: "lg" + (strokes.length + items.length), k: "text", x: clamp(r5(pt.x / W), 0, 0.95), y: clamp(r5(pt.y / H), 0, 0.97), t: (o.textLines ? o.textLines.join("\n") : o.text), c: typeof o.fill === "string" && o.fill ? o.fill : "#1c1c1e", s: clamp(r5(o.fontSize * (o.scaleY || 1) / W), 0.01, 0.4) });
+      } else skipped++;
+    }
+    return { strokes, items, skipped };
+  } finally { try { sc.dispose(); } catch { /* nic */ } }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Úložiště poznámek: načítání po stránkách, automatické ukládání, záloha v zařízení
 // ────────────────────────────────────────────────────────────────────────────
 const newLayer = () => ({ strokes: [], items: [], legacy: null, loaded: false, error: false });
@@ -394,21 +429,25 @@ class PageView {
     if (this.r.annotating && !this.r.gesture) this.r.updateAnnotUi(); // nabídka „Smazat staré“ podle zobrazených stránek
   }
   async paintLegacy(rec) {
-    const fabric = this.r.env.fabric;
     const have = ["public", "personal"].map(l => rec[l].legacy).filter(d => d?.json);
-    if (!have.length || !fabric) { this.legC.width = 0; this.legC.height = 0; this.legacyBmp = null; return; }
+    const none = () => { this.legC.width = 0; this.legC.height = 0; this.legacyBmp = null; };
+    if (!have.length) return none();
+    const fabric = await this.r.getFabric();
+    if (!fabric) { none(); this.r.legacyFailed("nenačetla se knihovna Fabric (zkontrolujte připojení a obsahové blokátory)"); return; }
     const k = dpr();
     this.legC.width = Math.round(this.bw * k); this.legC.height = Math.round(this.bh * k);
     const ctx = this.legC.getContext("2d");
+    let drawn = 0, lastErr = null;
     for (const d of have) {
       try {
         const sc = new fabric.StaticCanvas(null, { width: d.width || 600, height: d.height || 800 });
         await new Promise(res => sc.loadFromJSON(d.json, res));
         sc.renderAll();
         ctx.drawImage(sc.lowerCanvasEl, 0, 0, sc.width, sc.height, 0, 0, this.legC.width, this.legC.height);
-        sc.dispose();
-      } catch { /* poškozená stará poznámka se přeskočí */ }
+        sc.dispose(); drawn++;
+      } catch (e) { lastErr = e; /* poškozená stará poznámka se přeskočí */ }
     }
+    if (!drawn) { none(); this.r.legacyFailed("poznámku se nepodařilo vykreslit" + (lastErr?.message ? " (" + String(lastErr.message).slice(0, 80) + ")" : "")); return; }
     this.legacyBmp = this.legC;
   }
   allStrokes() {
@@ -1039,6 +1078,7 @@ class Reader {
     return null;
   }
   activeLayerOk(v) {
+    if (this.converting) { this.toast("Probíhá převod starých poznámek…"); return false; }
     const L = this.store.layer(v.n, this.layer);
     if (!L || !L.loaded) { this.toast("Poznámky stránky se ještě načítají…"); return false; }
     if (L.error) { this.toast("Poznámky této stránky se nepodařilo načíst – úpravy jsou zablokovány"); return false; }
@@ -1299,7 +1339,7 @@ class Reader {
         <button class="pdf2-btn" data-act="redo" ${this.redo.length ? "" : "disabled"}>${ICON.redo}</button>
         <span class="pdf2-sep"></span>
         <button class="pdf2-btn" data-act="finger">${fm}</button>
-        ${legacyHere ? `<button class="pdf2-btn" data-act="clear-legacy" title="Smazat poznámky ze starého prohlížeče na této stránce">Smazat staré</button>` : ""}
+        ${legacyHere ? `<button class="pdf2-btn" data-act="convert-legacy" title="Převést staré poznámky z původního prohlížeče na nové (původní se uschovají)">Převést staré</button><button class="pdf2-btn" data-act="clear-legacy" title="Smazat poznámky ze starého prohlížeče na této stránce">Smazat staré</button>` : ""}
         <span class="pdf2-status" data-role="status"></span>
       </div>
       <div class="pdf2-row pdf2-row2">${row2}</div>`;
@@ -1353,7 +1393,48 @@ class Reader {
         return;
       }
       case "clear-legacy": return this.clearLegacy();
+      case "convert-legacy": return this.convertLegacy();
     }
+  }
+  // Převede staré poznámky (Fabric) vybrané vrstvy v celém dokumentu na nové. Původní stránku nejdřív uschová (legacyBackup),
+  // potom zapíše nové tahy (přidají se k už existujícím) a teprve pak smaže starou. Chyba na jedné stránce ostatní nezastaví.
+  async convertLegacy() {
+    if (this.converting) return;
+    const layer = this.layer, lk = this.store.layerKey(layer);
+    if (layer === "public" && !this.env.canEditPublic) return this.toast("Veřejné poznámky může převádět jen vedoucí");
+    if (!this.env.archiveLegacyPage) return this.toast("Převod tato verze aplikace neumí");
+    const fabric = await this.getFabric();
+    if (!fabric) return this.toast("Převod nejde: nenačetla se knihovna Fabric", 4000);
+    let all; try { all = await this.env.readAllAnnot(this.fileId, lk); } catch { return this.toast("Staré poznámky se nepodařilo načíst", 4000); }
+    const pages = Object.keys(all.legacy || {}).map(Number).filter(n => n >= 1 && n <= this.numPages && all.legacy[n]?.json);
+    if (!pages.length) return this.toast("Žádné staré poznámky k převodu");
+    const name = layer === "public" ? "veřejné" : "osobní";
+    const msg = `Převést ${name} staré poznámky na ${pages.length} ${pages.length === 1 ? "stránce" : "stránkách"} na nový typ? Původní se uschovají.`;
+    if (!(window.tenDialog ? await window.tenDialog.confirm(msg, { ok: "Převést" }) : confirm(msg))) return;
+    this.converting = true; this.toast("Převádím…", 60000);
+    let done = 0, fail = 0, skipped = 0;
+    try {
+      await this.store.flushAll();
+      for (const n of pages) {
+        try {
+          const L = (await this.store.load(n))[layer];
+          if (!L.loaded || L.error) throw new Error("stránka se nenačetla");
+          const cv = await legacyToV2(all.legacy[n], fabric);
+          skipped += cv.skipped;
+          if (cv.skipped && !cv.strokes.length && !cv.items.length) { fail++; continue; } // nic z toho neumíme převést: stará zůstane
+          const haveS = new Set(L.strokes.map(x => x.id)), haveI = new Set(L.items.map(x => x.id)); // opakovaný převod nic nezdvojí
+          const strokes = [...L.strokes, ...cv.strokes.filter(x => !haveS.has(x.id))], items = [...L.items, ...cv.items.filter(x => !haveI.has(x.id))];
+          await this.env.archiveLegacyPage(this.fileId, lk, n, all.legacy[n]);
+          await this.env.writeAnnotPage(this.fileId, lk, n, { v: 2, data: JSON.stringify({ strokes, items }), updatedAt: Date.now() });
+          L.strokes = strokes; L.items = items;
+          await this.env.deleteLegacyPage(this.fileId, lk, n); L.legacy = null;
+          done++;
+          await this.viewOf(n)?.drawAnnots();
+        } catch (e) { fail++; console.warn("Převod staré poznámky, strana " + n + ":", e?.message || e); }
+      }
+    } finally { this.converting = false; }
+    this.toast(`Převedeno stránek: ${done}` + (fail ? `, nepovedlo se: ${fail}` : "") + (skipped ? `, vynecháno objektů: ${skipped}` : ""), 5000);
+    this.updateAnnotUi();
   }
   async clearLegacy() {
     const vs = this.visibleViews().filter(v => this.store.layer(v.n, this.layer)?.legacy?.json);
@@ -1383,6 +1464,21 @@ class Reader {
     a.href = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
   }
+  // Fabric (jen pro staré poznámky) se na zařízení nemusí načíst z hlavní stránky; čtečka si ho dotáhne sama
+  getFabric() {
+    if (window.fabric) return Promise.resolve(window.fabric);
+    return this.fabricP ||= new Promise((res) => {
+      const sc = document.createElement("script");
+      sc.src = FABRIC_URL; sc.integrity = FABRIC_SRI; sc.crossOrigin = "anonymous";
+      sc.onload = () => res(window.fabric || null); sc.onerror = () => { this.fabricP = null; res(null); };
+      document.head.appendChild(sc);
+    });
+  }
+  legacyFailed(why) { // staré poznámky existují, ale nejdou zobrazit: ať to uživatel vidí a nehledá chybu jinde
+    console.warn("PDF staré poznámky:", why);
+    if (this.legacyWarned) return; this.legacyWarned = true;
+    this.toast("Staré poznámky nelze zobrazit: " + why, 6000);
+  }
   baseName() { return this.title.replace(/\.pdf$/i, ""); }
   async getBytes() { return this.bytes || await this.env.getPdfBytes(this.fileId, () => {}); } // originál se čte znovu z úložiště, nedrží se v paměti
   async downloadOriginal() { this.saveBlob(await this.getBytes(), this.baseName() + ".pdf"); }
@@ -1403,8 +1499,9 @@ class Reader {
       for (const [layer] of keys) {
         const d = data[layer], live = this.store.pages[n]?.[layer];
         const leg = d.legacy?.[n];
-        if (leg?.json && this.env.fabric) {
-          try { const sc = new this.env.fabric.StaticCanvas(null, { width: leg.width, height: leg.height }); await new Promise(r => sc.loadFromJSON(leg.json, r)); sc.renderAll(); ctx.drawImage(sc.lowerCanvasEl, 0, 0, sc.width, sc.height, 0, 0, W, H); sc.dispose(); drawn = true; } catch { /* přeskočit */ }
+        const fab = leg?.json ? await this.getFabric() : null;
+        if (fab) {
+          try { const sc = new fab.StaticCanvas(null, { width: leg.width, height: leg.height }); await new Promise(r => sc.loadFromJSON(leg.json, r)); sc.renderAll(); ctx.drawImage(sc.lowerCanvasEl, 0, 0, sc.width, sc.height, 0, 0, W, H); sc.dispose(); drawn = true; } catch { /* přeskočit */ }
         }
         let strokes = [], items = [];
         if (live && live.loaded) { strokes = live.strokes; items = live.items; }
@@ -1439,4 +1536,4 @@ export function createPdfReader(env) {
 }
 
 // exportováno pro testy
-export const _internals = { paintStroke, paintItem, simplify, strokeHit, AnnotStore };
+export const _internals = { paintStroke, paintItem, simplify, strokeHit, AnnotStore, legacyToV2, Reader };

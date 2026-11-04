@@ -3,6 +3,10 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.16.0 (4. 11. 2026)
+- Čtečka PDF: tlačítko „Převést staré“ (v režimu poznámek) převede poznámky z původního prohlížeče (Fabric) na nový typ v celém dokumentu, pro osobní nebo veřejnou vrstvu (veřejnou jen vedoucí). Tahy pera a zvýrazňovače i texty se přenesou i s barvou a tloušťkou; stará stránka se před smazáním uschová pod `legacyBackup`. Opakovaný převod nic nezdvojí.
+- Čtečka PDF: když se Fabric na zařízení nenačte, čtečka si ho dotáhne sama; nejdou-li staré poznámky zobrazit, ukáže se hláška s příčinou (dřív se přeskočily bez upozornění). Platí i pro stažení „S poznámkami“.
+
 ## 3.15.2 (3. 11. 2026)
 - Nahrávání: soubory nad 8 MB se nahrávají po částech přímo na Google Disk (až 2 GB), se skutečným průběhem a pokračováním po výpadku spojení. Menší soubory jdou jako dřív.
 - Hromadné mazání teď opravdu maže (do koše na Disku, jde vrátit) a ukáže souhrn. Hromadné stažení funguje.
