@@ -2254,6 +2254,7 @@ async function loadData() {
   window.tenSettings?.start();
   window.__tenSettingsChanged = () => { if (currentTab === "recent") renderDashboard(); };
   window.tenResume?.init(auth.currentUser?.uid);
+  setTimeout(replayAnnotOutbox, 4000);
   const resumed = window.tenResume ? await window.tenResume.restore() : false;
   if (!resumed) switchTab(window.location.hash === "#/osobni" || navigator.onLine === false ? "decks" : "recent");
 }
@@ -5879,7 +5880,7 @@ async function downloadAnnotatedPdf() {
 // ── NOVÝ PDF PROHLÍŽEČ (pdf-reader.js) ─────────────────────────────────
 // Načítá se až při prvním otevření PDF. Kdyby se nenačetl (chybí soubor, starý prohlížeč),
 // otevře se původní prohlížeč. Ručně lze vynutit původní: localStorage.pdfViewer = "legacy".
-const PDF_READER_URL = "./pdf-reader.js?v=2";
+const PDF_READER_URL = "./pdf-reader.js?v=3";
 const PDF_CACHE = "pdf-v1", PDF_CACHE_MAX = 25;
 let pdfReaderApi = null;
 
@@ -5967,6 +5968,18 @@ async function pdfGetBytes(fileId, onProgress, revisionId = null) {
 }
 
 window.tenPdfEnv = () => buildPdfReaderEnv(); // pro automatické testy
+
+// Poznámky psané bez připojení čekají v záloze zařízení. Odešlou se po startu aplikace a po obnovení připojení, i když se žádné PDF neotevře.
+async function replayAnnotOutbox() {
+  try {
+    if (navigator.onLine === false || pdfReaderApi?.isOpen()) return; // otevřená čtečka odesílá sama
+    const uid = auth.currentUser?.uid; if (!uid) return;
+    const raw = localStorage.getItem("pdf2.outbox." + uid); if (!raw || raw === "{}") return;
+    const mod = await import(PDF_READER_URL);
+    await mod.replayOutbox(buildPdfReaderEnv());
+  } catch (e) { console.warn("Odeslání poznámek z minula:", e?.message || e); }
+}
+window.addEventListener("online", () => setTimeout(replayAnnotOutbox, 1500));
 function buildPdfReaderEnv() {
   // čtečka pracuje se složeným id (soubor@revize); poznámky jdou pod revizi, bajty a data v zařízení pod samotný soubor
   const parts = (id) => window.tenRev.split(id);

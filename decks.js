@@ -96,7 +96,7 @@ function applyOutbox(rec, fileId) {
   let box = {};
   try { box = JSON.parse(localStorage.getItem("pdf2.outbox." + S.uid) || "{}") || {}; } catch (e) { return; }
   for (const e of Object.values(box)) {
-    if (!e || e.fileId !== fileId) continue;
+    if (!e || String(e.fileId).split("@")[0] !== fileId) continue;
     const slot = e.layerKey === "public" ? "public" : e.layerKey === S.uid ? "own" : null; if (!slot) continue;
     rec[slot] = rec[slot] || {}; rec[slot].pagesV2 = rec[slot].pagesV2 || {};
     if (e.payload === null) delete rec[slot].pagesV2[e.page]; else rec[slot].pagesV2[e.page] = e.payload;

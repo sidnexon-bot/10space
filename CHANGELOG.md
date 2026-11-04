@@ -3,6 +3,10 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.16.1 (4. 11. 2026)
+- Poznámky psané bez připojení se už neztratí. Dřív se záloha z tabletu odeslala až při otevření nějakého PDF a mohla přepsat nebo být přepsána (když člen na té stránce hned dokreslil). Teď se odešle po startu aplikace a po obnovení připojení, při otevření stránky se sloučí se stavem na serveru (novější vyhrává, při souběhu se tahy sjednotí) a bez připojení stavový řádek hlásí „Uloženo v zařízení (offline)“ místo věčného „Ukládám…“.
+- Offline kopie osobních desek zahrnuje i dosud neodeslané poznámky.
+
 ## 3.16.0 (4. 11. 2026)
 - Čtečka PDF: tlačítko „Převést staré“ (v režimu poznámek) převede poznámky z původního prohlížeče (Fabric) na nový typ v celém dokumentu, pro osobní nebo veřejnou vrstvu (veřejnou jen vedoucí). Tahy pera a zvýrazňovače i texty se přenesou i s barvou a tloušťkou; stará stránka se před smazáním uschová pod `legacyBackup`. Opakovaný převod nic nezdvojí.
 - Čtečka PDF: když se Fabric na zařízení nenačte, čtečka si ho dotáhne sama; nejdou-li staré poznámky zobrazit, ukáže se hláška s příčinou (dřív se přeskočily bez upozornění). Platí i pro stažení „S poznámkami“.

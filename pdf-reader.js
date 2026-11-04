@@ -266,6 +266,21 @@ async function legacyToV2(d, fabric) {
 // ────────────────────────────────────────────────────────────────────────────
 // Úložiště poznámek: načítání po stránkách, automatické ukládání, záloha v zařízení
 // ────────────────────────────────────────────────────────────────────────────
+// Záloha zápisu z minula (vznikla bez připojení) × stav stránky na serveru. Je-li záloha novější než server, platí (je to
+// pokračování toho, co zařízení naposledy vidělo, včetně smazaných tahů); je-li novější server (mezitím psal někdo jiný, např.
+// druhé zařízení), tahy se sjednotí podle ID, aby se nic neztratilo. Vrací { strokes, items, applied } (applied = záloha něco změnila).
+function mergeOutbox(server, entry) {
+  const sv = server || { strokes: [], items: [] }, svAt = sv.updatedAt || 0;
+  const at = entry.at || entry.payload?.updatedAt || 0;
+  let own = { strokes: [], items: [] };
+  if (entry.payload?.data) { try { const d = JSON.parse(entry.payload.data); own = { strokes: d.strokes || [], items: d.items || [] }; } catch { /* poškozená záloha se přeskočí */ } }
+  if (at >= svAt) return { strokes: own.strokes, items: own.items, applied: true };
+  const ids = (a) => new Set(a.map((x) => x.id));
+  const hs = ids(sv.strokes || []), hi = ids(sv.items || []);
+  const ms = own.strokes.filter((x) => !hs.has(x.id)), mi = own.items.filter((x) => !hi.has(x.id));
+  return { strokes: [...(sv.strokes || []), ...ms], items: [...(sv.items || []), ...mi], applied: ms.length + mi.length > 0 };
+}
+
 const newLayer = () => ({ strokes: [], items: [], legacy: null, loaded: false, error: false });
 
 class AnnotStore {
@@ -281,15 +296,26 @@ class AnnotStore {
     if (this.loading[page]) return this.loading[page];
     const rec = { personal: newLayer(), public: newLayer() };
     this.pages[page] = rec;
+    const box = this.readOutbox(); // stav zálohy před čtením: odeslání z jiného místa ho nesmí „předběhnout“ a zmizet
     this.loading[page] = Promise.all(["personal", "public"].map(async (layer) => {
       try {
-        const r = await this.env.readAnnotPage(this.fileId, this.layerKey(layer), page);
+        const lk = this.layerKey(layer);
+        const r = await this.env.readAnnotPage(this.fileId, lk, page);
+        let server = null;
         if (r.v2?.data) {
-          try { const d = JSON.parse(r.v2.data); rec[layer].strokes = d.strokes || []; rec[layer].items = d.items || []; }
+          try { const d = JSON.parse(r.v2.data); server = { strokes: d.strokes || [], items: d.items || [], updatedAt: r.v2.updatedAt || 0 }; }
           catch { rec[layer].error = true; }
         }
+        if (server) { rec[layer].strokes = server.strokes; rec[layer].items = server.items; }
         rec[layer].legacy = r.legacy || null;
+        let merged = false;
+        const e = box[this.fileId + "|" + lk + "|" + page];
+        if (e && !rec[layer].error) { // zápis z minula čeká na odeslání: stránka ho obsahuje a uloží se (ne přepíše) i s novými tahy
+          const m = mergeOutbox(server, e);
+          if (m.applied) { rec[layer].strokes = m.strokes; rec[layer].items = m.items; merged = true; }
+        }
         rec[layer].loaded = true;
+        if (merged) this.touch(page, layer);
       } catch { rec[layer].error = true; }
     })).then(() => {
       if (rec.personal.error || rec.public.error) delete this.loading[page]; // příště zkusit znovu
@@ -318,7 +344,7 @@ class AnnotStore {
     clearTimeout(this.timers[key]); delete this.timers[key];
     const payload = this.payload(page, layer);
     const lk = this.layerKey(layer), ob = this.fileId + "|" + lk + "|" + page;
-    const box = this.readOutbox(); box[ob] = { fileId: this.fileId, layerKey: lk, page, payload }; this.writeOutbox(box); // nejdřív do zařízení
+    const box = this.readOutbox(); box[ob] = { fileId: this.fileId, layerKey: lk, page, payload, at: Date.now() }; this.writeOutbox(box); // nejdřív do zařízení
     this.pending++; this.onStatus();
     const run = () => this.env.writeAnnotPage(this.fileId, lk, page, payload).then(() => {
       const b = this.readOutbox(); if (b[ob] && JSON.stringify(b[ob].payload) === JSON.stringify(payload)) delete b[ob]; this.writeOutbox(b); // novější zápis téže stránky zůstane v záloze
@@ -337,16 +363,29 @@ class AnnotStore {
     for (const [k, e] of Object.entries(box)) {
       if (e.layerKey === "public" && !this.env.canEditPublic) continue;
       if (e.layerKey !== "public" && e.layerKey !== this.env.user.uid) continue;
+      const layer = e.layerKey === "public" ? "public" : "personal";
       try {
-        await this.env.writeAnnotPage(e.fileId, e.layerKey, e.page, e.payload);
-        const b = this.readOutbox(); delete b[k]; this.writeOutbox(b);
+        if (e.fileId === this.fileId) { // soubor otevřený v této čtečce: stránka se načte (a sloučí se zálohou) a odešle běžným ukládáním
+          const L = (await this.load(e.page))[layer];
+          if (L.error) { bad++; continue; }
+          await this.flushKey(e.page, layer);
+          continue;
+        }
+        // jiný soubor: nejdřív se přečte stav na serveru a záloha se s ním sloučí, ať se nepřepíše práce z jiného zařízení
+        const r = await this.env.readAnnotPage(e.fileId, e.layerKey, e.page);
+        let server = null; if (r.v2?.data) { const d = JSON.parse(r.v2.data); server = { strokes: d.strokes || [], items: d.items || [], updatedAt: r.v2.updatedAt || 0 }; }
+        const m = mergeOutbox(server, e);
+        const payload = m.strokes.length || m.items.length ? { v: 2, data: JSON.stringify({ strokes: m.strokes, items: m.items }), updatedAt: Date.now() } : null;
+        await this.env.writeAnnotPage(e.fileId, e.layerKey, e.page, payload);
+        const b = this.readOutbox(); if (b[k] && b[k].at === e.at) delete b[k]; this.writeOutbox(b); // novější zápis téže stránky zůstane v záloze
       } catch { bad++; }
     }
-    this.failed = bad;
+    this.failed = bad || this.failed;
     this.onStatus();
   }
   status() {
-    if (this.pending || Object.keys(this.timers).length) return "saving";
+    if (Object.keys(this.timers).length) return "saving";
+    if (this.pending) return typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "saving"; // bez sítě zápis čeká, ale je v záloze zařízení
     if (this.failed || Object.keys(this.readOutbox()).length) return "offline";
     return "saved";
   }
@@ -1517,6 +1556,13 @@ class Reader {
   }
 }
 
+// Odešle zbylé zápisy z minula bez otevřené čtečky (volá se po startu aplikace a po obnovení připojení)
+export async function replayOutbox(env) {
+  const st = new AnnotStore(env, "");
+  await st.retryOutbox();
+  return Object.keys(st.readOutbox()).length;
+}
+
 export function createPdfReader(env) {
   let active = null;
   return {
@@ -1536,4 +1582,4 @@ export function createPdfReader(env) {
 }
 
 // exportováno pro testy
-export const _internals = { paintStroke, paintItem, simplify, strokeHit, AnnotStore, legacyToV2, Reader };
+export const _internals = { paintStroke, paintItem, simplify, strokeHit, AnnotStore, legacyToV2, Reader, mergeOutbox };
