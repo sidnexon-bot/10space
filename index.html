@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" integrity="sha384-K2R7AzsJQPCDnhTlIEZr5pifaODgyx7XqbqkZMtLKzGJNo/Irtg9yU85F+1YwL8X" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
   <script src="version.js"></script>
+  <script src="busy.js"></script>
   <script src="platform.js"></script>
   <script src="ui.js"></script>
   <script src="kody.js"></script>
@@ -1707,7 +1708,7 @@
     </div>
     <!-- MAIN CONTENT -->
     <div class="main-content" id="main-content"
-      ondragover="event.preventDefault();document.getElementById('upload-zone').classList.add('dragover')"
+      ondragover="handleDragOver(event)"
       ondragleave="document.getElementById('upload-zone').classList.remove('dragover')"
       ondrop="handleDrop(event)">
 
@@ -1733,7 +1734,9 @@
         </button>
       </div>
 
-      <!-- UPLOAD ZONE -->
+      <!-- výběr souborů z mobilu: Nahrát rovnou otevře výběr, bez přetahování -->
+      <input type="file" multiple hidden id="upload-picker" onchange="handleFileSelect(event)">
+      <!-- UPLOAD ZONE (jen počítač: přetažení nebo výběr) -->
       <div class="upload-zone hidden" id="upload-zone">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
         <p>Přetáhni soubory sem nebo <label style="color:#EE220C;cursor:pointer;font-weight:600">vyber ze zařízení<input type="file" multiple style="display:none" onchange="handleFileSelect(event)"></label></p>
@@ -1922,9 +1925,11 @@ function hideSplash() {
 
 // AUTH
 window.handleGoogleLogin = async () => {
+  let endLoginBusy = null;
   try {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
+    endLoginBusy = window.tenBusy?.start("Ověřuji přístup…");
     let member = null;
     try {
       const snapshot = await get(ref(db, "/members"));
@@ -1940,7 +1945,7 @@ window.handleGoogleLogin = async () => {
   } catch(err) {
     document.getElementById("login-error").textContent = "Chyba: " + err.message;
     document.getElementById("login-error").classList.remove("hidden");
-  }
+  } finally { endLoginBusy?.(); }
 };
 
 window.handleLogout = async () => {
@@ -1952,6 +1957,7 @@ window.handleLogout = async () => {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     let member = null;
+    const endAuthBusy = window.tenBusy?.start("Ověřuji přístup…");
     try {
       if (navigator.onLine === false) throw new Error("offline");
       const snapshot = await Promise.race([get(ref(db, "/members")), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))]);
@@ -1961,15 +1967,18 @@ onAuthStateChanged(auth, async (user) => {
       // bez připojení (nebo velmi pomalé sítě) se použije člen naposledy ověřený na tomto zařízení; odepřené čtení (nečlen) dál odhlásí
       if (e.message === "offline" || e.message === "timeout") { try { const c = JSON.parse(localStorage.getItem("10space.member") || "null"); if (c && c.uid === user.uid) member = c; } catch (e2) { /* poškozený záznam */ } }
     }
+    endAuthBusy?.();
     if (!member) {
       await signOut(auth);
       hideSplash();
+      window.tenBusy?.release("deeplink");
       return;
     }
     currentUser = { ...member, photoURL: user.photoURL };
     showApp();
   } else {
     hideSplash();
+    window.tenBusy?.release("deeplink"); // nepřihlášený: odkaz na soubor počká na přihlášení, karta zakrývala přihlašovací okno
     document.getElementById("login-screen")?.classList.remove("hidden");
   }
 });
@@ -2172,6 +2181,7 @@ function syncWriteUi(folderId) {
 
 // LOAD DATA
 async function loadData() {
+  const endLoad = window.tenBusy?.start("Načítám data…");
   loadShares(true).catch(() => {}); // zahřeje Cloud Function a naplní paměť dřív, než se otevře dashboard
   // Načti složky z RTDB
   const slozkySnap = await offlineGet("/slozky");
@@ -2189,7 +2199,8 @@ async function loadData() {
     if (hash.startsWith("#/file/")) {
     const fileId = hash.split("/")[2];
     if (fileId) {
-      setTimeout(() => openFileFromDeepLink(fileId), 1500);
+      // počká na strom souborů (nejdéle 1,5 s jako dřív), ale nečeká zbytečně, když dorazí dřív
+      setTimeout(() => Promise.race([window.aclReady || Promise.resolve(), new Promise((r) => setTimeout(r, 1500))]).then(() => openFileFromDeepLink(fileId)), 0);
     }
   }
 
@@ -2256,25 +2267,28 @@ async function loadData() {
   window.tenResume?.init(auth.currentUser?.uid);
   setTimeout(replayAnnotOutbox, 4000);
   const resumed = window.tenResume ? await window.tenResume.restore() : false;
+  endLoad?.();
   if (!resumed) switchTab(window.location.hash === "#/osobni" || navigator.onLine === false ? "decks" : "recent");
 }
 
-function openFileFromDeepLink(fileId) {
+async function openFileFromDeepLink(fileId) {
   const file = window.driveFiles?.[fileId];
   const folder = window.driveFolders?.[fileId];
-  
-  if (file) {
-    if (file.mimeType === "application/pdf") {
-      openPdfViewer(fileId, file.name);
+  const end = window.tenBusy?.start("Otevírám dokument…");
+  try {
+    if (file) {
+      if (file.mimeType === "application/pdf") {
+        await openPdfViewer(fileId, file.name);
+      } else {
+        await handleDriveNameClick(fileId, file.mimeType, false);
+      }
+    } else if (folder) {
+      switchTab("folders");
+      navigateToDriveFolder(fileId, folder.name);
     } else {
-      handleDriveNameClick(fileId, file.mimeType, false);
+      await openPdfViewer(fileId, "Noty"); // soubor ještě není v přehledu Drive (např. noty z repertoáru): viewer si ho stáhne podle ID
     }
-  } else if (folder) {
-    switchTab("folders");
-    navigateToDriveFolder(fileId, folder.name);
-  } else {
-    openPdfViewer(fileId, "Noty"); // soubor ještě není v přehledu Drive (např. noty z repertoáru): viewer si ho stáhne podle ID
-  }
+  } finally { end?.(); window.tenBusy?.release("deeplink"); }
 }
 
 function buildFolderTree(parentId, depth) {
@@ -6026,6 +6040,7 @@ function buildPdfReaderEnv() {
 window.openPdfViewer = async (driveFileId, title, revisionId = null) => {
   recordRecentOpen(driveFileId);
   if (localStorage.getItem("pdfViewer") === "legacy") return window.openPdfViewerLegacy(driveFileId, title);
+  const endBusy = window.tenBusy?.start("Otevírám PDF…");
   try {
     if (!pdfReaderApi) {
       const mod = await import(PDF_READER_URL);
@@ -6034,12 +6049,13 @@ window.openPdfViewer = async (driveFileId, title, revisionId = null) => {
     // soubor se otevírá vždy k určité revizi (aktuální, nebo vybrané v kartě Verze); poznámky se k ní vážou
     const rev = revisionId || await window.tenRev.ensureHead(driveFileId);
     const isOld = revisionId && !window.tenRev.isHead(driveFileId, revisionId);
+    window.tenBusy?.release("deeplink"); // dál ukazuje průběh sama čtečka (Načítám PDF…)
     await pdfReaderApi.open(window.tenRev.join(driveFileId, rev), isOld ? (title || "Dokument") + " (starší verze)" : title);
   } catch (err) {
     console.error("Nový PDF prohlížeč se nepodařilo spustit, otevírám původní:", err);
     pdfReaderApi = null;
     return window.openPdfViewerLegacy(driveFileId, title);
-  }
+  } finally { endBusy?.(); }
 };
 
 window.pdfToggleToolbar = () => {
@@ -6651,13 +6667,20 @@ window.stopImpersonate = async () => {
 };
   
 // UPLOAD
+const isMobileLayout = () => window.matchMedia("(max-width: 768px)").matches; // stejná hranice jako přepnutí na mobilní rozvržení v CSS
 window.openUpload = () => {
   if (!writeGate()) return;
+  if (isMobileLayout()) { document.getElementById("upload-picker").click(); return; } // mobil: hned výběr souborů, žádné přetahování
   document.getElementById("upload-zone").classList.toggle("hidden");
+};
+window.handleDragOver = (e) => {
+  e.preventDefault(); // i na mobilu, ať puštěný soubor neotevře prohlížeč místo aplikace
+  if (!isMobileLayout()) document.getElementById("upload-zone").classList.add("dragover");
 };
 window.handleDrop = (e) => {
   e.preventDefault();
   document.getElementById("upload-zone").classList.remove("dragover");
+  if (isMobileLayout()) return; // přetažení souborů jen na počítači
   processFiles(Array.from(e.dataTransfer.files));
 };
 window.handleFileSelect = (e) => { processFiles(Array.from(e.target.files)); e.target.value = ""; };

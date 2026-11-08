@@ -3,6 +3,12 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.17.0 (8. 11. 2026)
+- Indikátor čekání: nahoře běží tenký červený pruh všude, kde aplikace čeká na odpověď serveru (otevření souboru a PDF, stažení, nahrávání, přejmenování, přesun, mazání, sdílení, oprávnění, verze, načtení dat po startu a přihlášení). Po chvíli se pod pruhem ukáže, na co se čeká („Stahuji soubor…“). Krátké operace nic neblikají a zapomenutá se po minutě sama ukončí.
+- Odkaz na konkrétní soubor (#/file/…): hned po otevření se ukáže karta „Otevírám dokument…“, dokud se nepřihlásí a nenačtou data a nepřevezme to čtečka s vlastním průběhem. Po 12 s přibude „Trvá to déle než obvykle…“ a tlačítko Skrýt. Čekání na strom souborů je teď nejvýš 1,5 s a končí hned, jakmile data dorazí (dřív se čekalo vždy celých 1,5 s).
+- Štítek pod pruhem se nezdvojuje s jinými ukazateli: když už běží spinner přes obrazovku, skeleton seznamu, načítání ve čtečce PDF, panel nahrávání nebo hláška o připojení, ukáže se jen pruh. Pruh je nad prohlížeči médií a dokumentů i nad okny a pod hláškami; při „Zobrazit jako“ je štítek pod červeným bannerem.
+- Nahrávání na mobilu: „Nahrát“ (v nabídce Přidat) rovnou otevře výběr souborů ze zařízení, bez zóny „Přetáhni soubory sem“. Přetahování souborů zůstává jen na počítači; na mobilu puštěný soubor nic nenahraje.
+
 ## 3.16.1 (4. 11. 2026)
 - Poznámky psané bez připojení se už neztratí. Dřív se záloha z tabletu odeslala až při otevření nějakého PDF a mohla přepsat nebo být přepsána (když člen na té stránce hned dokreslil). Teď se odešle po startu aplikace a po obnovení připojení, při otevření stránky se sloučí se stavem na serveru (novější vyhrává, při souběhu se tahy sjednotí) a bez připojení stavový řádek hlásí „Uloženo v zařízení (offline)“ místo věčného „Ukládám…“.
 - Offline kopie osobních desek zahrnuje i dosud neodeslané poznámky.
