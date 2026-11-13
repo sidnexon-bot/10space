@@ -3,6 +3,10 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.18.1 (13. 11. 2026)
+- Detail projektu a sdílený odkaz: jen tabulka přímo na stránce, bez karty (bez pozadí, zaoblení a stínu); sekce jsou odděleny nadpisem s linkou a řádky hairline čarami. Popis od Marka je bez šedého podbarvení.
+- Složky projektu se rozbalují přímo v tabulce jako v Disku: šipka u složky, ikony podle typu souboru, u souboru datum změny a velikost, vnořené složky, prázdná složka to řekne. Klik na soubor ho otevře ve čtečce, složka jde ovládat i klávesnicí. Zvláštní panel „Zpět“ pod tabulkou zmizel. Ve sdíleném odkazu vede řádek Podklady do průzkumníka podkladů jako dřív.
+
 ## 3.18.0 (13. 11. 2026)
 Projekt jako technický rider. Detail projektu v 10space je jedna tabulka po sekcích a nekopíruje detail akce v 10base.
 - Detail projektu: Informace (datum, místo, sraz, doprava, skupiny, program a garant s e-mailem a telefonem na samostatných řádcích), Plán akce (harmonogram, přípravné akce a ukončení z rideru seřazené podle času), Podrobný program (stávající tabulka rideru), Složky projektu ve vzhledu Disku, Příjmy a výdaje a Interní kód. Odstraněny ukazatele příprav (to-do je jen v 10base) a údaj o hospodě.

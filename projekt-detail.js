@@ -8,6 +8,14 @@
   var BASE_URL = "https://app.10men.cz/";
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var FOLDER = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#5f6368" aria-hidden="true"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
+  var CHEV = '<svg class="pd-chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
+  var fileIcon = function (mime) {
+    mime = String(mime || "").toLowerCase();
+    var c = mime.indexOf("pdf") > -1 ? "#ea4335" : mime.indexOf("audio") === 0 ? "#8e44ad" : mime.indexOf("image") === 0 ? "#1e8e3e" : mime.indexOf("video") === 0 ? "#e8710a" :
+      mime.indexOf("sheet") > -1 || mime.indexOf("excel") > -1 ? "#188038" : mime.indexOf("presentation") > -1 || mime.indexOf("powerpoint") > -1 ? "#e37400" :
+      mime.indexOf("word") > -1 || mime.indexOf("document") > -1 || mime.indexOf("msword") > -1 ? "#1a73e8" : "#5f6368";
+    return '<svg width="20" height="20" viewBox="0 0 24 24" fill="' + c + '" aria-hidden="true"><path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6" fill="#fff" opacity=".45"/></svg>';
+  };
   var kc = function (n) { return (n < 0 ? "−" : "") + Math.abs(n).toLocaleString("cs-CZ", { maximumFractionDigits: 2 }) + " Kč"; };
   var isAdmin = function (u) { return !!u && (u.role === "ADMIN" || u.role === "Owner"); };
   var plural = function (n, one, few, many) { return n === 1 ? one : n >= 2 && n <= 4 ? few : many; };
@@ -49,14 +57,41 @@
     return '<div class="pd-rider-wrap"><table class="pd-rt"><thead><tr><th>Název</th><th>Skladba / Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead><tbody>' + body + "</tbody></table></div>";
   }
 
-  function folderRowHtml(onclick, nazev, n) {
-    return '<tr class="pd-folder" onclick="' + onclick + '"><td><span class="pd-fi">' + FOLDER + esc(nazev) + '</span></td><td class="pd-t pd-n">' + (n ? n + " " + plural(n, "položka", "položky", "položek") : "") + "</td></tr>";
+  // obsah složky z místní kopie stromu Disku (window.driveFolders / driveFiles): nejdřív složky, pak soubory, podle abecedy
+  function kids(id) {
+    var cs = function (a, b) { return String(a.name || "").localeCompare(String(b.name || ""), "cs"); };
+    var dirs = Object.entries(window.driveFolders || {}).filter(function (e) { return e[1].parentId === id; }).map(function (e) { return { id: e[0], name: e[1].name, dir: true }; }).sort(cs);
+    var files = Object.entries(window.driveFiles || {}).filter(function (e) { return e[1].parentId === id; }).map(function (e) { return { id: e[0], name: e[1].name, mime: e[1].mimeType, size: Number(e[1].size) || 0, mod: e[1].modifiedTime }; }).sort(cs);
+    return dirs.concat(files);
   }
-  function folderRow(id, nazev) {
-    var n = 0;
-    try { n = Object.values(window.driveFiles || {}).filter(function (f) { return f.parentId === id; }).length + Object.values(window.driveFolders || {}).filter(function (f) { return f.parentId === id; }).length; } catch (e) { /* bez počtu */ }
-    return folderRowHtml("otevritProjektSlozku('" + esc(id) + "', '" + esc(nazev) + "')", nazev, n);
+  var bytes = function (n) { return !n ? "" : n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + " kB" : (n / 1048576).toLocaleString("cs-CZ", { maximumFractionDigits: 1 }) + " MB"; };
+  var day = function (iso) { var d = iso ? new Date(iso) : null; return d && !isNaN(d) ? d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" }) : ""; };
+  var KEY = ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click()}"';
+  function itemRow(it, depth, anc) {
+    var pad = ' style="padding-left:' + depth * 20 + 'px"', a = ' data-id="' + esc(it.id) + '" data-depth="' + depth + '" data-anc="' + esc(anc) + '"';
+    if (it.dir) {
+      var n = kids(it.id).length;
+      return '<tr class="pd-row pd-dir" tabindex="0" role="button" aria-expanded="false"' + a + ' onclick="tenProjekt.toggle(this)"' + KEY + '><td><span class="pd-fi"' + pad + ">" + CHEV + FOLDER + '<span class="pd-nm">' + esc(it.name) + '</span></span></td><td class="pd-t pd-n">' +
+        (n ? n + " " + plural(n, "položka", "položky", "položek") : "prázdná") + "</td></tr>";
+    }
+    var when = day(it.mod);
+    return '<tr class="pd-row" tabindex="0" role="button"' + a + ' data-mime="' + esc(it.mime || "") + '" onclick="tenProjekt.openFile(this)"' + KEY + '><td><span class="pd-fi"' + pad + '><span style="width:14px;flex:none"></span>' + fileIcon(it.mime) +
+      '<span class="pd-nm">' + esc(it.name) + '</span></span></td><td class="pd-t pd-n">' + (when ? '<span class="pd-when">' + esc(when) + (it.size ? " · " : "") + "</span>" : "") + esc(bytes(it.size)) + "</td></tr>";
   }
+  // rozbalení a sbalení složky přímo v tabulce (i vnořených složek)
+  function toggle(tr) {
+    var id = tr.getAttribute("data-id"), tb = tr.parentNode;
+    if (tr.getAttribute("aria-expanded") === "true") {
+      Array.prototype.slice.call(tb.querySelectorAll("tr[data-anc]")).forEach(function (r) { if (r.getAttribute("data-anc").indexOf("," + id + ",") > -1) r.remove(); });
+      tr.setAttribute("aria-expanded", "false"); return;
+    }
+    var depth = Number(tr.getAttribute("data-depth")) + 1, anc = tr.getAttribute("data-anc") + id + ",", items = kids(id), loaded = !!(window.driveFolders && window.driveFiles);
+    var msg = !loaded ? "Obsah složek se zatím nenačetl, zkuste to za chvíli" : "Složka je prázdná";
+    tr.insertAdjacentHTML("afterend", items.length ? items.map(function (it) { return itemRow(it, depth, anc); }).join("") : '<tr class="pd-empty" data-anc="' + esc(anc) + '"><td colspan="2"><span style="padding-left:' + (depth * 20 + 23) + 'px">' + msg + "</span></td></tr>");
+    tr.setAttribute("aria-expanded", "true");
+  }
+  function openFile(tr) { if (window.handleDriveNameClick) window.handleDriveNameClick(tr.getAttribute("data-id"), tr.getAttribute("data-mime"), false); }
+  var folderRow = function (id, nazev) { return itemRow({ id: id, name: nazev, dir: true }, 0, ","); };
 
   // celý obsah detailu; o.user = přihlášený člen (role), o.members = /members
   function html(o) {
@@ -95,7 +130,7 @@
     // popis od Marka (jako dřív: administrátor ho upraví a přegeneruje)
     var wikiAdmin = o.user && o.user.role === "ADMIN";
     out += sec("Popis (AI)") + '<div class="pd-wiki projekt-wiki-text" id="wiki-text" contenteditable="' + (wikiAdmin ? "true" : "false") + '">' + esc(projekt.wikiText || "Zatím žádný popis.") + "</div>";
-    if (wikiAdmin) out += '<div class="projekt-wiki-actions" style="padding:0 14px 10px"><button class="projekt-wiki-btn" onclick="ulozitWiki(\'' + esc(o.projektId) + '\')">Uložit</button> <button class="projekt-wiki-btn ai" onclick="regenerovatWiki(\'' + esc(o.projektId) + '\')">Přegenerovat Markem</button></div>';
+    if (wikiAdmin) out += '<div class="projekt-wiki-actions"><button class="projekt-wiki-btn" onclick="ulozitWiki(\'' + esc(o.projektId) + '\')">Uložit</button> <button class="projekt-wiki-btn ai" onclick="regenerovatWiki(\'' + esc(o.projektId) + '\')">Přegenerovat Markem</button></div>';
 
     out += sec("Plán akce") + "<table>" + (plan.length ? plan.map(function (p) {
       return '<tr><td class="pd-t">' + esc(p.cas || "—") + '</td><td colspan="2"><b>' + esc(p.co) + "</b>" + (p.pozn ? ' <span class="pd-m">' + esc(p.pozn) + "</span>" : "") + "</td></tr>";
@@ -107,9 +142,7 @@
     if (projekt.drivePodkladyId) folders += folderRow(projekt.drivePodkladyId, "Podklady");
     if (projekt.driveSmlouvyId && admin) folders += folderRow(projekt.driveSmlouvyId, "Smlouvy a faktury");
     if (projekt.driveFotkyId) folders += folderRow(projekt.driveFotkyId, "Fotky a nahrávky");
-    out += sec("Složky projektu", "Disk") + (folders ? "<table>" + folders + "</table>" : "<table><tr><td>" + '<span class="pd-gap">Žádné složky</span></td></tr></table>');
-    out += '<div id="projekt-slozka-obsah" class="hidden" style="padding:0 14px 12px"><div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px"><button class="projekt-card-btn" onclick="zavritProjektSlozku()">← Zpět</button><span style="font-size:13px;font-weight:600" id="projekt-slozka-nazev"></span></div><div id="projekt-slozka-list"></div></div>';
-
+    out += sec("Složky projektu") + (folders ? '<table class="pd-files">' + folders + "</table>" : '<div class="pd-hint">Projekt zatím nemá složky.</div>');
     out += '<div id="pd-finance"></div>';
     out += sec("Interní") + "<table>" + row("Interní kód", '<span class="kd-row" data-kod-row="' + esc(o.projektId) + '"></span>') + "</table>";
     return out + "</div>";
@@ -135,7 +168,7 @@
       return '<tr><td class="pd-t">' + esc(p.cas || "—") + '</td><td colspan="2"><b>' + esc(p.co) + "</b>" + (p.pozn ? ' <span class="pd-m">' + esc(p.pozn) + "</span>" : "") + "</td></tr>";
     }).join("") + "</table>";
     if (prog.rows.length) out += sec("Podrobný program", prog.min ? esc(Math.round(prog.min) + " min") : "") + programTable(prog.rows, {});
-    if (d.hasPodklady) out += sec("Složky projektu", "Disk") + "<table>" + folderRowHtml("openProjektPodklady()", "Podklady", 0) + "</table>";
+    if (d.hasPodklady) out += sec("Složky projektu") + '<table class="pd-files"><tr class="pd-row pd-dir" tabindex="0" role="link" onclick="openProjektPodklady()"' + KEY + '><td><span class="pd-fi">' + FOLDER + '<span class="pd-nm">Podklady</span></span></td><td class="pd-n"><svg class="pd-chev" style="transform:none" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></td></tr></table>';
     return out + "</div>";
   }
 
@@ -159,5 +192,5 @@
     } catch (e) { /* bez připojení nebo chyba serveru: sekce se nezobrazí, zbytek detailu funguje */ }
   }
 
-  window.tenProjekt = { html: html, htmlShared: htmlShared, loadFinance: loadFinance, _dayPlan: dayPlan, _programStats: programStats };
+  window.tenProjekt = { html: html, htmlShared: htmlShared, toggle: toggle, openFile: openFile, loadFinance: loadFinance, _dayPlan: dayPlan, _programStats: programStats };
 })();
