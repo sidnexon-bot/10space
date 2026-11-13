@@ -1,0 +1,43 @@
+/* 10space – detail projektu jako technický rider (projekt-detail.js): jedna tabulka po sekcích, 13 px, názvy tučně */
+.pd-sheet { flex: none; background: var(--card, #fff); border-radius: var(--r-card, 18px); overflow: hidden; font-size: 13px; line-height: 1.35; color: var(--text, #1c1c1e); }
+.pd-miss { padding: 9px 14px; background: #fff1d6; color: #8a5a00; border-bottom: 1px solid var(--hair, rgba(60, 60, 67, 0.12)); }
+.pd-miss b { font-weight: 700; }
+.pd-sec { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 14px; background: #f7f7fa; color: var(--muted, #8e8e93); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-top: 1px solid var(--hair, rgba(60, 60, 67, 0.12)); border-bottom: 1px solid var(--hair, rgba(60, 60, 67, 0.12)); }
+.pd-sheet > .pd-sec:first-child { border-top: 0; }
+.pd-sheet table { width: 100%; border-collapse: collapse; }
+.pd-sheet td, .pd-sheet th { padding: 5px 14px; border-bottom: 1px solid var(--hair, rgba(60, 60, 67, 0.12)); text-align: left; vertical-align: top; }
+.pd-sheet tr:last-child td { border-bottom: 0; }
+.pd-sheet th { font-size: 11px; font-weight: 600; color: var(--muted, #8e8e93); }
+.pd-sheet td:first-child { font-weight: 700; white-space: nowrap; width: 1%; padding-right: 18px; }
+.pd-sheet td.pd-t { font-weight: 400; color: var(--muted, #8e8e93); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pd-sheet td.pd-n, .pd-sheet th.pd-n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pd-m { color: var(--muted, #8e8e93); font-weight: 400; }
+.pd-in { color: #1a7a3a; }
+.pd-out { color: #c00000; }
+.pd-sum td { font-weight: 700; }
+.pd-gap { color: var(--muted, #8e8e93); font-style: italic; font-weight: 400; }
+.pd-gap a { color: #EE220C; font-style: normal; font-weight: 600; text-decoration: none; margin-left: 6px; }
+.pd-sheet a.pd-link { color: inherit; text-decoration: underline; }
+.pd-wiki { padding: 8px 14px; white-space: pre-wrap; }
+.pd-rider-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.pd-sheet table.pd-rt { font-size: 12.5px; }
+.pd-sheet table.pd-rt th, .pd-sheet table.pd-rt td { border: 1px solid var(--hair, rgba(60, 60, 67, 0.12)); padding: 5px 9px; }
+.pd-sheet table.pd-rt th { background: #f7f7fa; }
+.pd-sheet table.pd-rt tr:nth-child(even) td { background: rgba(128, 128, 128, 0.05); }
+.pd-sheet table.pd-rt td:first-child { width: auto; white-space: normal; font-weight: 400; }
+.pd-sheet table.pd-rt td.pd-b { font-weight: 700; }
+.pd-folder { cursor: pointer; }
+.pd-folder:hover td { background: rgba(128, 128, 128, 0.07); }
+.pd-sheet .pd-folder td:first-child { width: auto; white-space: nowrap; }
+.pd-fi { display: inline-flex; align-items: center; gap: 10px; }
+.pd-fi svg { flex: none; }
+.pd-sheet td.pd-grow { width: auto; }
+body.dark .pd-miss { background: rgba(255, 179, 64, 0.16); color: #ffb340; }
+body.dark .pd-sec, body.dark .pd-sheet table.pd-rt th { background: var(--surface-2, #222225); }
+body.dark .pd-in { color: #32d74b; }
+body.dark .pd-out { color: #ff6961; }
+.pd-sheet .projekt-wiki-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pd-sheet .projekt-wiki-btn { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 520px) {
+  .pd-sheet td, .pd-sheet th { padding: 5px 10px; }
+}

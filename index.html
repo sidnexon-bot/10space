@@ -17,6 +17,7 @@
   <script src="platform.js"></script>
   <script src="ui.js"></script>
   <script src="kody.js"></script>
+  <script src="projekt-detail.js"></script>
   <script src="settings.js"></script>
   <title>10space</title>
   <style>
@@ -1559,6 +1560,7 @@
   <link rel="stylesheet" href="decks.css">
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="kody.css">
+  <link rel="stylesheet" href="projekt-detail.css">
   <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="settings.css">
 </head>
@@ -4390,245 +4392,12 @@ window.otevritProjekt = async (projektId) => {
 
   document.getElementById("projekt-detail-title").textContent = projekt.nazev || "Projekt";
   
-  const datum = projekt.datum ? new Date(projekt.datum).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—";
+  // seznam členů se do zařízení neukládá: bez připojení se garant nezobrazí
+  const membersSnap = await get(ref(db, "/members")).catch(() => ({ val: () => ({}) }));
+  const members = membersSnap.val() || {};
 
-  // Parsuj rider
-const rider = akce?.rider ? JSON.parse(akce.rider) : null;
-
-// Hospoda z ridera nebo z akce
-const hospodaInfo = rider?.hospoda?.nazev 
-  ? `${rider.hospoda.nazev}${rider.hospoda.cas ? `, ${rider.hospoda.cas}` : ""}${rider.hospoda.jmeno ? `, rezervace: ${rider.hospoda.jmeno}` : ""}`
-  : (akce?.hospoda || null);
-
-// Garant (seznam členů se do zařízení neukládá, bez připojení se garant nezobrazí)
-const membersSnap = await get(ref(db, "/members")).catch(() => ({ val: () => ({}) }));
-const members = membersSnap.val() || {};
-
-let garantJmeno = "";
-if (rider?.garant) {
-  const garant = Object.values(members).find(m => m.id === rider.garant || m.uid === rider.garant);
-  garantJmeno = garant?.name || garant?.email || "";
-}
-
-// Info řádky
-const infoRows = [
-  { label: "Interní kód", html: true, value: `<span class="kd-row" data-kod-row="${driveEsc(projektId)}"></span>` }, // vyplní kody.js
-  { label: "Datum", value: datum },
-  { label: "Místo", value: akce?.place || projekt.misto || null },
-  { label: "Sraz", value: akce?.sraz || null },
-  { label: "Doprava", value: akce?.doprava || null },
-  { label: "Oblečení", value: akce?.obleceni || null },
-  { label: "Hospoda", value: hospodaInfo },
-  { label: "Poznámka", value: akce?.note || null },
-].filter(r => r.value);
-
-// Progress bar z rider todo
-let progressHtml = "";
-if (rider?.todo_pred || rider?.todo_den) {
-  const pred = rider.todo_pred || [];
-  const den = rider.todo_den || [];
-  const predDone = pred.filter(t => t.done).length;
-  const denDone = den.filter(t => t.done).length;
-  const predPct = pred.length ? Math.round(predDone / pred.length * 100) : 0;
-  const denPct = den.length ? Math.round(denDone / den.length * 100) : 0;
-  progressHtml = `
-    <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Příprava</div>
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-          <span>Před koncertem</span>
-          <span style="color:#8e8e93">${predPct} %</span>
-        </div>
-        <div style="background:#f2f2f7;border-radius:4px;height:8px">
-          <div style="background:#EE220C;height:8px;border-radius:4px;width:${predPct}%;transition:width 0.3s"></div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-          <span>V den koncertu</span>
-          <span style="color:#8e8e93">${denPct} %</span>
-        </div>
-        <div style="background:#f2f2f7;border-radius:4px;height:8px">
-          <div style="background:#EE220C;height:8px;border-radius:4px;width:${denPct}%;transition:width 0.3s"></div>
-        </div>
-      </div>
-    </div>`;
-}
-
-// Timeline z harmonogram_items
-let timelineHtml = "";
-try {
-  const harmItems = akce?.harmonogram_items ? JSON.parse(akce.harmonogram_items) : null;
-  if (harmItems && Array.isArray(harmItems) && harmItems.length > 0) {
-    const items = [...harmItems].sort((a, b) => (a.cas || "").localeCompare(b.cas || ""));
-    timelineHtml = `
-      <div class="projekt-sekce">
-        <div class="projekt-sekce-title">Harmonogram</div>
-        <div class="projekt-timeline">
-          ${items.map((item, i) => `
-            <div class="projekt-timeline-item">
-              <div class="projekt-timeline-time">${driveEsc(item.cas || "—")}</div>
-              <div class="projekt-timeline-dot"></div>
-              <div class="projekt-timeline-label">${driveEsc(item.popis || "")}</div>
-            </div>
-          `).join("")}
-        </div>
-      </div>`;
-  }
-} catch(e) {}
-
-// Detailní rider tabulka
-let riderHtml = "";
-if (rider && (rider.pripravne_akce?.length || rider.harmonogram_koncertu?.length || rider.ukonceni?.length)) {
-  
-   function riderTable(rows, cols) {
-    if (!rows?.length) return "";
-    return `
-      <div class="rider-table-wrap">
-        <table class="rider-table">
-          <thead><tr>${cols.map(c => `<th>${driveEsc(c.label)}</th>`).join("")}</tr></thead>
-          <tbody>
-            ${rows.map(r => `<tr>${cols.map(c => `<td>${driveEsc(r[c.key] || "—")}</td>`).join("")}</tr>`).join("")}
-          </tbody>
-        </table>
-      </div>`;
-  }
-
-  riderHtml = `
-    <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Detailní program</div>
-      
-      ${rider.pripravne_akce?.length ? `
-        <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Přípravné akce</div>
-        ${riderTable(rider.pripravne_akce, [
-          { label: "Čas", key: "cas" },
-          { label: "Název", key: "nazev" },
-          { label: "Poznámka", key: "poznamka" }
-        ])}
-      ` : ""}
-
-      ${rider.harmonogram_koncertu?.length ? `
-      <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Harmonogram koncertu</div>
-      <div class="rider-table-wrap"><table class="rider-table">
-        <thead><tr><th>Název</th><th>Skladba / Detail</th><th>Stopáž</th><th>Poznámka</th></tr></thead>
-        <tbody>
-          ${rider.harmonogram_koncertu.map(r => {
-            const getMemberName = (id) => {
-              const m = Object.values(members).find(m => m.id === id || m.uid === id);
-              return m?.name || m?.email || id || "—";
-            };
-    
-            if (r.typ === "blok" && r.skladby?.length > 0) {
-              return r.skladby.map((s, i) => `
-                <tr>
-                  ${i === 0 ? `<td rowspan="${r.skladby.length}" style="font-weight:600;vertical-align:middle">${driveEsc(r.nazev || "Blok")}</td>` : ""}
-                  <td>${driveEsc(s.name || "—")}</td>
-                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${r.stopaz_min ? driveEsc(r.stopaz_min) + " min" : "—"}</td>` : ""}
-                  ${i === 0 ? `<td rowspan="${r.skladby.length}">${driveEsc(r.poznamka || "—")}</td>` : ""}
-                </tr>
-              `).join("");
-            } else {
-              const detail = r.moderator ? getMemberName(r.moderator) : "";
-              return `
-                <tr>
-                  <td>${driveEsc(r.nazev || "—")}</td>
-                  <td>${driveEsc(detail)}</td>
-                  <td>${r.stopaz_min ? driveEsc(r.stopaz_min) + " min" : "—"}</td>
-                  <td>${driveEsc(r.poznamka || "—")}</td>
-                </tr>
-              `;
-            }
-          }).join("")}
-        </tbody>
-      </table></div>
-    ` : ""}
-
-      ${rider.ukonceni?.length ? `
-        <div style="font-size:12px;font-weight:600;color:#8e8e93;margin:12px 0 6px">Ukončení</div>
-        ${riderTable(rider.ukonceni, [
-          { label: "Čas", key: "cas" },
-          { label: "Název", key: "nazev" },
-          { label: "Poznámka", key: "poznamka" }
-        ])}
-      ` : ""}
-    </div>`;
-}
-
-  document.getElementById("projekt-detail-body").innerHTML = `
-    <!-- INFO -->
-    <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Informace o projektu</div>
-      ${garantJmeno ? `
-        <div class="projekt-info-row">
-          <div class="projekt-info-label">Garant</div>
-          <div class="projekt-info-value" style="font-weight:600">${driveEsc(garantJmeno)}</div>
-        </div>` : ""}
-      ${infoRows.map(r => `
-        <div class="projekt-info-row">
-          <div class="projekt-info-label">${driveEsc(r.label)}</div>
-          <div class="projekt-info-value">${r.html ? r.value : driveEsc(r.value)}</div>
-        </div>
-      `).join("")}
-    </div>
-  
-    <!-- WIKI -->
-    <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Popis (AI)</div>
-      <div class="projekt-wiki-text" id="wiki-text" contenteditable="${currentUser?.role === "ADMIN" ? "true" : "false"}">${driveEsc(projekt.wikiText || "Zatím žádný popis.")}</div>
-      ${currentUser?.role === "ADMIN" ? `
-        <div class="projekt-wiki-actions">
-          <button class="projekt-wiki-btn" onclick="ulozitWiki('${projektId}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Uložit
-          </button>
-          <button class="projekt-wiki-btn ai" onclick="regenerovatWiki('${projektId}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#EE220C" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            Přegenerovat Markem
-          </button>
-        </div>
-      ` : ""}
-    </div>
-  
-    <!-- TIMELINE -->
-    ${timelineHtml}
-  
-    <!-- RIDER TABULKA -->
-    ${riderHtml}
-  
-    <!-- PROGRESS BAR -->
-    ${progressHtml}
-  
-    <!-- SLOŽKY -->
-    <div class="projekt-sekce">
-      <div class="projekt-sekce-title">Složky projektu</div>
-      ${projekt.drivePodkladyId ? `
-        <div class="projekt-slozka-btn" onclick="otevritProjektSlozku('${projekt.drivePodkladyId}', 'Podklady')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          Podklady
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>` : ""}
-      ${projekt.driveSmlouvyId ? `
-        <div class="projekt-slozka-btn" onclick="otevritProjektSlozku('${projekt.driveSmlouvyId}', 'Smlouvy a faktury')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          Smlouvy a faktury
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>` : ""}
-      ${projekt.driveFotkyId ? `
-        <div class="projekt-slozka-btn" onclick="otevritProjektSlozku('${projekt.driveFotkyId}', 'Fotky a nahrávky')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EE220C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          Fotky a nahrávky
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" style="margin-left:auto" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>` : ""}
-      
-      <div id="projekt-slozka-obsah" class="hidden">
-        <div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px">
-          <button class="projekt-card-btn" onclick="zavritProjektSlozku()">← Zpět</button>
-          <span style="font-size:13px;font-weight:600" id="projekt-slozka-nazev"></span>
-        </div>
-        <div id="projekt-slozka-list"></div>
-      </div>
-    </div>
-  `;
+  document.getElementById("projekt-detail-body").innerHTML = window.tenProjekt.html({ projektId, projekt, akce, members, user: currentUser });
+  window.tenProjekt.loadFinance(projektId);   // příjmy a výdaje podle kódu, doplní se po načtení
 };
 
 window.zavritProjekt = () => {

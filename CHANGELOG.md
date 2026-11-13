@@ -3,6 +3,14 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.18.0 (13. 11. 2026)
+Projekt jako technický rider. Detail projektu v 10space je jedna tabulka po sekcích a nekopíruje detail akce v 10base.
+- Detail projektu: Informace (datum, místo, sraz, doprava, skupiny, program a garant s e-mailem a telefonem na samostatných řádcích), Plán akce (harmonogram, přípravné akce a ukončení z rideru seřazené podle času), Podrobný program (stávající tabulka rideru), Složky projektu ve vzhledu Disku, Příjmy a výdaje a Interní kód. Odstraněny ukazatele příprav (to-do je jen v 10base) a údaj o hospodě.
+- Co v akci chybí (místo, sraz, doprava, garant, harmonogram dne, program), je označeno: nahoře pruh „Chybí N údajů“ a v prázdném řádku odkaz „Doplnit v 10base“.
+- Příjmy a výdaje projektu podle kódu E1234 z účetnictví 10korun (nová funkce projektFinanceApi). Člen vidí součty (příjmy, výdaje, bilance, otevřené doklady), administrátor a hospodář i řádky po položkách. Smlouvy a faktury ve složkách vidí jen administrátor.
+- Sdílený odkaz na projekt pro spolupracující skupiny (share.html): stejná tabulka bez financí, interního kódu, smluv, hospody a popisu od Marka (ten se nesdílí, může obsahovat interní věci). Garant má e-mail a telefon. Plán akce slučuje harmonogram, přípravné akce a ukončení. Server posílá jen výslovně povolená pole.
+- Nové soubory: projekt-detail.js a projekt-detail.css (vypnutí: odebrat je z index.html a share.html).
+
 ## 3.17.0 (8. 11. 2026)
 - Indikátor čekání: nahoře běží tenký červený pruh všude, kde aplikace čeká na odpověď serveru (otevření souboru a PDF, stažení, nahrávání, přejmenování, přesun, mazání, sdílení, oprávnění, verze, načtení dat po startu a přihlášení). Po chvíli se pod pruhem ukáže, na co se čeká („Stahuji soubor…“). Krátké operace nic neblikají a zapomenutá se po minutě sama ukončí.
 - Odkaz na konkrétní soubor (#/file/…): hned po otevření se ukáže karta „Otevírám dokument…“, dokud se nepřihlásí a nenačtou data a nepřevezme to čtečka s vlastním průběhem. Po 12 s přibude „Trvá to déle než obvykle…“ a tlačítko Skrýt. Čekání na strom souborů je teď nejvýš 1,5 s a končí hned, jakmile data dorazí (dřív se čekalo vždy celých 1,5 s).
