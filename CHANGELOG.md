@@ -3,6 +3,9 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.18.2 (13. 11. 2026)
+- Detail projektu: z prázdných údajů zmizely odkazy „Doplnit v 10base“ a „Určit v 10base“ (vedly jen na Přehled). Zůstává text „nevyplněno“ a pruh „Chybí N údajů“, který říká, že se údaje doplňují ve formuláři akce v 10base.
+
 ## 3.18.1 (13. 11. 2026)
 - Detail projektu a sdílený odkaz: jen tabulka přímo na stránce, bez karty (bez pozadí, zaoblení a stínu); sekce jsou odděleny nadpisem s linkou a řádky hairline čarami. Popis od Marka je bez šedého podbarvení.
 - Složky projektu se rozbalují přímo v tabulce jako v Disku: šipka u složky, ikony podle typu souboru, u souboru datum změny a velikost, vnořené složky, prázdná složka to řekne. Klik na soubor ho otevře ve čtečce, složka jde ovládat i klávesnicí. Zvláštní panel „Zpět“ pod tabulkou zmizel. Ve sdíleném odkazu vede řádek Podklady do průzkumníka podkladů jako dřív.

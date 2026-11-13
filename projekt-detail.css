@@ -17,7 +17,6 @@
 .pd-out { color: #c00000; }
 .pd-sum td { font-weight: 700; }
 .pd-gap { color: var(--muted, #6e6e73); font-style: italic; font-weight: 400; }
-.pd-gap a { color: #EE220C; font-style: normal; font-weight: 600; text-decoration: none; margin-left: 6px; }
 .pd-sheet a.pd-link { color: inherit; text-decoration: underline; }
 .pd-sheet .pd-wiki, body .pd-sheet .pd-wiki.projekt-wiki-text, body.dark .pd-sheet .pd-wiki.projekt-wiki-text { padding: 8px 0; white-space: pre-wrap; background: none; border: 0; border-radius: 0; }
 .pd-sheet .projekt-wiki-actions { padding: 6px 0 0; }

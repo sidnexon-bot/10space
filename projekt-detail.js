@@ -5,7 +5,6 @@
 (function () {
   "use strict";
   var API = "https://us-central1-base-39f52.cloudfunctions.net/projektFinanceApi";
-  var BASE_URL = "https://app.10men.cz/";
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var FOLDER = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#5f6368" aria-hidden="true"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
   var CHEV = '<svg class="pd-chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
@@ -23,7 +22,7 @@
 
   var sec = function (title, right) { return '<div class="pd-sec"><span>' + esc(title) + "</span><span>" + (right || "") + "</span></div>"; };
   var row = function (k, v) { return '<tr><td>' + esc(k) + '</td><td colspan="3">' + v + "</td></tr>"; };
-  var gap = function (text, link) { return '<span class="pd-gap">' + esc(text) + '<a href="' + BASE_URL + '" target="_blank" rel="noopener">' + esc(link || "Doplnit v 10base") + " →</a></span>"; };
+  var gap = function (text) { return '<span class="pd-gap">' + esc(text) + "</span>"; };
 
   // plán dne akce: harmonogram, přípravné akce a ukončení z rideru, podle času
   function planFrom(harm, pripravne, ukonceni) {
@@ -120,7 +119,7 @@
       info += row("Garant", esc(garant.name || garant.email || ""));
       if (garant.email) info += row("E-mail", '<a class="pd-link" href="mailto:' + esc(garant.email) + '">' + esc(garant.email) + "</a>");
       if (garant.phone) info += row("Telefon", '<a class="pd-link" href="tel:' + esc(String(garant.phone).replace(/\s+/g, "")) + '">' + esc(garant.phone) + "</a>");
-    } else info += row("Garant", gap("není určen", "Určit v 10base"));
+    } else info += row("Garant", gap("není určen"));
     if (akce.note) info += row("Poznámka", '<span style="white-space:pre-wrap">' + esc(akce.note) + "</span>");
 
     var out = '<div class="pd-sheet">';
