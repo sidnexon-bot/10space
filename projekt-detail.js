@@ -117,7 +117,7 @@
     if (prog.rows.length) info += row("Program", esc((prog.min ? Math.round(prog.min) + " min" : "") + (prog.min && prog.songs ? ", " : "") + (prog.songs ? prog.songs + " " + plural(prog.songs, "skladba", "skladby", "skladeb") : "") || "—"));
     if (garant) {
       info += row("Garant", esc(garant.name || garant.email || ""));
-      if (garant.email) info += row("E-mail", '<a class="pd-link" href="mailto:' + esc(garant.email) + '">' + esc(garant.email) + "</a>");
+      info += row("E-mail", '<a class="pd-link" href="mailto:info@10men.cz">info@10men.cz</a>');   // společný kontakt sboru, ne přihlašovací e-mail člena
       if (garant.phone) info += row("Telefon", '<a class="pd-link" href="tel:' + esc(String(garant.phone).replace(/\s+/g, "")) + '">' + esc(garant.phone) + "</a>");
     } else info += row("Garant", gap("není určen"));
     if (akce.note) info += row("Poznámka", '<span style="white-space:pre-wrap">' + esc(akce.note) + "</span>");
