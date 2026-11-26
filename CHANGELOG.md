@@ -3,6 +3,11 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.20.0 (26. 11. 2026)
+- Podrobnosti souboru ve složce 01_Účetnictví na Disku mají sekci „Doklad“ (vidí a upravuje ji jen administrátor a hospodář): druh (smlouva, faktura vydaná, faktura přijatá, jiný), protistrana a IČO, naše číslo, číslo faktury dodavatele, kód projektu, částka, datum vystavení, splatnost a poznámka.
+- „Vybrat fakturu z 10korun“ doplní údaje z faktury a doklad s ní propojí. Údaje se pak vždy berou z 10korun (oprava faktury se projeví i tady) a do faktury se zapíše odkaz na soubor. U starých dokladů bez faktury jdou údaje vyplnit ručně a kdykoli upravit nebo smazat.
+- Nová funkce serveru dokumentMetaApi; údaje jsou v databázi pod /dokumentyMeta a čte je jen server. Nové soubory: dokumenty-meta.js a dokumenty-meta.css (vypnutí: odebrat je z index.html).
+
 ## 3.19.0 (26. 11. 2026)
 - Detail projektu: u složek projektu je tlačítko „Nahrát dokument“ (jen administrátor, stejně jako složka Smlouvy a faktury). Nabídne Smlouva, Faktura nebo Jiný, vybere se PDF a uloží se do složky „Smlouvy a faktury“ na Disku. Soubor dostane název `E1234_Faktura_původní název.pdf` (kód projektu, druh dokumentu), takže se ve složce řadí podle projektu a druhu. Složka se po nahrání hned rozbalí.
 
