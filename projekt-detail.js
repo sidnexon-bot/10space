@@ -90,6 +90,59 @@
     tr.setAttribute("aria-expanded", "true");
   }
   function openFile(tr) { if (window.handleDriveNameClick) window.handleDriveNameClick(tr.getAttribute("data-id"), tr.getAttribute("data-mime"), false); }
+  // nahrání smlouvy, faktury nebo jiného PDF do složky „Smlouvy a faktury“ projektu (jen administrátor, jako samotná složka)
+  var UPLOAD = "https://uploadfile-etp6s2ynnq-uc.a.run.app", MAX_PDF = 17 * 1024 * 1024;   // obálka base64 má nejvýš ~23 MB
+  var TYPY = { smlouva: "Smlouva", faktura: "Faktura", jiny: "Dokument" };
+  var uploadBox = function (projektId, folderId) {
+    return '<span class="pd-up" data-pid="' + esc(projektId) + '" data-folder="' + esc(folderId) + '"><button type="button" class="pd-up-btn" aria-haspopup="menu" aria-expanded="false" onclick="tenProjekt.upMenu(this)">Nahrát dokument<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>' +
+      '<span class="pd-up-menu" role="menu" hidden>' + ["smlouva", "faktura", "jiny"].map(function (k) { return '<button type="button" role="menuitem" onclick="tenProjekt.upPick(this,\'' + k + '\')">' + (k === "jiny" ? "Jiný" : TYPY[k]) + "</button>"; }).join("") + "</span>" +
+      '<input type="file" accept="application/pdf,.pdf" hidden onchange="tenProjekt.upFile(this)"><span class="pd-up-st" role="status" aria-live="polite"></span></span>';
+  };
+  function closeMenus() { Array.prototype.forEach.call(document.querySelectorAll(".pd-up-menu"), function (m) { m.hidden = true; var b = m.parentNode.querySelector(".pd-up-btn"); if (b) b.setAttribute("aria-expanded", "false"); }); }
+  function upMenu(btn) {
+    var m = btn.parentNode.querySelector(".pd-up-menu"), open = m.hidden;
+    closeMenus(); m.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) setTimeout(function () { document.addEventListener("click", closeMenus, { once: true }); }, 0);
+  }
+  function upPick(item, typ) {
+    var box = item.closest(".pd-up"), input = box.querySelector("input[type=file]");
+    closeMenus(); input.setAttribute("data-typ", typ); input.value = ""; input.click();
+  }
+  // název souboru: kód projektu, druh dokumentu a původní název (řadí se tak podle projektu a druhu)
+  function docName(projektId, typ, fileName) {
+    var st = window.tenKody && window.tenKody._state ? window.tenKody._state() : null, c = st && st.byAkce && st.byAkce[projektId];
+    var base = String(fileName || "dokument").replace(/\.pdf$/i, "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+    base = base.replace(new RegExp("^" + (TYPY[typ] || TYPY.jiny) + "[\\s_-]+", "i"), "") || "dokument";   // „Faktura leden“ nedostane druhé „Faktura“
+    return [c && c.cislo, TYPY[typ] || TYPY.jiny, base].filter(Boolean).join("_") + ".pdf";
+  }
+  var readB64 = function (file) { return new Promise(function (ok, ko) { var r = new FileReader(); r.onload = function () { ok(String(r.result).split(",")[1] || ""); }; r.onerror = ko; r.readAsDataURL(file); }); };
+  async function upFile(input) {
+    var file = input.files && input.files[0], box = input.closest(".pd-up"), st = box.querySelector(".pd-up-st"), btn = box.querySelector(".pd-up-btn"), c = window.__tenCtx;
+    if (!file) return;
+    var say = function (t, err) { st.textContent = t; st.classList.toggle("pd-up-err", !!err); };
+    if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") return say("Nahrát jde jen PDF.", true);
+    if (file.size > MAX_PDF) return say("PDF je příliš velké (nejvýš asi 17 MB).", true);
+    if (!c || !c.auth.currentUser) return say("Nejste přihlášeni.", true);
+    var projektId = box.getAttribute("data-pid"), folderId = box.getAttribute("data-folder"), name = docName(projektId, input.getAttribute("data-typ"), file.name);
+    btn.disabled = true; say("Nahrávám…");
+    try {
+      var tok = await c.auth.currentUser.getIdToken();
+      var r = await fetch(UPLOAD, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok }, body: JSON.stringify({ fileName: name, mimeType: "application/pdf", base64Data: await readB64(file), slozkaId: folderId }) });
+      var d = await r.json().catch(function () { return {}; });
+      if (!r.ok || !d.driveFileId) throw new Error(d.error || (r.status === 413 ? "soubor je příliš velký" : "server vrátil " + r.status));
+      var now = new Date().toISOString();
+      window.driveFiles = window.driveFiles || {};
+      window.driveFiles[d.driveFileId] = { name: d.name || name, mimeType: "application/pdf", parentId: folderId, size: String(file.size), modifiedTime: now, createdTime: now, driveFileId: d.driveFileId };
+      var tr = box.closest(".pd-sheet").querySelector('tr.pd-dir[data-id="' + folderId + '"]');
+      if (tr) {   // složka se znovu rozbalí s novým souborem a aktualizuje se počet položek
+        if (tr.getAttribute("aria-expanded") === "true") toggle(tr);
+        toggle(tr);
+        var n = kids(folderId).length, cnt = tr.querySelector(".pd-n"); if (cnt) cnt.textContent = n + " " + plural(n, "položka", "položky", "položek");
+      }
+      say("Nahráno: " + (d.name || name));
+    } catch (e) { say("Nahrání se nepodařilo: " + e.message, true); }
+    btn.disabled = false; input.value = "";
+  }
   var folderRow = function (id, nazev) { return itemRow({ id: id, name: nazev, dir: true }, 0, ","); };
 
   // celý obsah detailu; o.user = přihlášený člen (role), o.members = /members
@@ -141,7 +194,7 @@
     if (projekt.drivePodkladyId) folders += folderRow(projekt.drivePodkladyId, "Podklady");
     if (projekt.driveSmlouvyId && admin) folders += folderRow(projekt.driveSmlouvyId, "Smlouvy a faktury");
     if (projekt.driveFotkyId) folders += folderRow(projekt.driveFotkyId, "Fotky a nahrávky");
-    out += sec("Složky projektu") + (folders ? '<table class="pd-files">' + folders + "</table>" : '<div class="pd-hint">Projekt zatím nemá složky.</div>');
+    out += sec("Složky projektu", admin && projekt.driveSmlouvyId ? uploadBox(o.projektId, projekt.driveSmlouvyId) : "") + (folders ? '<table class="pd-files">' + folders + "</table>" : '<div class="pd-hint">Projekt zatím nemá složky.</div>');
     out += '<div id="pd-finance"></div>';
     out += sec("Interní") + "<table>" + row("Interní kód", '<span class="kd-row" data-kod-row="' + esc(o.projektId) + '"></span>') + "</table>";
     return out + "</div>";
@@ -191,5 +244,5 @@
     } catch (e) { /* bez připojení nebo chyba serveru: sekce se nezobrazí, zbytek detailu funguje */ }
   }
 
-  window.tenProjekt = { html: html, htmlShared: htmlShared, toggle: toggle, openFile: openFile, loadFinance: loadFinance, _dayPlan: dayPlan, _programStats: programStats };
+  window.tenProjekt = { html: html, htmlShared: htmlShared, toggle: toggle, openFile: openFile, loadFinance: loadFinance, upMenu: upMenu, upPick: upPick, upFile: upFile, _docName: docName, _dayPlan: dayPlan, _programStats: programStats };
 })();
