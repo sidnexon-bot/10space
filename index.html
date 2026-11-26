@@ -18,6 +18,7 @@
   <script src="ui.js"></script>
   <script src="kody.js"></script>
   <script src="projekt-detail.js"></script>
+  <script src="dokumenty-meta.js"></script>
   <script src="settings.js"></script>
   <title>10space</title>
   <style>
@@ -1561,6 +1562,7 @@
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="kody.css">
   <link rel="stylesheet" href="projekt-detail.css">
+  <link rel="stylesheet" href="dokumenty-meta.css">
   <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="settings.css">
 </head>
@@ -3456,6 +3458,7 @@ function renderDriveDetailContent(fileId, isFolder) {
         <div class="location-tree">${renderDriveLocationTree(parentId)}</div>
       </div>
     `;
+    window.tenDokMeta?.mount(fileId, content);   // údaje o dokladu ve složce 01_Účetnictví (jen admin a hospodář)
   } else if (activeDetailTab === "versions") {
       renderVersions(fileId, item, content);
   } else if (activeDetailTab === "preview") {
@@ -5937,6 +5940,7 @@ function renderMobileDetailContent(fileId, isFolder) {
         <div class="detail-static">${parentName}</div>
       </div>
     `;
+    window.tenDokMeta?.mount(fileId, content);
   } else if (mobileDetailTab === "versions") {
     renderVersions(fileId, item, content);
   } else if (mobileDetailTab === "preview") {
