@@ -3,6 +3,9 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.19.0 (26. 11. 2026)
+- Detail projektu: u složek projektu je tlačítko „Nahrát dokument“ (jen administrátor, stejně jako složka Smlouvy a faktury). Nabídne Smlouva, Faktura nebo Jiný, vybere se PDF a uloží se do složky „Smlouvy a faktury“ na Disku. Soubor dostane název `E1234_Faktura_původní název.pdf` (kód projektu, druh dokumentu), takže se ve složce řadí podle projektu a druhu. Složka se po nahrání hned rozbalí.
+
 ## 3.18.2 (13. 11. 2026)
 - Detail projektu: z prázdných údajů zmizely odkazy „Doplnit v 10base“ a „Určit v 10base“ (vedly jen na Přehled). Zůstává text „nevyplněno“ a pruh „Chybí N údajů“, který říká, že se údaje doplňují ve formuláři akce v 10base.
 
