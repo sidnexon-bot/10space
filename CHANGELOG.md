@@ -3,6 +3,9 @@
 Verze se označují MAJOR.MINOR.PATCH. Číslo je v `version.js`, vydání se označí tagem `vX.Y.Z`.
 Postup vydání: zvýšit číslo a datum ve `version.js`, doplnit tento soubor, nasadit, `git tag -a vX.Y.Z -m "…"` a `git push --tags`.
 
+## 3.21.0 (27. 11. 2026)
+- Nastavení je rozcestník místo jedné dlouhé stránky: nahoře profil (iniciály, jméno, role), pod ním skupiny Přizpůsobit (Vzhled, Přehled), Správa (jen administrátor: převod poznámek) a O aplikaci (verze a kontrola aktualizací). Řádky mají barevnou ikonu, aktuální hodnotu a šipku; každá položka otevře podstránku s tlačítkem „Nastavení“. Podstránka se zapisuje do historie, takže tlačítko Zpět (i na Androidu) vrací na rozcestník. Funkce a ukládání jsou beze změny. Vzhled podle platformy: iPhone seskupené bloky s ikonami v barevných čtvercích, Android Material 3 s tonálními kolečky.
+
 ## 3.20.0 (26. 11. 2026)
 - Podrobnosti souboru ve složce 01_Účetnictví na Disku mají sekci „Doklad“ (vidí a upravuje ji jen administrátor a hospodář): druh (smlouva, faktura vydaná, faktura přijatá, jiný), protistrana a IČO, naše číslo, číslo faktury dodavatele, kód projektu, částka, datum vystavení, splatnost a poznámka.
 - „Vybrat fakturu z 10korun“ doplní údaje z faktury a doklad s ní propojí. Údaje se pak vždy berou z 10korun (oprava faktury se projeví i tady) a do faktury se zapíše odkaz na soubor. U starých dokladů bez faktury jdou údaje vyplnit ručně a kdykoli upravit nebo smazat.

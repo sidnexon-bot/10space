@@ -3,6 +3,7 @@
    při startu a nastavení putuje mezi zařízeními.
    • Vzhled: světlý / tmavý / podle systému,
    • Přehled: které karty se zobrazují a v jakém pořadí.
+   Stránka je rozcestník (profil, skupiny s ikonami a šipkami) a podstránky Vzhled, Přehled, Správa; podstránka se zapisuje do historie (tlačítko Zpět).
    Rozhraní pro aplikaci: tenSettings.boot() (hned při startu), start() (po přihlášení), render(el) (stránka), setTheme(mode), dashboardCards(). */
 (function () {
   "use strict";
@@ -79,20 +80,38 @@
     minus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>',
     grip: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>',
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
+    chev: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>',
+    grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>',
+    tool: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.1-.6-.6-2.1z"/></svg>',
+    dl: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>',
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
   };
   var isAdminUser = function () { var u = ctx() && ctx().user; return !!u && (u.role === "ADMIN" || u.role === "Owner"); };
-  function adminHtml() {
-    if (!isAdminUser()) return "";
-    return '<h2 class="st-h">Správa</h2><div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">Převést poznámky na verze souborů</div><div class="st-desc">Jednorázově přiřadí dosavadní poznámky k aktuální verzi každého souboru. Původní data se nemažou a opakované spuštění nic nezdvojí.</div></div>' +
-      '<div class="st-acts"><button type="button" class="drive-toolbar-btn" data-migrate-ann="1"><span id="st-mig-label">Převést poznámky</span></button></div></div></div>';
+  var VIEW = null, VIEWS = { vzhled: "Vzhled", prehled: "Přehled", sprava: "Správa" };
+  function cz(n, a, b, c) { return n === 1 ? a : n >= 2 && n <= 4 ? b : c; }
+  function navRow(go, icon, color, label, value) {
+    return '<button type="button" class="st-nav" data-go="' + go + '"><span class="st-nic" style="background:' + color + '" aria-hidden="true">' + ICON[icon] + '</span><span class="st-nl">' + esc(label) + (value ? '<span class="st-nsub">' + esc(value) + "</span>" : "") + "</span>" +
+      (value ? '<span class="st-nv" aria-hidden="true">' + esc(value) + "</span>" : "") + '<span class="st-nchev" aria-hidden="true">' + ICON.chev + "</span></button>";
   }
-  function aboutHtml() {
-    var V = globalThis.TEN_VERSION || {};
-    return '<div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">10space ' + esc(V.version || "") + '</div><div class="st-desc">Vydáno ' + esc(V.date || "") + '. Aplikace sama nabídne obnovení, jakmile vyjde novější verze.</div></div>' +
-      '<div class="st-acts"><button type="button" class="drive-toolbar-btn" data-check-update="1"><span id="st-upd-label">Zkontrolovat aktualizace</span></button></div></div></div>';
+  function hubHtml() {
+    var u = (ctx() && ctx().user) || {}, vis = dashboardCards(), nTheme = (THEMES.filter(function (t) { return t[0] === S.theme; })[0] || THEMES[2])[1];
+    var ini = String(u.name || u.email || "?").trim().split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).filter(function (c, k, a) { return k === 0 || k === a.length - 1; }).join("").toUpperCase() || "?";
+    var V = globalThis.TEN_VERSION || {}, date = V.date ? V.date.split("-").reverse().map(Number).join(". ") : "";
+    return '<div class="dashboard-card st-grp st-prof"><span class="st-av" aria-hidden="true">' + esc(ini) + '</span><span class="st-nl"><b>' + esc(u.name || u.email || "Můj profil") + "</b>" + (u.role ? '<span class="st-nsub" style="display:block">' + esc(u.role) + "</span>" : "") + "</span></div>" +
+      '<h2 class="st-sec">Přizpůsobit</h2><div class="dashboard-card st-grp">' + navRow("vzhled", "sun", "#5856d6", "Vzhled", nTheme) + navRow("prehled", "grid", "#007aff", "Přehled", vis.length + " " + cz(vis.length, "karta", "karty", "karet")) + "</div>" +
+      (isAdminUser() ? '<h2 class="st-sec">Správa</h2><div class="dashboard-card st-grp">' + navRow("sprava", "tool", "#ff9500", "Správa", "Převod poznámek") + "</div>" : "") +
+      '<h2 class="st-sec">O aplikaci</h2><div class="dashboard-card st-grp"><div class="st-nav st-static"><span class="st-nic" style="background:#EE220C" aria-hidden="true">' + ICON.dl + '</span><span class="st-nl">10space ' + esc(V.version || "") + '<span class="st-nsub" style="display:block">Vydáno ' + esc(date) + '</span></span><button type="button" class="drive-toolbar-btn" data-check-update="1"><span id="st-upd-label">Zkontrolovat</span></button></div></div>';
   }
-  function pageHtml() {
+  function viewHtml(v) {
+    if (v === "vzhled") {
+      var seg = THEMES.map(function (t) { return '<button type="button" role="radio" aria-checked="' + (S.theme === t[0]) + '" class="' + (S.theme === t[0] ? "on" : "") + '" data-theme="' + t[0] + '">' + t[1] + "</button>"; }).join("");
+      return '<div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">Výchozí režim</div><div class="st-desc">Světlý, tmavý, nebo podle nastavení telefonu či počítače. Platí na všech tvých zařízeních.</div></div><div class="st-seg" role="radiogroup" aria-label="Výchozí režim">' + seg + "</div></div></div>";
+    }
+    if (v === "sprava") {
+      return '<div class="dashboard-card st-card"><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">Převést poznámky na verze souborů</div><div class="st-desc">Jednorázově přiřadí dosavadní poznámky k aktuální verzi každého souboru. Původní data se nemažou a opakované spuštění nic nezdvojí.</div></div>' +
+        '<div class="st-acts"><button type="button" class="drive-toolbar-btn" data-migrate-ann="1"><span id="st-mig-label">Převést poznámky</span></button></div></div></div>';
+    }
     var vis = dashboardCards(), hidden = S.dashboard.hidden;
     var shown = vis.map(function (id) {
       var c = card(id);
@@ -105,23 +124,37 @@
       var c = card(id);
       return '<div class="st-row" data-card="' + id + '"><div class="st-t"><div class="st-name">' + esc(c.title) + '</div><div class="st-desc">' + esc(c.desc) + '</div></div><div class="st-acts"><button type="button" class="drive-toolbar-btn" data-show="' + id + '">' + ICON.plus + "<span>Přidat</span></button></div></div>";
     }).join("");
-    var seg = THEMES.map(function (t) { return '<button type="button" role="radio" aria-checked="' + (S.theme === t[0]) + '" class="' + (S.theme === t[0] ? "on" : "") + '" data-theme="' + t[0] + '">' + t[1] + "</button>"; }).join("");
     var isDefault = JSON.stringify(S.dashboard) === JSON.stringify(cleanDash(null));
-    return '<div class="st-wrap"><button type="button" class="drive-toolbar-btn st-back" data-back="1">' + ICON.back + '<span>Zpět</span></button><h1 class="st-title">Nastavení</h1><h2 class="st-h">Přizpůsobit</h2>' +
-      '<div class="dashboard-card st-card"><div class="dashboard-card-title">Vzhled</div><div class="st-row st-row-seg"><div class="st-t"><div class="st-name">Výchozí režim</div><div class="st-desc">Světlý, tmavý, nebo podle nastavení telefonu či počítače. Platí na všech tvých zařízeních.</div></div>' +
-      '<div class="st-seg" role="radiogroup" aria-label="Výchozí režim">' + seg + "</div></div></div>" +
-      '<div class="dashboard-card st-card"><div class="dashboard-card-title">Přehled</div><p class="st-hint">Vyber, které karty se na Přehledu zobrazují, a nastav jejich pořadí.</p>' + shown + "</div>" +
-      (more ? '<div class="dashboard-card st-card"><div class="dashboard-card-title">Další karty</div>' + more + "</div>" : "") +
-      '<div class="st-foot"><button type="button" class="drive-toolbar-btn" data-reset="1"' + (isDefault ? " disabled" : "") + "><span>Obnovit výchozí Přehled</span></button></div>" +
-      adminHtml() + '<h2 class="st-h">O aplikaci</h2>' + aboutHtml() + "</div>";
+    return '<p class="st-hint st-lead">Vyber, které karty se na Přehledu zobrazují, a nastav jejich pořadí.</p><h2 class="st-sec">Zobrazené karty</h2><div class="dashboard-card st-card">' + shown + "</div>" +
+      (more ? '<h2 class="st-sec">Skryté karty</h2><div class="dashboard-card st-card">' + more + "</div>" : "") +
+      '<div class="st-foot"><button type="button" class="drive-toolbar-btn" data-reset="1"' + (isDefault ? " disabled" : "") + "><span>Obnovit výchozí Přehled</span></button></div>";
   }
+  function pageHtml() {
+    if (VIEW === "sprava" && !isAdminUser()) VIEW = null;
+    var sub = VIEW && VIEWS[VIEW];
+    return '<div class="st-wrap' + (sub ? " st-sub-view" : "") + '"><button type="button" class="drive-toolbar-btn st-back" data-back="1">' + ICON.back + "<span>" + (sub ? "Nastavení" : "Zpět") + "</span></button>" +
+      (sub ? '<h1 class="st-ptitle" tabindex="-1">' + esc(VIEWS[VIEW]) + "</h1>" + viewHtml(VIEW) : '<h1 class="st-title">Nastavení</h1>' + hubHtml()) + "</div>";
+  }
+  function go(v, push) { // rozcestník ↔ podstránka; podstránka se zapisuje do historie, ať tlačítko Zpět (i na Androidu) vrací na rozcestník
+    VIEW = v && VIEWS[v] ? v : null;
+    if (push && VIEW) { try { history.pushState({ stView: VIEW }, ""); } catch (e) { /* bez historie */ } }
+    if (!area || !area.isConnected) return;
+    area.innerHTML = pageHtml(); area.scrollTop = 0; if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+    var w = area.querySelector(".st-wrap"); if (w) w.classList.add("st-anim");
+    var h = area.querySelector(".st-ptitle"); if (h) h.focus({ preventScroll: true });
+  }
+  window.addEventListener("popstate", function (e) {
+    if (!area || !area.isConnected || !area.querySelector(".st-wrap")) return;
+    var v = (e.state && e.state.stView) || null; if (v === VIEW) return;
+    go(v, false);
+  });
   function refreshPage() {
     if (!area || !area.isConnected || !area.querySelector(".st-wrap")) return;
     var top = document.scrollingElement ? document.scrollingElement.scrollTop : 0, mt = area.scrollTop;
     area.innerHTML = pageHtml(); area.scrollTop = mt; if (document.scrollingElement) document.scrollingElement.scrollTop = top;
   }
   function onClick(e) {
-    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back],[data-check-update],[data-migrate-ann]");
+    var t = e.target.closest && e.target.closest("[data-theme],[data-hide],[data-show],[data-reset],[data-back],[data-check-update],[data-migrate-ann],[data-go]");
     if (!t || !area || !area.contains(t)) return;
     if (t.dataset.theme) return setTheme(t.dataset.theme);
     if (t.dataset.checkUpdate) {
@@ -129,7 +162,8 @@
       return (window.tenVersionCheck ? window.tenVersionCheck(true) : Promise.resolve(null)).then(function (r) { var l2 = document.getElementById("st-upd-label"); if (l2) l2.textContent = r === false ? "Máte nejnovější verzi" : r === null ? "Nepodařilo se zjistit" : "Nová verze " + r; });
     }
     if (t.dataset.migrateAnn) return migrateAnnotations();
-    if (t.dataset.back) return back();
+    if (t.dataset.go) return go(t.dataset.go, true);
+    if (t.dataset.back) { if (!VIEW) return back(); if (history.state && history.state.stView) return history.back(); return go(null, false); }
     if (t.dataset.hide) return hide(t.dataset.hide);
     if (t.dataset.show) return show(t.dataset.show);
     if (t.dataset.reset) return setDash(null);
@@ -188,7 +222,7 @@
   }
   function back() { var t = window.__tenSettingsBack; if (typeof t === "function") t(); }
   function render(el) {
-    area = el; area.innerHTML = pageHtml();
+    area = el; VIEW = null; area.innerHTML = pageHtml();
     if (!area.__stBound) {
       area.__stBound = true; area.addEventListener("click", onClick); area.addEventListener("keydown", onKey);
       area.addEventListener("pointerdown", dragStart); area.addEventListener("pointermove", dragMove); area.addEventListener("pointerup", dragEnd); area.addEventListener("pointercancel", dragEnd);

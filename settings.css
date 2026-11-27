@@ -48,3 +48,45 @@ body.settings-page .topbar-center, body.settings-page .bottom-wrap, body.setting
   body.settings-page .main-content, body.settings-page #content-area { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .st-back { margin-left: 0; }
 }
+
+/* Nastavení jako rozcestník: profil, skupiny s ikonami a šipkami, podstránky (settings.js) */
+h2.st-sec { margin: 22px 0 8px; padding: 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted, #8e8e93); }
+.st-lead { margin: 4px 6px 0; }
+h1.st-ptitle { margin: 8px 0 6px; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; outline: none; }
+.st-anim > :not(.st-back) { animation: st-in var(--m-base, 0.22s) cubic-bezier(0.32, 0.72, 0, 1); }
+@keyframes st-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.st-grp { padding: 0 !important; overflow: hidden; margin-bottom: 0; }
+.st-nav { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; margin: 0; padding: 4px 14px; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--text, #1c1c1e); font: inherit; font-size: 16px; font-weight: 500; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.st-static { cursor: default; }
+.st-nav + .st-nav::before { content: ""; position: absolute; top: 0; left: 56px; right: 0; height: 1px; background: var(--hair, rgba(128, 128, 128, 0.18)); }
+button.st-nav:active { background: var(--surface-2, rgba(120, 120, 128, 0.14)); }
+button.st-nav:focus-visible { outline: 2px solid var(--accent, #EE220C); outline-offset: -2px; }
+.st-nic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 8px; color: #fff; }
+.st-nic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.st-nl { flex: 1; min-width: 0; }
+.st-nsub { display: none; font-size: 13px; font-weight: 400; color: var(--muted, #8e8e93); }
+.st-nv { flex: none; font-size: 14px; font-weight: 400; color: var(--muted, #8e8e93); }
+.st-nchev { flex: none; display: inline-flex; color: var(--muted, #8e8e93); opacity: 0.6; }
+.st-nchev svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.st-prof { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 10px 14px !important; margin-top: 8px; }
+.st-prof b { font-size: 20px; font-weight: 600; display: block; overflow-wrap: anywhere; }
+.st-prof .st-nsub { display: block; margin-top: 2px; }
+.st-av { width: 56px; height: 56px; flex: none; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #5ac8fa, #007aff); color: #fff; font-size: 20px; font-weight: 600; }
+.st-static .drive-toolbar-btn { flex: none; min-height: 44px; }
+.st-sub-view .st-card + .st-card { margin-top: 14px; }
+/* Android: tonální kolečka s ikonou, hodnota pod názvem, bez dělicích čar, nadpisy skupin ve větě */
+html[data-platform="android"] h2.st-sec { font-size: 14px; font-weight: 500; letter-spacing: 0.01em; color: var(--and-accent, #0b57d0); }
+html[data-platform="android"] h1.st-ptitle { font-size: 24px; font-weight: 400; letter-spacing: 0; }
+html[data-platform="android"] .st-nav { min-height: 64px; font-weight: 400; }
+html[data-platform="android"] .st-nav + .st-nav::before { display: none; }
+html[data-platform="android"] .st-nic { width: 40px; height: 40px; border-radius: 50%; background: var(--and-tonal, #dde4ee) !important; color: var(--and-accent, #0b57d0); }
+html[data-platform="android"] .st-nsub { display: block; }
+html[data-platform="android"] .st-nv { display: none; }
+html[data-platform="android"] .st-av { background: var(--and-tonal, #dde4ee); color: var(--and-accent, #0b57d0); }
+html[data-platform="android"] .st-grp { padding: 4px 0 !important; }
+@media (prefers-reduced-motion: reduce) { .st-anim > :not(.st-back) { animation: none; } }
+.st-back { display: inline-flex; width: fit-content; }
+.st-static .drive-toolbar-btn { width: auto; flex: 0 0 auto; white-space: nowrap; padding: 0 14px; }
+.st-list > .st-row:first-child { border-top: none; }
+.st-nav, .st-prof { box-sizing: border-box; }
+.st-wrap > .st-back { width: fit-content; max-width: max-content; }
